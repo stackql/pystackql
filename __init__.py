@@ -17,7 +17,7 @@ class StackQL:
 		self.auth = kwargs.get('auth')
 		if self.auth is not None:
 			self.params.append('--auth')
-			self.params.append(self.keyfilepath)		
+			self.params.append(self.auth)		
 		# specify dbfilepath
 		self.dbfilepath = kwargs.get('dbfilepath')
 		if self.dbfilepath is not None:
