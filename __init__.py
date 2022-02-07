@@ -14,9 +14,9 @@ class StackQL:
 			self.exe = defaultbin
 		self.params = ['exec', '--output', 'json']			
 		# authentication method
-		self.keyfilepath = kwargs.get('keyfilepath')
-		if self.keyfilepath is not None:
-			self.params.append('--keyfilepath')
+		self.auth = kwargs.get('auth')
+		if self.auth is not None:
+			self.params.append('--auth')
 			self.params.append(self.keyfilepath)		
 		# specify dbfilepath
 		self.dbfilepath = kwargs.get('dbfilepath')
