@@ -48,4 +48,4 @@ class StackQL:
 			e = sys.exc_info()[0]
 			print("ERROR %s %s" % (str(e), e.__doc__))
 			output = None
-		return str(output, 'utf-8')		
+		print(str(output, 'utf-8'))		
