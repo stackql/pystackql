@@ -36,7 +36,7 @@ class StackQL:
 			e = sys.exc_info()[0]
 			print("ERROR %s %s" % (str(e), e.__doc__))
 			output = None
-		return output
+		return str(output, 'utf-8')
 		
 	def version(self):
 		try:
