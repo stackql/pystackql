@@ -24,7 +24,7 @@ class StackQL:
 			self.params.append('--dbfilepath')
 			self.params.append(self.dbfilepath)
 			
-	def execute(self, query):
+	def execute(self, query, utf8=True):
 		local_params = self.params
 		local_params.insert(1, query)
 		try:
@@ -36,7 +36,11 @@ class StackQL:
 			e = sys.exc_info()[0]
 			print("ERROR %s %s" % (str(e), e.__doc__))
 			output = None
-		return str(output, 'utf-8')
+		if utf8:
+			return output.decode('utf-8')
+		else:
+			return str(output)
+		#return str(output, 'utf-8')
 		
 	def version(self):
 		try:
