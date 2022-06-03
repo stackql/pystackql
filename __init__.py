@@ -17,14 +17,19 @@ class StackQL:
 		self.auth = kwargs.get('auth')
 		if self.auth is not None:
 			self.params.append('--auth')
-			self.params.append(self.auth)		
+			self.params.append(self.auth)	
+		# registry
+		self.registry = kwargs.get('registry')
+		if self.registry is not None:
+			self.params.append('--registry')
+			self.params.append(self.registry)	
 		# specify dbfilepath
 		self.dbfilepath = kwargs.get('dbfilepath')
 		if self.dbfilepath is not None:
 			self.params.append('--dbfilepath')
 			self.params.append(self.dbfilepath)
 			
-	def execute(self, query, utf8=True):
+	def execute(self, query):
 		local_params = self.params
 		local_params.insert(1, query)
 		try:
@@ -36,11 +41,7 @@ class StackQL:
 			e = sys.exc_info()[0]
 			print("ERROR %s %s" % (str(e), e.__doc__))
 			output = None
-		if utf8:
-			return output.decode('utf-8')
-		else:
-			return str(output)
-		#return str(output, 'utf-8')
+		return str(output, 'utf-8')
 		
 	def version(self):
 		try:

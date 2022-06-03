@@ -20,3 +20,6 @@ if the StackQL binary is not in the system path you can explicitly specify this 
 from pystackql import StackQL  
 iql = StackQL(exe='/some/other/path/stackql', keyfilepath='/tmp/infraql-demo.json')
 ```
+
+from pystackql import StackQL  
+iql = StackQL(exe='./local-registry/stackql')
