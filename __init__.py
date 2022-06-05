@@ -28,7 +28,20 @@ class StackQL:
 		if self.dbfilepath is not None:
 			self.params.append('--dbfilepath')
 			self.params.append(self.dbfilepath)
-			
+
+	def executeStmt(self, query):
+		local_params = self.params
+		local_params.insert(1, query)
+		try:
+			iqlPopen = subprocess.Popen([self.exe] + local_params,
+                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+			output = iqlPopen.stdout.read()
+			iqlPopen.terminate()
+		except:
+			e = sys.exc_info()[0]
+			output = "ERROR %s %s" % (str(e), e.__doc__)
+		return str(output, 'utf-8')
+
 	def execute(self, query):
 		local_params = self.params
 		local_params.insert(1, query)
@@ -37,14 +50,14 @@ class StackQL:
                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 			output = iqlPopen.stdout.read()
 			iqlPopen.terminate()
-			try:
-				json.loads(output)
-			except ValueError as e:
-				output = '[{"error": %s}]' % output
 		except:
 			e = sys.exc_info()[0]
-			print("ERROR %s %s" % (str(e), e.__doc__))
-			output = None
+			return "ERROR %s %s" % (str(e), e.__doc__)
+		# try to parse json
+		try:
+			json.loads(output)
+		except ValueError as e:
+			output = '[{"error": %s}]' % output
 		return str(output, 'utf-8')
 		
 	def version(self):
