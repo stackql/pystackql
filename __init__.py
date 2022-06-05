@@ -1,4 +1,4 @@
-import sys, subprocess, platform
+import sys, subprocess, platform, json
 
 class StackQL:
 	def __init__(self, **kwargs):
@@ -37,6 +37,10 @@ class StackQL:
                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 			output = iqlPopen.stdout.read()
 			iqlPopen.terminate()
+			try:
+				json.loads(output)
+			except ValueError as e:
+				output = '[{"error": %s}]' % output
 		except:
 			e = sys.exc_info()[0]
 			print("ERROR %s %s" % (str(e), e.__doc__))
