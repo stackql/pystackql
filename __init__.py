@@ -58,6 +58,7 @@ class StackQL:
 			json.loads(output)
 		except ValueError as e:
 			output = '[{"error": %s}]' % output
+			return output
 		return str(output, 'utf-8')
 		
 	def version(self):
