@@ -37,10 +37,12 @@ class StackQL:
                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 			output = iqlPopen.stdout.read()
 			iqlPopen.terminate()
+		except FileNotFoundError as e:
+			return("ERROR %s not found" % (self.exe))
 		except:
 			e = sys.exc_info()[0]
-			output = "ERROR %s %s" % (str(e), e.__doc__)
-		return str(output, 'utf-8')
+			return("ERROR %s %s" % (str(e), e.__doc__))
+		return(str(output, 'utf-8'))
 
 	def execute(self, query):
 		local_params = self.params
@@ -50,16 +52,17 @@ class StackQL:
                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 			output = iqlPopen.stdout.read()
 			iqlPopen.terminate()
+		except FileNotFoundError as e:
+			return("ERROR %s not found" % (self.exe))			
 		except:
 			e = sys.exc_info()[0]
-			return "ERROR %s %s" % (str(e), e.__doc__)
+			return("ERROR %s %s" % (str(e), e.__doc__))
 		# try to parse json
 		try:
 			json.loads(output)
 		except ValueError as e:
-			output = '[{"error": %s}]' % output
-			return json.dumps(output)
-		return str(output, 'utf-8')
+			return('[{"error": "%s"}]' % (str(output.strip(), 'utf-8')))
+		return(str(output, 'utf-8'))
 		
 	def version(self):
 		try:
@@ -67,8 +70,9 @@ class StackQL:
                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 			output = iqlPopen.stdout.read()
 			iqlPopen.terminate()
+		except FileNotFoundError as e:
+			return("ERROR %s not found" % (self.exe))
 		except:
 			e = sys.exc_info()[0]
-			print("ERROR %s %s" % (str(e), e.__doc__))
-			output = None
-		print(str(output, 'utf-8'))		
+			return("ERROR %s %s" % (str(e), e.__doc__))
+		return(str(output, 'utf-8'))		
