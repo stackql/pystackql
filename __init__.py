@@ -53,7 +53,7 @@ class StackQL:
 			output = iqlPopen.stdout.read()
 			iqlPopen.terminate()
 		except FileNotFoundError as e:
-			return("ERROR %s not found" % (self.exe))			
+			return('[{"error": "%s not found"}]' % (self.exe))
 		except:
 			e = sys.exc_info()[0]
 			return("ERROR %s %s" % (str(e), e.__doc__))
