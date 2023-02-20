@@ -10,6 +10,5 @@ Documents
 
 Class Doc
 =========
-
-.. automodule:: package_name.module
+.. automodule:: pystackql.StackQL
    :members:
