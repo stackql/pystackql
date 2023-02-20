@@ -23,3 +23,10 @@ iql = StackQL(exe='/some/other/path/stackql', keyfilepath='/tmp/infraql-demo.jso
 
 from pystackql import StackQL  
 iql = StackQL(exe='./local-registry/stackql')
+
+
+```
+cd docs
+sphinx-apidoc -o docs .
+make html
+```

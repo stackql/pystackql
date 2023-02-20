@@ -1,18 +1,18 @@
 import sys, subprocess, platform, json, site, os, requests, zipfile
 
-def get_platform():
+def _get_platform():
 	return platform.system()
 
-def get_download_dir():
+def _get_download_dir():
 	return site.getuserbase()
 
-def get_binary_name(platform):
+def _get_binary_name(platform):
 	if platform == 'Windows':
 		return r'stackql.exe'
 	else:
 		return r'stackql'
 
-def get_url(platform):
+def _get_url(platform):
 	if platform == 'Linux':
 		return 'https://releases.stackql.io/stackql/latest/stackql_linux_amd64.zip'
 	elif platform == 'Windows':
@@ -20,9 +20,9 @@ def get_url(platform):
 	elif platform == 'Darwin':
 		return 'https://storage.googleapis.com/stackql-public-releases/latest/stackql_darwin_multiarch.pkg'
 	else:
-		raise Exception("ERROR: [get_url] unsupported OS type: %s" % (platform))
+		raise Exception("ERROR: [_get_url] unsupported OS type: %s" % (platform))
 
-def download_file(url, path):
+def _download_file(url, path):
 	try:
 		r = requests.get(url, stream=True)
 		r.raise_for_status()
@@ -40,19 +40,19 @@ def download_file(url, path):
 		print("\nDownload complete.")
 	except Exception as e:
 		error_message = e.args[0]
-		print("ERROR: [download_file] %s" % (error_message))
+		print("ERROR: [_download_file] %s" % (error_message))
 		exit()
 
-def setup():
+def _setup():
 	print('installing stackql...')
 	try:
-		download_dir = get_download_dir()
-		platform = get_platform()
-		binary_name = get_binary_name(platform)
-		url = get_url(platform)
+		download_dir = _get_download_dir()
+		platform = _get_platform()
+		binary_name = _get_binary_name(platform)
+		url = _get_url(platform)
 		print("downloading latest version of stackql from %s to %s" % (url, download_dir))
 		archive_file_name = os.path.join(download_dir, os.path.basename(url))
-		download_file(url, archive_file_name)
+		_download_file(url, archive_file_name)
 		if platform == 'Darwin':
 			os.system('sudo installer -pkg {} -target /'.format(archive_file_name))
 		else:
@@ -61,10 +61,10 @@ def setup():
 		os.chmod(os.path.join(download_dir, binary_name), 0o755)
 	except Exception as e:
 		error_message = e.args[0]
-		print("ERROR: [setup] %s" % (error_message))
+		print("ERROR: [_setup] %s" % (error_message))
 		exit()
 
-def get_version(bin_path):
+def _get_version(bin_path):
 	try:
 		iqlPopen = subprocess.Popen([bin_path] + ["--version"],
 							stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -75,51 +75,36 @@ def get_version(bin_path):
 		sha = version_tokens[3].replace('(', '').replace(')', '')
 		return(version, sha)
 	except FileNotFoundError:
-		print("ERROR: [get_version] %s not found" % (bin_path))
+		print("ERROR: [_get_version] %s not found" % (bin_path))
 		exit()
 	except Exception as e:
 		error_message = e.args[0]
-		print("ERROR: [get_version] %s" % (error_message))		
+		print("ERROR: [_get_version] %s" % (error_message))		
 		exit()
 
 class StackQL:
-	"""This is a conceptual class representation of a simple BLE device
-	(GATT Server). It is essentially an extended combination of the
-	:class:`bluepy.btle.Peripheral` and :class:`bluepy.btle.ScanEntry` classes
+	"""A class representing an instance of the StackQL query engine.
 
-	:param client: A handle to the :class:`simpleble.SimpleBleClient` client
-		object that detected the device
-	:type client: class:`simpleble.SimpleBleClient`
-	:param addr: Device MAC address, defaults to None
-	:type addr: str, optional
-	:param addrType: Device address type - one of ADDR_TYPE_PUBLIC or
-		ADDR_TYPE_RANDOM, defaults to ADDR_TYPE_PUBLIC
-	:type addrType: str, optional
-	:param iface: Bluetooth interface number (0 = /dev/hci0) used for the
-		connection, defaults to 0
-	:type iface: int, optional
-	:param data: A list of tuples (adtype, description, value) containing the
-		AD type code, human-readable description and value for all available
-		advertising data items, defaults to None
-	:type data: list, optional
-	:param rssi: Received Signal Strength Indication for the last received
-		broadcast from the device. This is an integer value measured in dB,
-		where 0 dB is the maximum (theoretical) signal strength, and more
-		negative numbers indicate a weaker signal, defaults to 0
-	:type rssi: int, optional
-	:param connectable: `True` if the device supports connections, and `False`
-		otherwise (typically used for advertising ‘beacons’).,
-		defaults to `False`
-	:type connectable: bool, optional
-	:param updateCount: Integer count of the number of advertising packets
-		received from the device so far, defaults to 0
-	:type updateCount: int, optional
+	:param platform: the operating system platform (read only)
+	:type platform: str
+	:param parse_json: whether to parse the output as JSON, defaults to `False` 
+		unless overridden by setting `output` to `csv`, `table` or `text` as a `kwarg` in the `StackQL` object constructor (read only)
+	:type parse_json: bool
+	:param params: a list of command-line parameters passed to the StackQL executable, populated by the class constructor (read only)
+	:type params: list
+	:param bin_path: the file path of the StackQL executable (read only)
+	:type bin_path: str
+	:param version: the version number of the StackQL executable (read only)
+	:type version: str
+	:param sha: the commit (short) sha for the installed `stackql` binary build (read only)
+	:type sha: str
 	"""
+
 	def __init__(self, **kwargs):
 		"""Constructor method
 		"""
 		# get platform and set property
-		self.platform = get_platform()
+		self.platform = _get_platform()
 
 		# get each kwarg and set property
 		self.parse_json = True
@@ -137,29 +122,44 @@ class StackQL:
 			self.params.append("json")
 
 		# set fq path
-		binary = get_binary_name(self.platform)
-		download_dir = get_download_dir()
+		binary = _get_binary_name(self.platform)
+		download_dir = _get_download_dir()
 		self.bin_path = os.path.join(download_dir, binary)
 
 		# get and set version
 		if os.path.exists(self.bin_path):
-			self.version, self.sha = get_version(self.bin_path)
+			self.version, self.sha = _get_version(self.bin_path)
 		else:
-			setup()
-			self.version, self.sha = get_version(self.bin_path)
+			_setup()
+			self.version, self.sha = _get_version(self.bin_path)
 
 	def show_properties(self):
+		"""Prints the properties of the StackQL instance in JSON format.
+
+		"""
 		props = {}
 		for var in vars(self):
 			props[var] = getattr(self, var)
 		print(json.dumps(props, indent=4, sort_keys=True))
 
 	def upgrade(self):
-		setup()
-		self.version, self.sha = get_version(self.bin_path)
+		"""Upgrades the StackQL instance to the latest version.
+		
+		"""
+		_setup()
+		self.version, self.sha = _get_version(self.bin_path)
 		print("stackql upgraded to version %s" % (self.version))
 
 	def executeStmt(self, query):
+		"""Executes a query using the StackQL instance and returns the output as a string.  
+			This is intended for operations which do not return a result set, for example a mutation 
+			operation such as an `INSERT` or a `DELETE` or life cycle method such as an `EXEC` operation.
+
+		:param query: the StackQL query to execute
+		:type query: str, required
+		:return: the output of the statement (`stderr` or `stdout`)
+		:rtype: str
+		"""
 		local_params = self.params
 		local_params.insert(1, query)
 		try:
@@ -175,6 +175,14 @@ class StackQL:
 		return(str(output, 'utf-8'))
 
 	def execute(self, query):
+		"""Executes a query using the StackQL instance and returns the output as a string 
+			or JSON object depending on the value of `parse_json` property.
+
+		:param query: the StackQL query to execute
+		:type query: str, required
+		:return: the result set from the query
+		:rtype: json or str
+		"""
 		local_params = self.params
 		local_params.insert(1, query)
 		try:

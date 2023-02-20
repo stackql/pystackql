@@ -1,15 +1,5 @@
-pystackql
-------------
-
-Documents
-=========
-.. toctree::
-   :maxdepth: 16
-
-   user-guide
-
 Documentation
-=============
+=================
 
 The ``StackQL`` class
 *****************************
@@ -17,3 +7,4 @@ The ``StackQL`` class
     :members:
     :undoc-members:
     :show-inheritance:
+
