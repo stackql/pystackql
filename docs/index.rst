@@ -8,7 +8,12 @@ Documents
 
    user-guide
 
-Class Doc
-=========
-.. automodule:: pystackql.StackQL
-   :members:
+Documentation
+=============
+
+The ``StackQL`` class
+*****************************
+.. autoclass:: pystackql.StackQL
+    :members:
+    :undoc-members:
+    :show-inheritance:

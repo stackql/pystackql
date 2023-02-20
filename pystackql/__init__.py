@@ -83,30 +83,40 @@ def get_version(bin_path):
 		exit()
 
 class StackQL:
+	"""This is a conceptual class representation of a simple BLE device
+	(GATT Server). It is essentially an extended combination of the
+	:class:`bluepy.btle.Peripheral` and :class:`bluepy.btle.ScanEntry` classes
+
+	:param client: A handle to the :class:`simpleble.SimpleBleClient` client
+		object that detected the device
+	:type client: class:`simpleble.SimpleBleClient`
+	:param addr: Device MAC address, defaults to None
+	:type addr: str, optional
+	:param addrType: Device address type - one of ADDR_TYPE_PUBLIC or
+		ADDR_TYPE_RANDOM, defaults to ADDR_TYPE_PUBLIC
+	:type addrType: str, optional
+	:param iface: Bluetooth interface number (0 = /dev/hci0) used for the
+		connection, defaults to 0
+	:type iface: int, optional
+	:param data: A list of tuples (adtype, description, value) containing the
+		AD type code, human-readable description and value for all available
+		advertising data items, defaults to None
+	:type data: list, optional
+	:param rssi: Received Signal Strength Indication for the last received
+		broadcast from the device. This is an integer value measured in dB,
+		where 0 dB is the maximum (theoretical) signal strength, and more
+		negative numbers indicate a weaker signal, defaults to 0
+	:type rssi: int, optional
+	:param connectable: `True` if the device supports connections, and `False`
+		otherwise (typically used for advertising ‘beacons’).,
+		defaults to `False`
+	:type connectable: bool, optional
+	:param updateCount: Integer count of the number of advertising packets
+		received from the device so far, defaults to 0
+	:type updateCount: int, optional
 	"""
-	A class representing an instance of the StackQL query engine.
-
-	Methods:
-	- show_properties: prints the properties of the StackQL instance in JSON format
-	- upgrade: upgrades the StackQL instance to the latest version
-	- executeStmt: executes a query using the StackQL instance and returns the output as a string
-	- execute: executes a query using the StackQL instance and returns the output as a string or JSON object depending on the value of parse_json property.
-
-	Properties:
-	- platform: the operating system platform (read only)
-	- parse_json: whether to parse the output as JSON (read only)
-	- params: a list of command-line parameters to pass to the StackQL executable, populated by the class constructor (read only)
-	- bin_path: the file path of the StackQL executable (read only)
-	- version: the version number of the StackQL executable (read only)
-	- sha: the SHA-256 hash of the StackQL executable (read only)
-	"""
-
 	def __init__(self, **kwargs):
-		"""
-		Initializes a new instance of the StackQL class.
-
-		Parameters:
-		- **kwargs: a dictionary of keyword arguments representing command-line parameters to pass to the StackQL executable
+		"""Constructor method
 		"""
 		# get platform and set property
 		self.platform = get_platform()
@@ -139,32 +149,17 @@ class StackQL:
 			self.version, self.sha = get_version(self.bin_path)
 
 	def show_properties(self):
-		"""
-		Prints the properties of the StackQL instance in JSON format.
-		"""
 		props = {}
 		for var in vars(self):
 			props[var] = getattr(self, var)
 		print(json.dumps(props, indent=4, sort_keys=True))
 
 	def upgrade(self):
-		"""
-		Upgrades the StackQL instance to the latest version.
-		"""
 		setup()
 		self.version, self.sha = get_version(self.bin_path)
 		print("stackql upgraded to version %s" % (self.version))
 
 	def executeStmt(self, query):
-		"""
-		Executes a query using the StackQL instance and returns the output as a string.  This is intended for operations which do not return a result set, for example mutation or life cycle methods.
-
-		Parameters:
-		- query: the StackQL query to execute
-
-		Returns:
-		- output: the output of the query as a string
-		"""
 		local_params = self.params
 		local_params.insert(1, query)
 		try:
@@ -180,15 +175,6 @@ class StackQL:
 		return(str(output, 'utf-8'))
 
 	def execute(self, query):
-		"""
-		Executes a query using the StackQL instance and returns the output as a string or JSON object depending on the value of parse_json property.
-
-		Parameters:
-		- query: the StackQL query to execute
-
-		Returns:
-		- output: the output of the query as a string or JSON object
-		"""
 		local_params = self.params
 		local_params.insert(1, query)
 		try:
