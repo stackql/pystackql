@@ -10,6 +10,7 @@ def basic_instantiation():
     print("```")
     stackql.show_properties()
     print("```\n")
+    res = stackql.execute("REGISTRY PULL aws")
     del stackql
 
 def upgrade_stackql():
@@ -71,42 +72,49 @@ def output_tests():
 
 def aws_auth():
 
-    # print("# aws auth as str\n")
-    # authstr = 'fred'
-    # stackql = StackQL(auth=authstr)
-    # res = stackql.execute("")
-    # print("```json")
-    # print(res)
-    # print("```\n")
-    # del stackql
+    query = """
+SELECT split_part(replace(instanceState, ' ', ''),'\n',2) as stateCode,
+split_part(replace(instanceState, ' ', ''),'\n',3) as stateName,
+COUNT(*) as num_instances 
+FROM aws.ec2.instances 
+WHERE region = 'ap-southeast-2'
+GROUP BY split_part(replace(instanceState, ' ', ''),'\n',2),
+split_part(replace(instanceState, ' ', ''),'\n',3)
+    """
 
-    print("# aws auth as dict\n")
-    authdict = { 
-            'aws': { 
-            'credentialsenvvar': 'AWS_SECRET_ACCESS_KEY', 
-            'accesskeyidenvvar': 'AWS_ACCESS_KEY_ID', 
-            'type': 'aws_signing_v4' 
-            } 
-        }
-    print(json.dumps(authdict))
-    stackql = StackQL(auth=authdict)
-    res = stackql.execute("REGISTRY PULL aws")
-    res = stackql.execute("SELECT instanceState, COUNT(*) as num_instances FROM aws.ec2.instances WHERE region = 'ap-southeast-2' GROUP BY instanceState")
+    query = """
+SELECT instanceType, COUNT(*) as num_instances
+FROM aws.ec2.instances
+WHERE region = 'ap-southeast-2'
+GROUP BY instanceType
+    """
+
+    print("# aws auth as str\n")
+    authstr = '{"aws": {"credentialsenvvar": "AWS_SECRET_ACCESS_KEY", "keyIDenvvar": "AWS_ACCESS_KEY_ID", "type": "aws_signing_v4"}}'
+    stackql = StackQL(auth=authstr)
+    res = stackql.execute(query)
     print("```json")
     print(res)
     print("```\n")
-    print("```")
-    stackql.show_properties()
-    print("```\n")    
+    del stackql
+
+    print("# aws auth as dict\n")
+    authdict =  { 
+                    "aws": { 
+                        "credentialsenvvar": "AWS_SECRET_ACCESS_KEY", 
+                        "keyIDenvvar": "AWS_ACCESS_KEY_ID", 
+                        "type": "aws_signing_v4" 
+                    } 
+                }
+    stackql = StackQL(auth=authdict)
+    res = stackql.execute(query)
+    print("```json")
+    print(res)
+    print("```\n")
     del stackql
 
 # basic_instantiation()
 # upgrade_stackql()
 # output_tests()
 aws_auth()
-
-
-
-
-# iql.()
 

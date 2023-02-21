@@ -14,8 +14,8 @@ For StackQL provider information see the `StackQL Provider Registry <https://reg
    :caption: Contents
    
    intro
-   pystackql
    examples
+   pystackql   
 
 Indices and tables
 ==================

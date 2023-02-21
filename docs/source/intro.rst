@@ -1,8 +1,8 @@
 Getting Started
 ===============
 
-``pystackql`` allows you to run StackQL queries against cloud and SaaS providers within a native Python environment.
-The ``pystackql.StackQL`` class can be used with Pandas, Matplotlib, Jupyter and more. 
+:mod:`pystackql` allows you to run StackQL queries against cloud and SaaS providers within a native Python environment.
+The :class:`pystackql.StackQL` class can be used with Pandas, Matplotlib, Jupyter and more. 
 
 .. contents:: Contents
    :local:
@@ -65,29 +65,31 @@ The following example demonstrates how to instantiate a `StackQL` session with a
 
 .. code-block:: python
 
-    from pyspark import SparkContext, SparkConf
-    import sagemaker_pyspark
+    # see registry.stackql.io for provider auth block descriptions
+    provider_auth =  { 
+        "aws": { 
+            "credentialsenvvar": "AWS_SECRET_ACCESS_KEY", 
+            "keyIDenvvar": "AWS_ACCESS_KEY_ID", 
+            "type": "aws_signing_v4" 
+        },
+        "google": { 
+            "type": "service_account",  
+            "credentialsfilepath": "creds/sa-key.json" 
+        },
+        "okta": { 
+            "type": "api_key",
+            "credentialsenvvar": "OKTA_SECRET_KEY", 
+            "valuePrefix": "SSWS " 
+        }
+    }
+    stackql = StackQL(auth=provider_auth)
+    query = "SELECT ..."
+    res = stackql.execute(query)
 
-    conf = (SparkConf()
-            .set("spark.driver.extraClassPath", ":".join(sagemaker_pyspark.classpath_jars())))
-    SparkContext(conf=conf)
 
-
-As a newbie experimenter/hobbyist in the field of IoT using BLE communications, I found it pretty hard to identify a Python package which would enable one to use a Raspberry Pi (Zero W inthis case) to swiftly scan, connect to and read/write from/to a nearby BLE device (GATT server). 
-
-This package is intended to provide a quick, as well as (hopefully) easy to undestand, way of getting a simple BLE GATT client up and running, for all those out there, who, like myself, are hands-on learners and are eager to get their hands dirty from early on. 
-
-For more installation options see the `StackQL docs <https://stackql.io/docs/installing-stackql>`_.
-
-
-- As my main use-case scenario was to simply connect two devices, the current version of :class:`simpleble.SimpleBleClient` has been designed and implemented with this use-case in mind. As such, if you are looking for a package to allow you to connect to multiple devices, then know that off-the-self this package DOES NOT allow you to do so. However, implementing such a feature is an easily achievable task, which has been planned for sometime in the near future and if there proves to be interest on the project, I would be happy to speed up the process.
-
-- Only Read and Write operations are currently supported, but I am planning on adding Notifications soon.
-
-- Although the interfacing operations of the :class:`bluepy.btle.Service` and :class:`bluepy.btle.Peripheral` classes have been brought forward to the :class:`simpleble.SimpleBleClient` class, the same has not been done for the :class:`bluepy.btle.Descriptor`, meaning that the :class:`simpleble.SimpleBleClient` cannot be used to directly access the Descriptors. This can however be done easily by obtaining a handle of a :class:`simpleble.SimpleBleDevice` object and calling the superclass :meth:`bluepy.btle.Peripheral.getDescriptors` method. 
+In the above example you will need environment variables set for the `aws` and `okta` providers.  The `google` provider will use the service account file located at `creds/sa-key.json`.
 
 Running Queries
 ***************
 
-- As my main use-case scenario was to simply connect two devices, the current version of :class:`simpleble.SimpleBleClient` has been designed and implemented with this use-case in mind. As such, if you are looking for a package to allow you to connect to multiple devices, then know that off-the-self this package DOES NOT allow you to do so. However, implementing such a feature is an easily achievable task, which has been planned for sometime in the near future and if there proves to be interest on the project, I would be happy to speed up the process.
-
+The :class:`pystackql.StackQL` class has a single method, :meth:`pystackql.StackQL.execute`, which can be used to run StackQL queries and return results in `json`, `csv`, `text` or `table` format.
