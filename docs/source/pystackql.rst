@@ -1,7 +1,7 @@
-Documentation
-=================
+API Reference
+=============
 
-The ``StackQL`` class
+``StackQL`` class
 *****************************
 .. autoclass:: pystackql.StackQL
     :members:

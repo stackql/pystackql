@@ -1,8 +1,12 @@
 Examples
 =============
 
-Installation/Usage:
-*******************
+Discover Provider Metadata 
+**************************
+As the package has not been published on PyPi yet, it CANNOT be install using pip. 
+
+Analyze Cloud Resource Inventory 
+********************************
 As the package has not been published on PyPi yet, it CANNOT be install using pip. 
 
 For now, the suggested method is to put the file `simpleble.py` in the same directory as your source files and call ``from simpleble import SimpleBleClient, SimpleBleDevice``.
@@ -10,8 +14,29 @@ For now, the suggested method is to put the file `simpleble.py` in the same dire
 ``bluepy`` must also be installed and imported as shown in the example below.
 For instructions about how to install, as well as the full documentation of, ``bluepy`` please refer `here <https://github.com/IanHarvey/bluepy/>`_
 
-Search for device, connect and read characteristic
-**************************************************
+Using `pystackql` with Pandas and Matplotlib 
+********************************************
+As the package has not been published on PyPi yet, it CANNOT be install using pip. 
+
+For now, the suggested method is to put the file `simpleble.py` in the same directory as your source files and call ``from simpleble import SimpleBleClient, SimpleBleDevice``.
+
+``bluepy`` must also be installed and imported as shown in the example below.
+For instructions about how to install, as well as the full documentation of, ``bluepy`` please refer `here <https://github.com/IanHarvey/bluepy/>`_
+
+Run CSPM Queries 
+****************
+As the package has not been published on PyPi yet, it CANNOT be install using pip.
+
+Run Cross Cloud Provider Queries 
+********************************
+As the package has not been published on PyPi yet, it CANNOT be install using pip. 
+
+Deploy Cloud Resources 
+**********************
+As the package has not been published on PyPi yet, it CANNOT be install using pip. 
+
+Perform Lifecycle Operations 
+****************************
 .. code-block:: python
 
     """This example demonstrates a simple BLE client that scans for devices, 

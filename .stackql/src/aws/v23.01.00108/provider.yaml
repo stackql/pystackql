@@ -1,0 +1,41 @@
+id: aws
+name: aws
+version: v23.01.00108
+providerServices:
+  cloud_control:
+    description: Cloud Control API
+    id: cloud_control:v23.01.00108
+    name: cloud_control
+    preferred: true
+    service:
+      $ref: aws/v23.01.00108/services/cloud_control.yaml
+    title: Cloud Control API
+    version: v23.01.00108
+  ec2:
+    description: ec2
+    id: ec2:v23.01.00108
+    name: ec2
+    preferred: true
+    service:
+      $ref: aws/v23.01.00108/services/ec2.yaml
+    title: EC2
+    version: v23.01.00108
+  iam:
+    description: iam
+    id: iam:v23.01.00108
+    name: iam
+    preferred: true
+    service:
+      $ref: aws/v23.01.00108/services/iam.yaml
+    title: IAM
+    version: v23.01.00108
+  s3:
+    description: s3
+    id: s3:v23.01.00108
+    name: s3
+    preferred: true
+    service:
+      $ref: aws/v23.01.00108/services/s3.yaml
+    title: S3
+    version: v23.01.00108
+openapi: 3.0.0

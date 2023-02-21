@@ -22,7 +22,7 @@ def _get_url(platform):
 	else:
 		raise Exception("ERROR: [_get_url] unsupported OS type: %s" % (platform))
 
-def _download_file(url, path):
+def _download_file(url, path, showprogress=True):
 	try:
 		r = requests.get(url, stream=True)
 		r.raise_for_status()
@@ -35,7 +35,8 @@ def _download_file(url, path):
 				f.write(data)
 				downloaded_size = chunks * block_size
 				progress_bar = '#' * int(downloaded_size / total_size_in_bytes * 20)
-				print(f'\r[{progress_bar.ljust(20)}] {int(downloaded_size / total_size_in_bytes * 100)}%', end='')
+				if showprogress:
+					print(f'\r[{progress_bar.ljust(20)}] {int(downloaded_size / total_size_in_bytes * 100)}%', end='')
 
 		print("\nDownload complete.")
 	except Exception as e:
@@ -43,7 +44,7 @@ def _download_file(url, path):
 		print("ERROR: [_download_file] %s" % (error_message))
 		exit()
 
-def _setup():
+def _setup(showprogress=True):
 	print('installing stackql...')
 	try:
 		download_dir = _get_download_dir()
@@ -52,7 +53,7 @@ def _setup():
 		url = _get_url(platform)
 		print("downloading latest version of stackql from %s to %s" % (url, download_dir))
 		archive_file_name = os.path.join(download_dir, os.path.basename(url))
-		_download_file(url, archive_file_name)
+		_download_file(url, archive_file_name, showprogress)
 		if platform == 'Darwin':
 			os.system('sudo installer -pkg {} -target /'.format(archive_file_name))
 		else:
@@ -82,6 +83,23 @@ def _get_version(bin_path):
 		print("ERROR: [_get_version] %s" % (error_message))		
 		exit()
 
+def _format_auth(auth):
+	try:
+		if auth is not None:
+			if isinstance(auth, str):
+				authobj = json.loads(auth)
+				authstr = auth
+			elif isinstance(auth, dict):
+				authobj = auth
+				authstr = json.dumps(auth)
+			return authobj, authstr
+		else:
+			raise Exception("ERROR: [_format_auth] auth key supplied with no value")
+	except Exception as e:
+		error_message = e.args[0]
+		print("ERROR: [_format_auth] %s" % (error_message))
+		exit()
+
 class StackQL:
 	"""A class representing an instance of the StackQL query engine.
 
@@ -98,6 +116,8 @@ class StackQL:
 	:type version: str
 	:param sha: the commit (short) sha for the installed `stackql` binary build (read only)
 	:type sha: str
+	:param auth: StackQL provider authentication object supplied using the class constructor (read only)
+	:type auth: dict
 	"""
 
 	def __init__(self, **kwargs):
@@ -112,11 +132,15 @@ class StackQL:
 		output_set = False
 		for key, value in kwargs.items():
 			self.params.append("--%s" % key)
-			self.params.append(value)
 			if key == "output":
 				output_set = True
 				if value != "json":
 					self.parse_json = False
+			if key == "auth":
+				authobj, authstr = _format_auth(value)
+				value = authstr
+				self.auth = authobj
+			self.params.append(value)
 		if not output_set:
 			self.params.append("--output")
 			self.params.append("json")
@@ -142,11 +166,11 @@ class StackQL:
 			props[var] = getattr(self, var)
 		print(json.dumps(props, indent=4, sort_keys=True))
 
-	def upgrade(self):
+	def upgrade(self, showprogress=True):
 		"""Upgrades the StackQL instance to the latest version.
 		
 		"""
-		_setup()
+		_setup(showprogress)
 		self.version, self.sha = _get_version(self.bin_path)
 		print("stackql upgraded to version %s" % (self.version))
 
