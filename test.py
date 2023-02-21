@@ -1,4 +1,5 @@
 import json, os
+import pandas as pd
 from pystackql import StackQL 
 
 def basic_instantiation():
@@ -73,16 +74,6 @@ def output_tests():
 def aws_auth():
 
     query = """
-SELECT split_part(replace(instanceState, ' ', ''),'\n',2) as stateCode,
-split_part(replace(instanceState, ' ', ''),'\n',3) as stateName,
-COUNT(*) as num_instances 
-FROM aws.ec2.instances 
-WHERE region = 'ap-southeast-2'
-GROUP BY split_part(replace(instanceState, ' ', ''),'\n',2),
-split_part(replace(instanceState, ' ', ''),'\n',3)
-    """
-
-    query = """
 SELECT instanceType, COUNT(*) as num_instances
 FROM aws.ec2.instances
 WHERE region = 'ap-southeast-2'
@@ -113,8 +104,65 @@ GROUP BY instanceType
     print("```\n")
     del stackql
 
+
+    from pystackql import StackQL
+    auth = '{"aws": {"credentialsenvvar": "AWS_SECRET_ACCESS_KEY", "keyIDenvvar": "AWS_ACCESS_KEY_ID", "type": "aws_signing_v4"}}'
+    region = "ap-southeast-2"
+    stackql = StackQL(auth=auth)
+    query = "SELECT * FROM aws.ec2.instances WHERE region = '%s'" % (region)
+    res = stackql.execute(query)
+    df = res.to_dataframe()
+    print(df)
+
+def pandas_test():
+
+    region = "ap-southeast-2"
+
+    query = """
+SELECT instanceType, COUNT(*) as num_instances
+FROM aws.ec2.instances
+WHERE region = '%s'
+GROUP BY instanceType
+    """ % (region)
+
+    print("# basic pandas test\n")
+    authstr = '{"aws": {"credentialsenvvar": "AWS_SECRET_ACCESS_KEY", "keyIDenvvar": "AWS_ACCESS_KEY_ID", "type": "aws_signing_v4"}}'
+    stackql = StackQL(auth=authstr)
+    res = stackql.execute(query)
+    df = pd.read_json(res)
+    print("```")
+    print(df)
+    print("```\n")
+    del stackql
+
+    query = """
+SELECT split_part(replace(instanceState, ' ', ''),'\n',2) as stateCode,
+split_part(replace(instanceState, ' ', ''),'\n',3) as stateName,
+COUNT(*) as num_instances 
+FROM aws.ec2.instances 
+WHERE region = '%s'
+GROUP BY split_part(replace(instanceState, ' ', ''),'\n',2),
+split_part(replace(instanceState, ' ', ''),'\n',3)
+    """ % (region)
+
+    print("# pandas test with builtin functions\n")
+    authdict =  { 
+                    "aws": { 
+                        "credentialsenvvar": "AWS_SECRET_ACCESS_KEY", 
+                        "keyIDenvvar": "AWS_ACCESS_KEY_ID", 
+                        "type": "aws_signing_v4" 
+                    } 
+                }
+    stackql = StackQL(auth=authdict)
+    res = stackql.execute(query)
+    df = pd.read_json(res)
+    print("```")
+    print(df)
+    print("```\n")
+    del stackql
+
 # basic_instantiation()
 # upgrade_stackql()
 # output_tests()
-aws_auth()
-
+# aws_auth()
+pandas_test()
