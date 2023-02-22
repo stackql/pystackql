@@ -117,7 +117,6 @@ GROUP BY instanceType
 def pandas_test():
 
     region = "ap-southeast-2"
-
     query = """
 SELECT instanceType, COUNT(*) as num_instances
 FROM aws.ec2.instances
@@ -126,6 +125,29 @@ GROUP BY instanceType
     """ % (region)
 
     print("# basic pandas test\n")
+    authstr = '{"aws": {"credentialsenvvar": "AWS_SECRET_ACCESS_KEY", "keyIDenvvar": "AWS_ACCESS_KEY_ID", "type": "aws_signing_v4"}}'
+    stackql = StackQL(auth=authstr)
+    res = stackql.execute(query)
+    df = pd.read_json(res)
+    print("```")
+    print(df)
+    print("```\n")
+    del stackql
+
+    regions = ["ap-southeast-2", "us-east-1"]
+    query = """
+    SELECT '%s' as region, instanceType, COUNT(*) as num_instances
+    FROM aws.ec2.instances
+    WHERE region = '%s'
+    GROUP BY instanceType
+    UNION
+    SELECT  '%s' as region, instanceType, COUNT(*) as num_instances
+    FROM aws.ec2.instances
+    WHERE region = '%s'
+    GROUP BY instanceType
+    """ % (regions[0], regions[0], regions[1], regions[1])
+
+    print("# union test\n")
     authstr = '{"aws": {"credentialsenvvar": "AWS_SECRET_ACCESS_KEY", "keyIDenvvar": "AWS_ACCESS_KEY_ID", "type": "aws_signing_v4"}}'
     stackql = StackQL(auth=authstr)
     res = stackql.execute(query)

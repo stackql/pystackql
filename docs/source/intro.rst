@@ -29,9 +29,9 @@ to confirm that the installation was successful, you can run the following comma
 .. code-block:: python
 
     from pystackql import StackQL
-    iql= StackQL()
+    stackql= StackQL()
 
-    print(iql.version)
+    print(stackql.version)
  
 you should see a result like:
 
@@ -39,14 +39,16 @@ you should see a result like:
 
     v0.3.265
 
+.. _auth-overview:
+
 Authentication Overview
 ***********************
 
 StackQL providers will have different authentication methods. To see the available authentication methods for a provider consult the `StackQL provider docs <https://registry.stackql.io/>`_.
 In general most providers will use API keys or service account files which can be generated and revoked from the provider's console.
 
-StackQL provider authentication is setup with the ``pystackql.StackQL`` class constructor using the `auth` keyword/named argument.  
-The `auth` argument can be set to a dictionary or a string.  If a dictionary is used, the keys should be the provider name and the values should be the authentication method.  
+StackQL provider authentication is setup with the :class:`pystackql.StackQL` class constructor using the ``auth`` keyword/named argument.  
+The ``auth`` argument can be set to a dictionary or a string.  If a dictionary is used, the keys should be the provider name and the values should be the authentication method.  
 If a string is supplied it needs to be a stringified JSON object with the same structure as the dictionary.
 
 .. If a string is used, it should be the provider name.  
@@ -56,12 +58,12 @@ If a string is supplied it needs to be a stringified JSON object with the same s
 
 .. note:: 
 
-   Keyword arguments to the `StackQL` class constructor are simply command line arguments to the `stackql exec command <https://stackql.io/docs/command-line-usage/exec>`_.
+   Keyword arguments to the :class:`pystackql.StackQL` class constructor are simply command line arguments to the `stackql exec command <https://stackql.io/docs/command-line-usage/exec>`_.
 
 Authentication Example
 **********************
 
-The following example demonstrates how to instantiate a `StackQL` session with authentication to the `aws`, `google` and `okta` providers.
+The following example demonstrates how to instantiate a ``StackQL`` session with authentication to the ``aws``, ``google`` and ``okta`` providers.
 
 .. code-block:: python
 
@@ -87,21 +89,22 @@ The following example demonstrates how to instantiate a `StackQL` session with a
     res = stackql.execute(query)
 
 
-In the above example, you will need environment variables set for the `aws` and `okta` providers.  The `google` provider will use the service account file located at `creds/sa-key.json`.
+In the above example, you will need environment variables set for the ``aws`` and ``okta`` providers.  The ``google`` provider will use the service account file located at ``creds/sa-key.json``.
 
 Running Queries
 ***************
 
-The :class:`pystackql.StackQL` class has a single method, :meth:`pystackql.StackQL.execute`, which can be used to run StackQL queries and return results in `json`, `csv`, `text` or `table` format.
+The :class:`pystackql.StackQL` class has a single method, :meth:`pystackql.StackQL.execute`, which can be used to run StackQL queries and return results in ``json``, ``csv``, ``text`` or ``table`` format.
 
 Using Pandas
 ============
 
-The following example demonstrates how to run a query and return the results as a `pandas.DataFrame`:
+The following example demonstrates how to run a query and return the results as a ``pandas.DataFrame``:
 
 .. code-block:: python
 
     from pystackql import StackQL
+    import pandas as pd
     provider_auth =  { 
         "aws": { 
             "credentialsenvvar": "AWS_SECRET_ACCESS_KEY", 
@@ -126,11 +129,12 @@ The following example demonstrates how to run a query and return the results as 
 Using ``UNION`` and ``JOIN`` operators
 ======================================
 
-StackQL is a fully functional SQL programming environment, enabling the full set of SQL relational algebra (including `UNION` and `JOIN`) operations, here is an example of a simple `UNION` query:
+StackQL is a fully functional SQL programming environment, enabling the full set of SQL relational algebra (including ``UNION`` and ``JOIN``) operations, here is an example of a simple ``UNION`` query:
 
 .. code-block:: python
 
     ...
+    regions = ["ap-southeast-2", "us-east-1"]
     query = """
     SELECT '%s' as region, instanceType, COUNT(*) as num_instances
     FROM aws.ec2.instances
@@ -147,7 +151,7 @@ StackQL is a fully functional SQL programming environment, enabling the full set
     df = pd.read_json(res)
     print(df)
 
-The preceding example will print a `pandas.DataFrame` which would look like this:
+The preceding example will print a ``pandas.DataFrame`` which would look like this:
 
 .. code-block:: sh
 
@@ -161,11 +165,12 @@ Using built-in functions
 ========================
 
 StackQL has a complete library of built in functions and operators for manipulating scalar and complex fields (JSON objects), for more information on the available functions and operators, see the `StackQL docs <https://stackql.io/docs>`_.  
-Here is an example of using the `json_extract` function to extract a field from a JSON object as well as the `split_part` function to extract a field from a string:
+Here is an example of using the ``json_extract`` function to extract a field from a JSON object as well as the ``split_part`` function to extract a field from a string:
 
 .. code-block:: python
 
     from pystackql import StackQL
+    import pandas as pd
     provider_auth =  { 
         "azure": { 
             "type": "azure_default" 
