@@ -11,7 +11,7 @@ The :class:`pystackql.StackQL` class can be used with Pandas, Matplotlib, Jupyte
 Installation
 ************ 
 
-`pystackql` can be installed from PyPI using pip:
+`pystackql` can be installed from `PyPi <https://pypi.org/project/pystackql/>`_ using pip:
 
 .. code-block:: sh
 

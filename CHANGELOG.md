@@ -1,6 +1,12 @@
 # Changelog
 
-## v1.0.0 (2022-06-06)
+## v1.0.1 (2023-02-23)
+
+### Minor updates
+
+ * updated `setup.py`
+
+## v1.0.0 (2023-02-22)
 
 ### Refactor
 

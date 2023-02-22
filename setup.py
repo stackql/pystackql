@@ -10,7 +10,7 @@ with open('LICENSE') as f:
 
 setup(
     name='pystackql',
-    version='1.0.0',
+    version='1.0.1',
     description='A Python interface for StackQL',
     long_description=readme,
     author='Jeffrey Aven',
@@ -27,11 +27,15 @@ setup(
     #         'stackql = pystackql:setup'
     #     ]
     # },
-    # classifiers=[
-    #     'Operating System :: Microsoft :: Windows',
-    #     'Operating System :: MacOS',
-    #     'Operating System :: POSIX :: Linux',
-    #     'Programming Language :: Python :: 3',
-    #     'License :: OSI Approved :: MIT License',
-    # ]
+    classifiers=[
+        'Operating System :: Microsoft :: Windows',
+        'Operating System :: MacOS',
+        'Operating System :: POSIX :: Linux',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'License :: OSI Approved :: MIT License',
+    ]
 )
