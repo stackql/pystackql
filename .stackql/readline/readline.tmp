@@ -1,1 +1,0 @@
-SELECT instanceState, COUNT(*) as num_instances FROM aws.ec2.instances WHERE region = 'ap-southeast-2' GROUP BY instanceState;

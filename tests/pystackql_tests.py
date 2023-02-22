@@ -1,6 +1,8 @@
-import json, os
+import json, os, sys
 import pandas as pd
-from pystackql import StackQL 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from pystackql import StackQL
 
 def basic_instantiation():
     print("# basic instantiation")
@@ -104,16 +106,6 @@ GROUP BY instanceType
     print("```\n")
     del stackql
 
-
-    from pystackql import StackQL
-    auth = '{"aws": {"credentialsenvvar": "AWS_SECRET_ACCESS_KEY", "keyIDenvvar": "AWS_ACCESS_KEY_ID", "type": "aws_signing_v4"}}'
-    region = "ap-southeast-2"
-    stackql = StackQL(auth=auth)
-    query = "SELECT * FROM aws.ec2.instances WHERE region = '%s'" % (region)
-    res = stackql.execute(query)
-    df = res.to_dataframe()
-    print(df)
-
 def pandas_test():
 
     region = "ap-southeast-2"
@@ -183,8 +175,8 @@ split_part(replace(instanceState, ' ', ''),'\n',3)
     print("```\n")
     del stackql
 
-# basic_instantiation()
-# upgrade_stackql()
-# output_tests()
-# aws_auth()
+basic_instantiation()
+upgrade_stackql()
+output_tests()
+aws_auth()
 pandas_test()
