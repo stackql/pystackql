@@ -44,12 +44,12 @@ you should see a result like:
 Authentication Overview
 ***********************
 
-StackQL providers will have different authentication methods. To see the available authentication methods for a provider consult the `StackQL provider docs <https://registry.stackql.io/>`_.
-In general most providers will use API keys or service account files which can be generated and revoked from the provider's console.
+StackQL providers will have different authentication methods. To see the available authentication methods for a provider, consult the `StackQL provider docs <https://registry.stackql.io/>`_.
+In general most providers will use API keys or service account files, which can be generated and revoked from the provider's console.
 
 StackQL provider authentication is setup with the :class:`pystackql.StackQL` class constructor using the ``auth`` keyword/named argument.  
 The ``auth`` argument can be set to a dictionary or a string.  If a dictionary is used, the keys should be the provider name and the values should be the authentication method.  
-If a string is supplied it needs to be a stringified JSON object with the same structure as the dictionary.
+If a string is supplied, it needs to be a stringified JSON object with the same structure as the dictionary.
 
 .. If a string is used, it should be the provider name.  
 .. The authentication method will be read from the environment variable ``STACKQL_AUTH_<provider_name>``.  

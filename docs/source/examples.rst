@@ -2,8 +2,8 @@ Examples
 =============
 
 The following examples demonstrate running a StackQL query against a cloud or SaaS provider and returning the results as a ``pandas.DataFrame``.  
-For brevity, the examples below assume that the appropriate imports have been specified, and that an instance of the :class:`pystackql.StackQL` has been instantiated with the appropriate provider authentiation.
-For more information, see :ref:`auth-overview` as well as the `StackQL provider docs <https://registry.stackql.io/>`_.
+For brevity, the examples below assume that the appropriate imports have been specified and that an instance of the :class:`pystackql.StackQL` has been instantiated with the appropriate provider authentication.
+For more information, see :ref:`auth-overview` and the `StackQL provider docs <https://registry.stackql.io/>`_.
 
 .. code-block:: python
 
@@ -19,8 +19,8 @@ For more information, see :ref:`auth-overview` as well as the `StackQL provider 
 Discover Provider Metadata 
 **************************
 
-StackQL provider definitions are extensions of the providers OpenAPI specification, which exposes all of the provider's services, resources, and operations - making them accessible using SQL grammar.
-StackQL allows you to explore the provider's metadata using the ``SHOW`` and ``DESCRIBE`` commands as demonstarted here.
+StackQL provider definitions are extensions of the provider's OpenAPI specification, which exposes all of the provider's services, resources, and operations - making them accessible using SQL grammar.
+StackQL allows you to explore the provider's metadata using the ``SHOW`` and ``DESCRIBE`` commands as demonstrated here.
 
 .. code-block:: python
     :caption: List all services in a provider
@@ -109,7 +109,7 @@ Typically, this would be done in a Jupyter notebook.  The following code can be 
 Run CSPM Queries 
 ****************
 
-StackQL can be used to perform point-in-time or interactive queries against cloud resources to determine if they are compliant with your organization's security policies.
+StackQL can perform point-in-time or interactive queries against cloud resources to determine if they comply with your organization's security policies. 
 This is an example of a CSPM query to find buckets with public access enabled in a Google project.
 
 .. code-block:: python
@@ -133,7 +133,7 @@ Run Cross Cloud Provider Queries
 ********************************
 
 StackQL can be used to run queries across multiple cloud providers, this can be useful for cross cloud reporting or analysis.
-StackQL has support for standard SQL set based operators including ``UNION`` and ``JOIN``.  Here is an example of a ``UNION`` operation between AWS and GCP.
+StackQL supports standard SQL set-based operators, including ``UNION`` and ``JOIN``.  Here is an example of a ``UNION`` operation between AWS and GCP.
 
 .. code-block:: python
     :linenos:
@@ -195,7 +195,7 @@ Note that ``INSERT`` operations do not return a dataset, do the :meth:`pystackql
 
 .. note:: 
 
-   By default StackQL provider mutation operations are asynchronous (non blocking), you can make them synchronous by using the ``/*+ AWAIT */`` query hint, for example:
+   By default StackQL provider mutation operations are asynchronous (non-blocking), you can make them synchronous by using the ``/*+ AWAIT */`` query hint, for example:
 
     .. code-block:: sql
     
