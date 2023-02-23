@@ -40,15 +40,12 @@ def _download_file(url, path, showprogress=True):
 
 		print("\nDownload complete.")
 	except Exception as e:
-		error_message = e.args[0]
-		print("ERROR: [_download_file] %s" % (error_message))
+		print("ERROR: [_download_file] %s" % (str(e)))
 		exit()
 
-def _setup(showprogress=True):
+def _setup(download_dir, platform, showprogress=True):
 	print('installing stackql...')
 	try:
-		download_dir = _get_download_dir()
-		platform = _get_platform()
 		binary_name = _get_binary_name(platform)
 		url = _get_url(platform)
 		print("downloading latest version of stackql from %s to %s" % (url, download_dir))
@@ -61,8 +58,7 @@ def _setup(showprogress=True):
 				zip_ref.extractall(download_dir) 
 		os.chmod(os.path.join(download_dir, binary_name), 0o755)
 	except Exception as e:
-		error_message = e.args[0]
-		print("ERROR: [_setup] %s" % (error_message))
+		print("ERROR: [_setup] %s" % (str(e)))
 		exit()
 
 def _get_version(bin_path):
@@ -110,7 +106,9 @@ class StackQL:
 	:type parse_json: bool
 	:param params: a list of command-line parameters passed to the StackQL executable, populated by the class constructor (read only)
 	:type params: list
-	:param bin_path: the file path of the StackQL executable (read only)
+	:param download_dir: the download directory for the StackQL executable - defaults to site.getuserbase() unless overridden in the `StackQL` object constructor (read only)
+	:type download_dir: str
+	:param bin_path: the full path of the StackQL executable (read only)
 	:type bin_path: str
 	:param version: the version number of the StackQL executable (read only)
 	:type version: str
@@ -140,6 +138,8 @@ class StackQL:
 				authobj, authstr = _format_auth(value)
 				value = authstr
 				self.auth = authobj
+			if key == "download_dir":
+				self.download_dir = value
 			self.params.append(value)
 		if not output_set:
 			self.params.append("--output")
@@ -147,14 +147,16 @@ class StackQL:
 
 		# set fq path
 		binary = _get_binary_name(self.platform)
-		download_dir = _get_download_dir()
-		self.bin_path = os.path.join(download_dir, binary)
+		# if download_dir not set, use site.getuserbase()
+		if not hasattr(self, 'download_dir'):
+			self.download_dir = _get_download_dir()
+		self.bin_path = os.path.join(self.download_dir, binary)
 
 		# get and set version
 		if os.path.exists(self.bin_path):
 			self.version, self.sha = _get_version(self.bin_path)
 		else:
-			_setup()
+			_setup(self.download_dir, self.platform)
 			self.version, self.sha = _get_version(self.bin_path)
 
 	def show_properties(self):
@@ -170,7 +172,7 @@ class StackQL:
 		"""Upgrades the StackQL instance to the latest version.
 		
 		"""
-		_setup(showprogress)
+		_setup(self.download_dir, self.platform, showprogress)
 		self.version, self.sha = _get_version(self.bin_path)
 		print("stackql upgraded to version %s" % (self.version))
 

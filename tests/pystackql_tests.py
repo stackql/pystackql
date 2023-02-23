@@ -175,8 +175,20 @@ split_part(replace(instanceState, ' ', ''),'\n',3)
     print("```\n")
     del stackql
 
+def custom_download_dir():
+    print("# custom download dir")
+    stackql = StackQL(download_dir="/tmp")
+    print("```")
+    print(stackql.version)
+    print("```\n")
+    print("```")
+    stackql.show_properties()
+    print("```\n")
+    del stackql
+
 basic_instantiation()
 upgrade_stackql()
 output_tests()
 aws_auth()
 pandas_test()
+custom_download_dir()

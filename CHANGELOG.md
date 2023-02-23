@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.2 (2023-02-23)
+
+### Updates
+
+ * enabled custom `download_dir` argument
+
 ## v1.0.1 (2023-02-23)
 
 ### Minor updates
