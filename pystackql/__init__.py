@@ -9,6 +9,8 @@ def _get_download_dir():
 def _get_binary_name(platform):
 	if platform == 'Windows':
 		return r'stackql.exe'
+	elif platform == 'Darwin':
+		return r'stackql/Payload/stackql'
 	else:
 		return r'stackql'
 
@@ -41,7 +43,7 @@ def _download_file(url, path, showprogress=True):
 		print("\nDownload complete.")
 	except Exception as e:
 		print("ERROR: [_download_file] %s" % (str(e)))
-		exit()
+		exit(1)
 
 def _setup(download_dir, platform, showprogress=True):
 	print('installing stackql...')
@@ -52,14 +54,17 @@ def _setup(download_dir, platform, showprogress=True):
 		archive_file_name = os.path.join(download_dir, os.path.basename(url))
 		_download_file(url, archive_file_name, showprogress)
 		if platform == 'Darwin':
-			os.system('sudo installer -pkg {} -target /'.format(archive_file_name))
+			unpacked_file_name = os.path.join(download_dir, 'stackql')
+			command = 'pkgutil --expand-full {} {}'.format(archive_file_name, unpacked_file_name)
+			os.system(command)
 		else:
 			with zipfile.ZipFile(archive_file_name, 'r') as zip_ref:
 				zip_ref.extractall(download_dir) 
+
 		os.chmod(os.path.join(download_dir, binary_name), 0o755)
 	except Exception as e:
 		print("ERROR: [_setup] %s" % (str(e)))
-		exit()
+		exit(1)
 
 def _get_version(bin_path):
 	try:
@@ -73,11 +78,11 @@ def _get_version(bin_path):
 		return(version, sha)
 	except FileNotFoundError:
 		print("ERROR: [_get_version] %s not found" % (bin_path))
-		exit()
+		exit(1)
 	except Exception as e:
 		error_message = e.args[0]
 		print("ERROR: [_get_version] %s" % (error_message))		
-		exit()
+		exit(1)
 
 def _format_auth(auth):
 	try:
@@ -94,7 +99,7 @@ def _format_auth(auth):
 	except Exception as e:
 		error_message = e.args[0]
 		print("ERROR: [_format_auth] %s" % (error_message))
-		exit()
+		exit(1)
 
 class StackQL:
 	"""A class representing an instance of the StackQL query engine.
