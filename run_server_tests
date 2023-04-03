@@ -1,0 +1,1 @@
+python3 -m tests.pystackql_server_tests

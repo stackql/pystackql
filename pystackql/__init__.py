@@ -159,12 +159,30 @@ class StackQL:
 			_setup(self.download_dir, self.platform)
 			self.version, self.sha = _get_version(self.bin_path)
 
+		# start server in the background if server_mode is True
+		self.server_mode = kwargs.get("server_mode", False)
+		self.server_process = None
+		if self.server_mode:
+			self.server_process = subprocess.Popen([self.bin_path, "srv", "--pgsrv.port", "5444"])
+			self.server_pid = self.server_process.pid
+	    
+	def stop(self):
+		"""Stop the StackQL server process.
+
+		"""
+		if self.server_mode and self.server_process is not None:
+			self.server_process.kill()
+			self.server_process = None
+			self.server_pid = None
+
 	def show_properties(self):
 		"""Prints the properties of the StackQL instance in JSON format.
 
 		"""
 		props = {}
 		for var in vars(self):
+			if var == "server_process":
+				continue
 			props[var] = getattr(self, var)
 		print(json.dumps(props, indent=4, sort_keys=True))
 
