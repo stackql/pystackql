@@ -178,9 +178,9 @@ split_part(replace(instanceState, ' ', ''),'\n',3)
 
 def custom_download_dir():
     print("# custom download dir")
-    platform = platform.system().lower()
-    print("## platform: %s" % platform)
-    if platform == "win32":
+    this_platform = platform.system().lower()
+    print("## platform: %s" % this_platform)
+    if this_platform == "win32":
         download_dir = 'C:\\temp'
     else:
         download_dir = '/tmp'
