@@ -45,7 +45,7 @@ def _download_file(url, path, showprogress=True):
 		print("ERROR: [_download_file] %s" % (str(e)))
 		exit(1)
 
-def _setup(download_dir, platform, showprogress=True):
+def _setup(download_dir, platform, showprogress=False):
 	print('installing stackql...')
 	try:
 		binary_name = _get_binary_name(platform)
