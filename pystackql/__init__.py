@@ -4,6 +4,10 @@ def _get_platform():
 	return platform.system()
 
 def _get_download_dir():
+	# check if site.getuserbase() dir exists
+	if not os.path.exists(site.getuserbase()):
+		# if not, create it
+		os.makedirs(site.getuserbase())
 	return site.getuserbase()
 
 def _get_binary_name(platform):
