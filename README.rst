@@ -43,23 +43,14 @@ You can install from source by cloning this repository and running a pip install
 Using PyStackQL
 -----------------------------------
 
-PyStackQL can be installed with pip as follows:
-
 The following example demonstrates how to run a query and return the results as a ``pandas.DataFrame``:
 
 ::
 
     from pystackql import StackQL
     import pandas as pd
-    provider_auth =  { 
-        "aws": { 
-            "credentialsenvvar": "AWS_SECRET_ACCESS_KEY", 
-            "keyIDenvvar": "AWS_ACCESS_KEY_ID", 
-            "type": "aws_signing_v4" 
-        }
-    }    
     region = "ap-southeast-2"
-    stackql = StackQL(auth=provider_auth)
+    stackql = StackQL()
     
     query = """
     SELECT instanceType, COUNT(*) as num_instances

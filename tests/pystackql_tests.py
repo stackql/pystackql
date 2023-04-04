@@ -83,6 +83,14 @@ WHERE region = 'ap-southeast-2'
 GROUP BY instanceType
     """
 
+    print("# aws auth default env vars\n")
+    stackql = StackQL()
+    res = stackql.execute(query)
+    print("```json")
+    print(res)
+    print("```\n")
+    del stackql
+
     print("# aws auth as str\n")
     authstr = '{"aws": {"credentialsenvvar": "AWS_SECRET_ACCESS_KEY", "keyIDenvvar": "AWS_ACCESS_KEY_ID", "type": "aws_signing_v4"}}'
     stackql = StackQL(auth=authstr)
@@ -118,8 +126,7 @@ GROUP BY instanceType
     """ % (region)
 
     print("# basic pandas test\n")
-    authstr = '{"aws": {"credentialsenvvar": "AWS_SECRET_ACCESS_KEY", "keyIDenvvar": "AWS_ACCESS_KEY_ID", "type": "aws_signing_v4"}}'
-    stackql = StackQL(auth=authstr)
+    stackql = StackQL()
     res = stackql.execute(query)
     df = pd.read_json(res)
     print("```")
@@ -141,8 +148,7 @@ GROUP BY instanceType
     """ % (regions[0], regions[0], regions[1], regions[1])
 
     print("# union test\n")
-    authstr = '{"aws": {"credentialsenvvar": "AWS_SECRET_ACCESS_KEY", "keyIDenvvar": "AWS_ACCESS_KEY_ID", "type": "aws_signing_v4"}}'
-    stackql = StackQL(auth=authstr)
+    stackql = StackQL()
     res = stackql.execute(query)
     df = pd.read_json(res)
     print("```")
@@ -161,14 +167,7 @@ split_part(replace(instanceState, ' ', ''),'\n',3)
     """ % (region)
 
     print("# pandas test with builtin functions\n")
-    authdict =  { 
-                    "aws": { 
-                        "credentialsenvvar": "AWS_SECRET_ACCESS_KEY", 
-                        "keyIDenvvar": "AWS_ACCESS_KEY_ID", 
-                        "type": "aws_signing_v4" 
-                    } 
-                }
-    stackql = StackQL(auth=authdict)
+    stackql = StackQL()
     res = stackql.execute(query)
     df = pd.read_json(res)
     print("```")
