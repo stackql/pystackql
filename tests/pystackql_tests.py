@@ -180,7 +180,7 @@ def custom_download_dir():
     print("# custom download dir")
     this_platform = platform.system().lower()
     print("## platform: %s" % this_platform)
-    if this_platform == "win32":
+    if this_platform == "windows":
         download_dir = 'C:\\temp'
     else:
         download_dir = '/tmp'
