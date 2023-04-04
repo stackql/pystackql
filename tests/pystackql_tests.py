@@ -1,5 +1,6 @@
-import json, os, sys
+import json, os, sys, platform
 import pandas as pd
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from pystackql import StackQL
@@ -177,7 +178,13 @@ split_part(replace(instanceState, ' ', ''),'\n',3)
 
 def custom_download_dir():
     print("# custom download dir")
-    stackql = StackQL(download_dir="/tmp")
+    platform = platform.system().lower()
+    print("## platform: %s" % platform)
+    if platform == "win32":
+        download_dir = 'C:\\temp'
+    else:
+        download_dir = '/tmp'
+    stackql = StackQL(download_dir=download_dir)
     print("```")
     print(stackql.version)
     print("```\n")

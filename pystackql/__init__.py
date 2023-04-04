@@ -125,6 +125,10 @@ class StackQL:
 	:type sha: str
 	:param auth: StackQL provider authentication object supplied using the class constructor (read only)
 	:type auth: dict
+	:param server_mode: Run stackql in server mode - defaults to `False` unless overridden in the `StackQL` object constructor (read only)
+	:type auth: bool
+	:param server_pid: Process ID for stackql server process (read only - only when in server mode)
+	:type auth: int	
 	"""
 
 	def __init__(self, **kwargs):
