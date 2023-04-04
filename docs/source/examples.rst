@@ -9,8 +9,7 @@ For more information, see :ref:`auth-overview` and the `StackQL provider docs <h
 
     from pystackql import StackQL
     import pandas as pd
-    provider_auth =  { ... }
-    stackql = StackQL(auth=provider_auth)
+    stackql = StackQL()
 
 .. contents:: Examples
    :local:

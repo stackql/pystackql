@@ -37,7 +37,7 @@ you should see a result like:
 
 .. code-block:: sh
 
-    v0.3.265
+    v0.5.353
 
 .. _auth-overview:
 
@@ -45,51 +45,18 @@ Authentication Overview
 ***********************
 
 StackQL providers will have different authentication methods. To see the available authentication methods for a provider, consult the `StackQL provider docs <https://registry.stackql.io/>`_.
-In general most providers will use API keys or service account files, which can be generated and revoked from the provider's console.
+In general, most providers will use API keys or service account files, which can be generated and revoked from the provider's console.
 
-StackQL provider authentication is setup with the :class:`pystackql.StackQL` class constructor using the ``auth`` keyword/named argument.  
+StackQL will use the designated environment variable or variables for each respective provider for authentication.
+For instance, if the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables are set on the machine you are running `pystackql` on, these will be used to authenticate requests to the `aws` provider.
+
+If you wish to use custom variables for providers you can override the defaults by supplying the ``auth`` keyword/named argument to the :class:`pystackql.StackQL` class constructor.
 The ``auth`` argument can be set to a dictionary or a string.  If a dictionary is used, the keys should be the provider name and the values should be the authentication method.  
 If a string is supplied, it needs to be a stringified JSON object with the same structure as the dictionary.
-
-.. If a string is used, it should be the provider name.  
-.. The authentication method will be read from the environment variable ``STACKQL_AUTH_<provider_name>``.  
-.. For example, if you are using the Google provider, you can set the environment variable ``STACKQL_AUTH_GOOGLE`` to the path of your service account file.  
-.. If you are using the AWS provider, you can set the environment variable ``STACKQL_AUTH_AWS`` to your API key.
 
 .. note:: 
 
    Keyword arguments to the :class:`pystackql.StackQL` class constructor are simply command line arguments to the `stackql exec command <https://stackql.io/docs/command-line-usage/exec>`_.
-
-Authentication Example
-**********************
-
-The following example demonstrates how to instantiate a ``StackQL`` session with authentication to the ``aws``, ``google`` and ``okta`` providers.
-
-.. code-block:: python
-
-    # see registry.stackql.io for provider auth block descriptions
-    provider_auth =  { 
-        "aws": { 
-            "credentialsenvvar": "AWS_SECRET_ACCESS_KEY", 
-            "keyIDenvvar": "AWS_ACCESS_KEY_ID", 
-            "type": "aws_signing_v4" 
-        },
-        "google": { 
-            "type": "service_account",  
-            "credentialsfilepath": "creds/sa-key.json" 
-        },
-        "okta": { 
-            "type": "api_key",
-            "credentialsenvvar": "OKTA_SECRET_KEY", 
-            "valuePrefix": "SSWS " 
-        }
-    }
-    stackql = StackQL(auth=provider_auth)
-    query = "SELECT ..."
-    res = stackql.execute(query)
-
-
-In the above example, you will need environment variables set for the ``aws`` and ``okta`` providers.  The ``google`` provider will use the service account file located at ``creds/sa-key.json``.
 
 Running Queries
 ***************
@@ -105,15 +72,8 @@ The following example demonstrates how to run a query and return the results as 
 
     from pystackql import StackQL
     import pandas as pd
-    provider_auth =  { 
-        "aws": { 
-            "credentialsenvvar": "AWS_SECRET_ACCESS_KEY", 
-            "keyIDenvvar": "AWS_ACCESS_KEY_ID", 
-            "type": "aws_signing_v4" 
-        }
-    }    
     region = "ap-southeast-2"
-    stackql = StackQL(auth=provider_auth)
+    stackql = StackQL()
     
     query = """
     SELECT instanceType, COUNT(*) as num_instances
@@ -171,14 +131,9 @@ Here is an example of using the ``json_extract`` function to extract a field fro
 
     from pystackql import StackQL
     import pandas as pd
-    provider_auth =  { 
-        "azure": { 
-            "type": "azure_default" 
-        }
-    }    
     subscriptionId = "273769f6-545f-45b2-8ab8-2f14ec5768dc"
     resourceGroupName = "stackql-ops-cicd-dev-01"
-    stackql = StackQL(auth=provider_auth)
+    stackql = StackQL()
 
     query = """
     SELECT name,  

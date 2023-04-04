@@ -10,7 +10,7 @@ with open('LICENSE') as f:
 
 setup(
     name='pystackql',
-    version='1.0.2',
+    version='1.5.0',
     description='A Python interface for StackQL',
     long_description=readme,
     author='Jeffrey Aven',

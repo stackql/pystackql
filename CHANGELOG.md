@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.0 (2023-04-04)
+
+### Updates
+
+ * added `server_mode` to run a background stackql server process
+
 ## v1.0.2 (2023-02-23)
 
 ### Updates
