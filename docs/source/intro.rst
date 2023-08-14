@@ -37,7 +37,7 @@ you should see a result like:
 
 .. code-block:: sh
 
-    v0.5.353
+    v0.5.396
 
 .. _auth-overview:
 
@@ -120,6 +120,32 @@ The preceding example will print a ``pandas.DataFrame`` which would look like th
     1     t2.micro              7  ap-southeast-2
     2     t2.small              4  ap-southeast-2
     3     t2.micro              6       us-east-1
+
+Running Queries Asynchronously
+==============================
+
+In addition to ``UNION`` DML operators, you can also run a batch (list) of queries asynchronously using the :meth:`pystackql.StackQL.executeQueriesAsync` method.  The results of each query will be combined and returned as a single result set.
+
+.. code-block:: python
+
+    ...
+    regions = ["ap-southeast-2", "us-east-1"]
+
+    queries = [
+        f"""
+        SELECT '{region}' as region, instanceType, COUNT(*) as num_instances
+        FROM aws.ec2.instances
+        WHERE region = '{region}'
+        GROUP BY instanceType
+        """
+        for region in regions
+    ]
+
+    res = stackql.executeQueriesAsync(queries)
+    df = pd.read_json(json.dumps(res))
+
+    print(df)
+
 
 Using built-in functions
 ========================

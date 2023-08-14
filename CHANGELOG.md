@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.0.0 (2023-08-15)
+
+### Updates
+
+ * added `executeQueriesAsync` stackql class method
+
 ## v1.5.0 (2023-04-04)
 
 ### Updates

@@ -1,4 +1,5 @@
-import sys, subprocess, platform, json, site, os, requests, zipfile
+import sys, subprocess, platform, json, site, os, requests, zipfile, asyncio, functools
+from concurrent.futures import ProcessPoolExecutor
 
 def _get_platform():
 	return platform.system()
@@ -104,6 +105,9 @@ def _format_auth(auth):
 		error_message = e.args[0]
 		print("ERROR: [_format_auth] %s" % (error_message))
 		exit(1)
+
+def _execute_queries_in_parallel(stackql_instance, queries):
+    return [stackql_instance.execute(query) for query in queries]
 
 class StackQL:
 	"""A class representing an instance of the StackQL query engine.
@@ -259,3 +263,27 @@ class StackQL:
 			except ValueError as e:
 				return('[{"error": "%s"}]' % (str(output.strip(), 'utf-8')))
 		return(str(output, 'utf-8'))
+	
+	def executeQueriesAsync(self, queries):
+		async def _execute_queries_async(queries_list):
+			loop = asyncio.get_event_loop()
+
+			# Use functools.partial to bind the necessary arguments
+			func = functools.partial(_execute_queries_in_parallel, self, queries_list)
+
+			with ProcessPoolExecutor() as executor:
+				results = await loop.run_in_executor(executor, func)
+			
+			return results
+
+		loop = asyncio.new_event_loop()
+		asyncio.set_event_loop(loop)
+		all_results = loop.run_until_complete(_execute_queries_async(queries))
+		loop.close()
+
+		# Assuming results are JSON arrays, we can combine them:
+		combined = []
+		for res in all_results:
+			combined.extend(json.loads(res))
+
+		return combined

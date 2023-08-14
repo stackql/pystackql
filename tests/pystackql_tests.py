@@ -175,6 +175,35 @@ split_part(replace(instanceState, ' ', ''),'\n',3)
     print("```\n")
     del stackql
 
+def executeQueriesAsync_test():
+    regions = ["ap-southeast-2", "us-east-1"]
+    stackql = StackQL()
+    
+    # Create a list of queries based on the regions
+    queries = [
+        f"""
+        SELECT '{region}' as region, instanceType, COUNT(*) as num_instances
+        FROM aws.ec2.instances
+        WHERE region = '{region}'
+        GROUP BY instanceType
+        """
+        for region in regions
+    ]
+    
+    # Use the new executeQueriesAsync method
+    combined_results = stackql.executeQueriesAsync(queries)
+    
+    # Convert to pandas DataFrame
+    df = pd.read_json(json.dumps(combined_results))
+
+    # Print results
+    print("# executeQueriesAsync test\n")
+    print("```")
+    print(df)
+    print("```\n")
+
+    del stackql
+
 def custom_download_dir():
     print("# custom download dir")
     this_platform = platform.system().lower()
@@ -197,4 +226,5 @@ upgrade_stackql()
 output_tests()
 aws_auth()
 pandas_test()
+executeQueriesAsync_test()
 custom_download_dir()
