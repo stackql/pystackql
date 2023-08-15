@@ -58,7 +58,9 @@ Analyze Cloud Resource Inventory
 StackQL can be used to collect, analyze, summarize and report on cloud resource inventory data.  The following example shows how to query the AWS EC2 inventory and return the number of instances by instance type.
 
 .. code-block:: python
+    :caption: Collect and analyze AWS EC2 inventory across multiple regions
     :linenos:
+    :emphasize-lines: 6-9
 
     ...
     regions = ["ap-southeast-2", "us-east-1"]
@@ -85,6 +87,7 @@ Using `pystackql` with Pandas and Matplotlib
 Typically, this would be done in a Jupyter notebook.  The following code can be used to generate a bar chart using :mod:`pystackql`, ``pandas`` and ``matplotlib``:
 
 .. code-block:: python
+    :caption: Visualize cloud inventory
     :linenos:
     :emphasize-lines: 12
 
@@ -111,7 +114,9 @@ StackQL can perform point-in-time or interactive queries against cloud resources
 This is an example of a CSPM query to find buckets with public access enabled in a Google project.
 
 .. code-block:: python
+    :caption: Run point in time CSPM queries using SQL
     :linenos:
+    :emphasize-lines: 4-7
 
     ...
     project = "stackql-demo"
@@ -133,7 +138,9 @@ StackQL can be used to run queries across multiple cloud providers, this can be 
 StackQL supports standard SQL set-based operators, including ``UNION`` and ``JOIN``.  Here is an example of a ``UNION`` operation between AWS and GCP.
 
 .. code-block:: python
+    :caption: Run cross cloud inventory queries using SQL
     :linenos:
+    :emphasize-lines: 8-16, 20-27
 
     ...
     project = "stackql-demo"
