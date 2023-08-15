@@ -221,10 +221,11 @@ def custom_download_dir():
     print("```\n")
     del stackql
 
-basic_instantiation()
-upgrade_stackql()
-output_tests()
-aws_auth()
-pandas_test()
-executeQueriesAsync_test()
-custom_download_dir()
+if __name__ == '__main__':
+    basic_instantiation()
+    upgrade_stackql()
+    output_tests()
+    aws_auth()
+    pandas_test()
+    executeQueriesAsync_test()
+    custom_download_dir()
