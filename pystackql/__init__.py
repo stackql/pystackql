@@ -264,26 +264,32 @@ class StackQL:
 				return('[{"error": "%s"}]' % (str(output.strip(), 'utf-8')))
 		return(str(output, 'utf-8'))
 	
-	def executeQueriesAsync(self, queries):
-		async def _execute_queries_async(queries_list):
-			loop = asyncio.get_event_loop()
+	async def _execute_queries_async(self, queries_list):
+		loop = asyncio.get_event_loop()
 
-			# Use functools.partial to bind the necessary arguments
-			func = functools.partial(_execute_queries_in_parallel, self, queries_list)
+		# Use functools.partial to bind the necessary arguments
+		func = functools.partial(_execute_queries_in_parallel, self, queries_list)
 
-			with ProcessPoolExecutor() as executor:
-				results = await loop.run_in_executor(executor, func)
-			
-			return results
-
-		loop = asyncio.new_event_loop()
-		asyncio.set_event_loop(loop)
-		all_results = loop.run_until_complete(_execute_queries_async(queries))
-		loop.close()
+		with ProcessPoolExecutor() as executor:
+			results = await loop.run_in_executor(executor, func)
 
 		# Assuming results are JSON arrays, we can combine them:
 		combined = []
-		for res in all_results:
+		for res in results:
 			combined.extend(json.loads(res))
 
 		return combined
+
+	def executeQueriesAsync(self, queries):
+		if 'IPython' in sys.modules:
+			# We are inside Jupyter, use Jupyter's native loop
+			from IPython import get_ipython
+			ipython = get_ipython()
+			return ipython.run_cell_magic('await', '', 'self._execute_queries_async(queries)')
+		else:
+			# We are outside Jupyter, create and run our own event loop
+			loop = asyncio.new_event_loop()
+			asyncio.set_event_loop(loop)
+			combined_results = loop.run_until_complete(self._execute_queries_async(queries))
+			loop.close()
+			return combined_results
