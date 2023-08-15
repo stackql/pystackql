@@ -281,6 +281,14 @@ class StackQL:
 		return combined
 
 	def executeQueriesAsync(self, queries):
+		"""Executes a list of queries asyncronously using StackQL instance and returns the output as a combined list of results.
+
+		:param queries: the StackQL query to execute
+		:type queries: list, required
+		:return: the combined result set from the query
+		:rtype: json list
+		"""
+
 		if 'IPython' in sys.modules:
 			# We are inside Jupyter, use Jupyter's native loop
 			from IPython import get_ipython
