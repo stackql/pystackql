@@ -1,231 +1,113 @@
-import json, os, sys, platform
+import unittest
+import json, os, sys, platform, re
 import pandas as pd
+from termcolor import colored
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from pystackql import StackQL
 
-def basic_instantiation():
-    print("# basic instantiation")
-    stackql = StackQL()
-    print("```")
-    print(stackql.version)
-    print("```\n")
-    print("```")
-    stackql.show_properties()
-    print("```\n")
-    res = stackql.execute("REGISTRY PULL aws")
-    del stackql
+def pystackql_test_setup(func):
+    def wrapper(self):
+        if hasattr(self, 'stackql') and self.stackql:
+            del self.stackql
+        self.stackql = StackQL()
+        func(self)
+    return wrapper
 
-def upgrade_stackql():
-    print("# upgrade stackql")
-    stackql = StackQL()
-    print("```")
-    print(stackql.version)
-    print("```\n")
-    print("```")
-    stackql.upgrade(showprogress=False)
-    print("```\n")
-    print("```")
-    print(stackql.version)
-    print("```\n")
-    del stackql
+class PyStackQLTest(unittest.TestCase):
 
-def output_tests():
-    print("# output tests\n")
+    def print_test_result(self, test_name, condition):
+        if condition:
+            print(colored('\n' + "[PASSED] " + test_name, 'green'))
+        else:
+            print(colored('\n' + "[FAILED] " + test_name, 'red'))
 
-    print("## json output (default)\n")
-    stackql = StackQL()
-    res = stackql.execute("REGISTRY LIST")
-    print("```json")
-    print(res)
-    print("```\n")
-    del stackql
+    @pystackql_test_setup
+    def test_properties_class_method(self):
+        properties = self.stackql.properties()
+        
+        # Check that properties is a dictionary
+        self.assertTrue(isinstance(properties, dict), "properties should be a dictionary")
+        
+        # List of keys we expect to be in the properties
+        expected_keys = [
+            "bin_path", "download_dir", "package_version", "params", 
+            "parse_json", "platform", "server_mode", "sha", "version"
+        ]
+        missing_keys = [key for key in expected_keys if key not in properties]
+        self.assertTrue(len(missing_keys) == 0, f"Missing keys in properties: {', '.join(missing_keys)}")
 
-    print("## csv output with headers\n")
-    stackql = StackQL(output="csv")
-    res = stackql.execute("REGISTRY LIST")
-    print("```")
-    print(res)
-    print("```\n")
-    del stackql
+        # Further type checks (as examples)
+        self.assertIsInstance(properties["bin_path"], str, "bin_path should be of type str")
+        self.assertIsInstance(properties["params"], list, "params should be of type list")
+        self.assertIsInstance(properties["parse_json"], bool, "parse_json should be of type bool")
 
-    print("## csv output without headers\n")
-    stackql = StackQL(output="csv", hideheaders="true")
-    res = stackql.execute("REGISTRY LIST")
-    print("```")
-    print(res)
-    print("```\n")
-    del stackql
+        # If all the assertions pass, then the properties are considered valid.
+        self.print_test_result("test_properties_class_method", True)
 
-    print("## table output\n")
-    stackql = StackQL(output="table")
-    res = stackql.execute("REGISTRY LIST")
-    print("```")
-    print(res)
-    print("```\n")
-    del stackql
+    @pystackql_test_setup
+    def test_version_attribute(self):
+        version = self.stackql.version
+        self.assertIsNotNone(version)
+        semver_pattern = r'^v?(\d+\.\d+\.\d+)$'  # should be 'vN.N.N' or 'N.N.N'
+        is_valid_semver = bool(re.match(semver_pattern, version))
+        self.assertTrue(is_valid_semver)
+        self.print_test_result("test_version_attribute", is_valid_semver)
 
-    print("## text output\n")
-    stackql = StackQL(output="text")
-    res = stackql.execute("REGISTRY LIST")
-    print("```")
-    print(res)
-    print("```\n")
-    del stackql
+    @pystackql_test_setup
+    def test_platform_attribute(self):
+        platform_string = self.stackql.platform
+        self.assertIsNotNone(platform_string)
+        platform_pattern = r'^(Windows|Linux|Darwin) (\w+) \(([^)]+)\), Python (\d+\.\d+\.\d+)$'
+        is_valid_platform = bool(re.match(platform_pattern, platform_string))
+        self.assertTrue(is_valid_platform)
+        self.print_test_result("test_platform_attribute", is_valid_platform)
 
-def aws_auth():
+    @pystackql_test_setup
+    def test_set_custom_download_dir(self):
+        this_platform = platform.system().lower()
+        if this_platform == "windows":
+            download_dir = 'C:\\temp'
+        else:
+            download_dir = '/tmp'
+        self.stackql = StackQL(download_dir=download_dir)
+        version = self.stackql.version
+        self.assertIsNotNone(version)
+        self.print_test_result("test_set_custom_download_dir", version is not None)
 
-    query = """
-SELECT instanceType, COUNT(*) as num_instances
-FROM aws.ec2.instances
-WHERE region = 'ap-southeast-2'
-GROUP BY instanceType
-    """
+    @pystackql_test_setup
+    def test_server_mode_and_defaults(self):
+        self.stackql = StackQL(server_mode=True)
+        self.assertTrue(self.stackql.server_mode)
+        self.assertEqual(self.stackql.server_address, "0.0.0.0")
+        self.assertEqual(self.stackql.server_port, 5466)
+        self.print_test_result("test_server_mode_and_defaults", self.stackql.server_mode)
 
-    print("# aws auth default env vars\n")
-    stackql = StackQL()
-    res = stackql.execute(query)
-    print("```json")
-    print(res)
-    print("```\n")
-    del stackql
+    @pystackql_test_setup
+    def test_server_mode_custom_address_and_port(self):
+        custom_address = "127.0.0.1"
+        custom_port = 5000
+        self.stackql = StackQL(server_mode=True, server_address=custom_address, server_port=custom_port)
+        self.assertEqual(self.stackql.server_address, custom_address)
+        self.assertEqual(self.stackql.server_port, custom_port)
+        self.print_test_result("test_server_mode_custom_address_and_port", self.stackql.server_mode)
 
-    print("# aws auth as str\n")
-    authstr = '{"aws": {"credentialsenvvar": "AWS_SECRET_ACCESS_KEY", "keyIDenvvar": "AWS_ACCESS_KEY_ID", "type": "aws_signing_v4"}}'
-    stackql = StackQL(auth=authstr)
-    res = stackql.execute(query)
-    print("```json")
-    print(res)
-    print("```\n")
-    del stackql
+    @pystackql_test_setup
+    def test_custom_params_and_table_output(self):
+        self.stackql = StackQL(output="table")
+        self.assertIn("table", self.stackql.params)
+        self.assertFalse(self.stackql.parse_json)
+        self.print_test_result("test_custom_params_and_no_json_output", not self.stackql.parse_json)
 
-    print("# aws auth as dict\n")
-    authdict =  { 
-                    "aws": { 
-                        "credentialsenvvar": "AWS_SECRET_ACCESS_KEY", 
-                        "keyIDenvvar": "AWS_ACCESS_KEY_ID", 
-                        "type": "aws_signing_v4" 
-                    } 
-                }
-    stackql = StackQL(auth=authdict)
-    res = stackql.execute(query)
-    print("```json")
-    print(res)
-    print("```\n")
-    del stackql
+    @pystackql_test_setup
+    def test_binary_setup(self):
+        self.assertTrue(os.path.exists(self.stackql.bin_path))
+        self.print_test_result("test_binary_setup", os.path.exists(self.stackql.bin_path))
 
-def pandas_test():
 
-    region = "ap-southeast-2"
-    query = """
-SELECT instanceType, COUNT(*) as num_instances
-FROM aws.ec2.instances
-WHERE region = '%s'
-GROUP BY instanceType
-    """ % (region)
 
-    print("# basic pandas test\n")
-    stackql = StackQL()
-    res = stackql.execute(query)
-    df = pd.read_json(res)
-    print("```")
-    print(df)
-    print("```\n")
-    del stackql
-
-    regions = ["ap-southeast-2", "us-east-1"]
-    query = """
-    SELECT '%s' as region, instanceType, COUNT(*) as num_instances
-    FROM aws.ec2.instances
-    WHERE region = '%s'
-    GROUP BY instanceType
-    UNION
-    SELECT  '%s' as region, instanceType, COUNT(*) as num_instances
-    FROM aws.ec2.instances
-    WHERE region = '%s'
-    GROUP BY instanceType
-    """ % (regions[0], regions[0], regions[1], regions[1])
-
-    print("# union test\n")
-    stackql = StackQL()
-    res = stackql.execute(query)
-    df = pd.read_json(res)
-    print("```")
-    print(df)
-    print("```\n")
-    del stackql
-
-    query = """
-SELECT split_part(replace(instanceState, ' ', ''),'\n',2) as stateCode,
-split_part(replace(instanceState, ' ', ''),'\n',3) as stateName,
-COUNT(*) as num_instances 
-FROM aws.ec2.instances 
-WHERE region = '%s'
-GROUP BY split_part(replace(instanceState, ' ', ''),'\n',2),
-split_part(replace(instanceState, ' ', ''),'\n',3)
-    """ % (region)
-
-    print("# pandas test with builtin functions\n")
-    stackql = StackQL()
-    res = stackql.execute(query)
-    df = pd.read_json(res)
-    print("```")
-    print(df)
-    print("```\n")
-    del stackql
-
-def executeQueriesAsync_test():
-    regions = ["ap-southeast-2", "us-east-1"]
-    stackql = StackQL()
-    
-    # Create a list of queries based on the regions
-    queries = [
-        f"""
-        SELECT '{region}' as region, instanceType, COUNT(*) as num_instances
-        FROM aws.ec2.instances
-        WHERE region = '{region}'
-        GROUP BY instanceType
-        """
-        for region in regions
-    ]
-    
-    # Use the new executeQueriesAsync method
-    combined_results = stackql.executeQueriesAsync(queries)
-    
-    # Convert to pandas DataFrame
-    df = pd.read_json(json.dumps(combined_results))
-
-    # Print results
-    print("# executeQueriesAsync test\n")
-    print("```")
-    print(df)
-    print("```\n")
-
-    del stackql
-
-def custom_download_dir():
-    print("# custom download dir")
-    this_platform = platform.system().lower()
-    print("## platform: %s" % this_platform)
-    if this_platform == "windows":
-        download_dir = 'C:\\temp'
-    else:
-        download_dir = '/tmp'
-    stackql = StackQL(download_dir=download_dir)
-    print("```")
-    print(stackql.version)
-    print("```\n")
-    print("```")
-    stackql.show_properties()
-    print("```\n")
-    del stackql
+def main():
+    unittest.main()
 
 if __name__ == '__main__':
-    basic_instantiation()
-    upgrade_stackql()
-    output_tests()
-    aws_auth()
-    pandas_test()
-    executeQueriesAsync_test()
-    custom_download_dir()
+    main()
