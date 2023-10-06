@@ -28,15 +28,18 @@ def _get_binary_name(platform):
 	else:
 		return r'stackql'
 
-def _get_url(platform):
-	if platform == 'Linux':
-		return 'https://releases.stackql.io/stackql/latest/stackql_linux_amd64.zip'
-	elif platform == 'Windows':
-		return 'https://releases.stackql.io/stackql/latest/stackql_windows_amd64.zip'
-	elif platform == 'Darwin':
-		return 'https://storage.googleapis.com/stackql-public-releases/latest/stackql_darwin_multiarch.pkg'
-	else:
-		raise Exception("ERROR: [_get_url] unsupported OS type: %s" % (platform))
+def _get_url():
+    system_val = platform.system()
+    machine_val = platform.machine()
+
+    if system_val == 'Linux' and machine_val == 'x86_64':
+        return 'https://releases.stackql.io/stackql/latest/stackql_linux_amd64.zip'
+    elif system_val == 'Windows':
+        return 'https://releases.stackql.io/stackql/latest/stackql_windows_amd64.zip'
+    elif system_val == 'Darwin':
+        return 'https://storage.googleapis.com/stackql-public-releases/latest/stackql_darwin_multiarch.pkg'
+    else:
+        raise Exception(f"ERROR: [_get_url] unsupported OS type: {system_val} {machine_val}")
 
 def _download_file(url, path, showprogress=True):
 	try:
@@ -63,7 +66,7 @@ def _setup(download_dir, platform, showprogress=False):
 	print('installing stackql...')
 	try:
 		binary_name = _get_binary_name(platform)
-		url = _get_url(platform)
+		url = _get_url()
 		print("downloading latest version of stackql from %s to %s" % (url, download_dir))
 		archive_file_name = os.path.join(download_dir, os.path.basename(url))
 		_download_file(url, archive_file_name, showprogress)

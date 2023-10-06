@@ -1,3 +1,5 @@
+from .stackql_magic import load_ipython_extension
+
 from .util import (
     _get_package_version,
     _get_platform,
@@ -101,26 +103,32 @@ class StackQL:
 
 	def _run_query(self, query):
 		"""
-		Internal method to execute a StackQL query using subprocess.
+		Internal method to execute a StackQL query using a subprocess.
+
+		The method spawns a subprocess to run the StackQL binary with the specified query and parameters.
+		It waits for the subprocess to complete and captures its stdout as the output. This approach ensures 
+		that resources like pipes are properly cleaned up after the subprocess completes.
 
 		:param query: The StackQL query string to be executed.
 		:type query: str
 
-		:return: The output result of the query or an error message in string format.
+		:return: The output result of the query, which can either be the actual query result or an error message.
 		:rtype: str
 
-		This method constructs the required parameters for the subprocess call, executes the query 
-		and returns the result. In case the StackQL binary isn't found, it returns a relevant error message.
-		For any other exceptions during the execution, it returns a generic error message.
-		"""
+		Possible error messages include:
+		- Indications that the StackQL binary wasn't found.
+		- Generic error messages for other exceptions encountered during the query execution.
+
+		:raises FileNotFoundError: If the StackQL binary isn't found.
+		:raises Exception: For any other exceptions during the execution, providing a generic error message.
+		"""		
 		local_params = self.params.copy()
 		local_params.insert(1, query)
 		try:
-			iqlPopen = subprocess.Popen([self.bin_path] + local_params,
-										stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-			output = iqlPopen.stdout.read()
-			iqlPopen.terminate()
-			return str(output, 'utf-8')
+			with subprocess.Popen([self.bin_path] + local_params,
+								stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as iqlPopen:
+				stdout, _ = iqlPopen.communicate()
+				return stdout.decode('utf-8')
 		except FileNotFoundError:
 			return "ERROR %s not found" % self.bin_path
 		except Exception as e:

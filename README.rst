@@ -24,7 +24,7 @@ PyStackQL can be used with ``pandas``, ``matplotlib``, ``plotly``, ``jupyter`` a
 For detailed documentation, including the API reference, see `Read the Docs <https://pystackql.readthedocs.io>`_.
 
 Installing PyStackQL
------------------------------------
+--------------------
 
 PyStackQL can be installed with pip as follows:
 
@@ -41,7 +41,7 @@ You can install from source by cloning this repository and running a pip install
     pip install .
 
 Using PyStackQL
------------------------------------
+---------------
 
 The following example demonstrates how to run a query and return the results as a ``pandas.DataFrame``:
 
@@ -62,6 +62,34 @@ The following example demonstrates how to run a query and return the results as 
     res = stackql.execute(query)
     df = pd.read_json(res)
     print(df)
+
+Using PyStackQL with Jupyter Notebook
+-------------------------------------
+
+To use the integrated Jupyter magic commands provided by PyStackQL:
+
+1. **Load the Extension**:
+
+.. code-block:: python
+
+    %load_ext pystackql
+
+2. **Execute a Query Using Line Magic**:
+
+.. code-block:: python
+
+    %stackql SHOW SERVICES IN azure
+
+3. **Or Using Cell Magic**:
+
+.. code-block:: python
+
+    %%stackql
+    SELECT status, count(*) as num_instances
+    FROM google.compute.instances
+    WHERE project = '$project' 
+    AND zone = '$zone'
+    GROUP BY status
 
 You can find more examples in the `stackql docs <https://stackql.io/docs>`_ or the examples in `readthedocs <https://pystackql.readthedocs.io/en/latest/examples.html>`_.
 
@@ -88,7 +116,6 @@ PyStackQL has been tested on:
 Licensing
 ~~~~~~~~~
 PyStackQL is licensed under the MIT License. The license is available `here <https://github.com/stackql/pystackql/blob/main/LICENSE>`_
-
 
 Building the docs
 ~~~~~~~~~~~~~~~~~
@@ -124,6 +151,39 @@ Then, from the root directory of the repository, run:
     python3 setup.py sdist
 
 The package will be built in the ``dist`` directory.
+
+Testing Locally
+---------------
+
+Before testing, ensure you have all the required packages installed:
+
+::
+
+    pip install -r requirements.txt
+
+Once the dependencies are installed, you can run the tests using the provided script:
+
+::
+
+    sh run_tests
+
+This script sets up the necessary environment variables and then runs the unit tests.
+
+Note: Make sure to set up the environment variables in the `tests/creds/env_vars/test.env` file or supply them in another way before running the tests. The tests may require specific configurations or access keys to connect to services.
+
+For better isolation and reproducibility, consider using a virtual environment:
+
+::
+
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+
+Once you're done testing, you can deactivate the virtual environment:
+
+::
+
+    deactivate
 
 Publishing the package
 ~~~~~~~~~~~~~~~~~~~~~~
