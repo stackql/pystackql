@@ -286,9 +286,9 @@ class StackQL:
 			# Use server mode
 			result = self._run_server_query(query)
 			if self.parse_json:
-				return json.dumps(result)
+				return result  # Directly return the parsed result as a JSON object
 			else:
-				return str(result)
+				return json.dumps(result)  # Convert it into a string and then return
 		else:
 			output = self._run_query(query)
 			if self.parse_json:
@@ -297,7 +297,6 @@ class StackQL:
 				except ValueError:
 					return '[{"error": "%s"}]' % output.strip()
 			return output
-
 
 	async def _execute_queries_async(self, queries_list):
 		loop = asyncio.get_event_loop()
@@ -308,10 +307,16 @@ class StackQL:
 		with ProcessPoolExecutor() as executor:
 			results = await loop.run_in_executor(executor, func)
 
-		# Assuming results are JSON arrays, we can combine them:
+		# Process results based on their type:
 		combined = []
 		for res in results:
-			combined.extend(json.loads(res))
+			if isinstance(res, str):
+				combined.extend(json.loads(res))
+			elif isinstance(res, list):
+				combined.extend(res)
+			else:
+				# Optionally handle other types, or raise an error.
+				pass
 
 		return combined
 
