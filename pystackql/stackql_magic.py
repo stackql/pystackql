@@ -47,6 +47,8 @@ class StackqlMagic(Magics):
         """
         result = self.stackql_instance.execute(query)
         if self.stackql_instance.parse_json:
+            if isinstance(result, list) and all(isinstance(item, dict) for item in result):
+                return pd.DataFrame(result)
             return pd.read_json(result)
         return result
 

@@ -75,8 +75,23 @@ def print_test_result(test_name, condition, server_mode=False, is_ipython=False)
     message = " ".join(headers)
     print("\n" + message)
 
+class PyStackQLTestsBase(unittest.TestCase):
+    pass
 
-class PyStackQLNonServerModeTests(unittest.TestCase):
+def setUpModule():
+    print("downloading stackql binary...")
+    PyStackQLTestsBase.stackql = StackQL()
+    print("starting stackql server...")
+    PyStackQLTestsBase.server_process = subprocess.Popen([PyStackQLTestsBase.stackql.bin_path, "srv", "--pgsrv.port", str(server_port)])
+    time.sleep(5)
+
+def tearDownModule():
+    print("stopping stackql server...")
+    if PyStackQLTestsBase.server_process:
+        PyStackQLTestsBase.server_process.terminate()
+        PyStackQLTestsBase.server_process.wait()
+
+class PyStackQLNonServerModeTests(PyStackQLTestsBase):
 
     @pystackql_test_setup
     def test_01_properties_class_method(self):
@@ -183,26 +198,7 @@ class PyStackQLNonServerModeTests(unittest.TestCase):
 
         print_test_result("Test executeQueriesAsync method", True)
 
-class BaseServerTestClass(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        # Instantiate the StackQL class to ensure the binary is downloaded.
-        print("downloading stackql binary...")
-        cls.stackql = StackQL()
-        # Start the server using the downloaded binary.
-        print("starting stackql server...")
-        cls.server_process = subprocess.Popen([cls.stackql.bin_path, "srv", "--pgsrv.port", str(server_port)])
-        time.sleep(5)
-
-    @classmethod
-    def tearDownClass(cls):
-        # Stop the server.
-        print("stopping stackql server...")
-        if cls.server_process:
-            cls.server_process.terminate()
-            cls.server_process.wait()
-
-class PyStackQLServerModeTests(BaseServerTestClass):
+class PyStackQLServerModeTests(PyStackQLTestsBase):
 
     @pystackql_test_setup
     def test_10_server_mode_connectivity(self):
@@ -247,34 +243,26 @@ class MockInteractiveShell:
         """Return a mock instance of the shell."""
         return MockInteractiveShell()
 
-# class StackQLMagicTests(BaseServerTestClass):
+class StackQLMagicTests(PyStackQLTestsBase):
 
-#     def setUp(self):
-#         """Set up for the magic tests."""
-#         self.shell = MockInteractiveShell.instance()
-#         load_ipython_extension(self.shell)
-#         self.stackql_magic = StackqlMagic(shell=self.shell)
+    def setUp(self):
+        """Set up for the magic tests."""
+        self.shell = MockInteractiveShell.instance()
+        load_ipython_extension(self.shell)
+        self.stackql_magic = StackqlMagic(shell=self.shell)
 
-#     def test_13_magic_line_query(self):
-#         # Test the line magic functionality
-#         query = google_query.split("\n")[1]  # Use a single line for simplicity
-#         df = self.stackql_magic.stackql(query, "")  # Line magic generally uses only the line argument
-#         self.assertTrue(isinstance(df, pd.DataFrame))
-#         self.assertTrue('num_instances' in df.columns and 'status' in df.columns)
-#         print_test_result("test line magic", True, True, True)
+    def test_14_magic_cell_query(self):
+        # Test the cell magic functionality
+        df = self.stackql_magic.stackql("", google_query)  # Cell magic uses both line and cell arguments
+        self.assertTrue(isinstance(df, pd.DataFrame))
+        self.assertTrue('num_instances' in df.columns and 'status' in df.columns)
+        print_test_result("test cell magic", True, True, True)
 
-#     def test_14_magic_cell_query(self):
-#         # Test the cell magic functionality
-#         df = self.stackql_magic.stackql("", google_query)  # Cell magic uses both line and cell arguments
-#         self.assertTrue(isinstance(df, pd.DataFrame))
-#         self.assertTrue('num_instances' in df.columns and 'status' in df.columns)
-#         print_test_result("test cell magic", True, True, True)
-
-#     def test_15_magic_cell_query_no_display(self):
-#         # Test the cell magic functionality with the --no-display option
-#         df = self.stackql_magic.stackql("--no-display", google_query)
-#         self.assertIsNone(df)
-#         print_test_result("test cell magic with --no-display", True, True, True)
+    def test_15_magic_cell_query_no_display(self):
+        # Test the cell magic functionality with the --no-display option
+        df = self.stackql_magic.stackql("--no-display", google_query)
+        self.assertIsNone(df)
+        print_test_result("test cell magic with --no-display", True, True, True)
 
 def main():
     unittest.main()
