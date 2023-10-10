@@ -30,7 +30,7 @@ AND zone = '{os.environ['GCP_ZONE']}'
 GROUP BY status
 """
 
-regions = os.environ.get('REGIONS').split(',')
+regions = os.environ.get('AWS_REGIONS').split(',')
 
 async_queries = [
     f"""
