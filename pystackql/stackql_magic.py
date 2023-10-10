@@ -63,7 +63,7 @@ class StackqlMagic(Magics):
         
         :param line: The arguments and/or SQL query when used as line magic.
         :param cell: The SQL query when used as cell magic.
-        :return: SQL query results as a Pandas DataFrame.
+        :return: SQL query results as a named Pandas DataFrame (`stackql_df`).
         """
         is_cell_magic = cell is not None
 

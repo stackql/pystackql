@@ -1,4 +1,3 @@
 #!/bin/bash
 . tests/creds/env_vars/test.env
-# pip install -r requirements.txt
 python3 -m tests.pystackql_tests

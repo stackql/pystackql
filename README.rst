@@ -112,6 +112,7 @@ PyStackQL has been tested on:
 - Python 3.9
 - Python 3.10
 - Python 3.11
+- Python 3.12
 
 Licensing
 ~~~~~~~~~
@@ -192,4 +193,4 @@ To publish the package to PyPI, run the following command:
 
 ::
 
-    twine upload dist/pystackql-2.0.3.tar.gz
+    twine upload dist/pystackql-3.0.0.tar.gz

@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.0.0 (2023-10-11)
+
+### Updates
+
+ * added `StackqlMagic` class for `jupyter`, `IPython` integration
+ * `server_mode` is now used to connect to a `stackql` server process using `pyscopg2`
+ * added additional tests
+
 ## v2.0.0 (2023-08-15)
 
 ### Updates

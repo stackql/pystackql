@@ -199,16 +199,16 @@ class StackQL:
 			dict: A dictionary containing the properties of the StackQL instance.
 
 		Example:
-			{
-				"platform": "Darwin x86_64 (macOS-12.0.1-x86_64-i386-64bit), Python 3.10.9",
-				"parse_json": True,
-				...
-			}
+			::
+
+				{
+					"platform": "Darwin x86_64 (macOS-12.0.1-x86_64-i386-64bit), Python 3.10.9",
+					"parse_json": True,
+					...
+				}
 		"""
 		props = {}
 		for var in vars(self):
-			if var == "server_process":
-				continue
 			props[var] = getattr(self, var)
 		return props
 
