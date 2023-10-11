@@ -3,7 +3,8 @@ import pandas as pd
 from termcolor import colored
 import unittest.mock as mock
 
-server_port = 5466
+# server_port = 5466
+server_port = 5444
 
 expected_properties = [
     "bin_path", "download_dir", "package_version", "params", 
