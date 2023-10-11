@@ -43,37 +43,24 @@ jobs:
           pip install psycopg2
 
       # Windows specific
-      - name: Determine psycopg2 wheel filename and path for Windows
+      - name: Install psycopg2-binary for Windows using local wheel
         if: matrix.os == 'windows-latest'
         run: |
-          $pythonSegment = "cp${{ matrix.python-version }}".replace('.', '')
-          if ("${{ matrix.python-version }}" -eq "3.7") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp37-cp37m-win_amd64.whl" | Out-File -Append -Encoding utf8 -NoNewline $env:GITHUB_ENV }
-          elseif ("${{ matrix.python-version }}" -eq "3.8") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp38-cp38-win_amd64.whl" | Out-File -Append -Encoding utf8 -NoNewline $env:GITHUB_ENV }
-          elseif ("${{ matrix.python-version }}" -eq "3.9") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp39-cp39-win_amd64.whl" | Out-File -Append -Encoding utf8 -NoNewline $env:GITHUB_ENV }
-          elseif ("${{ matrix.python-version }}" -eq "3.10") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp310-cp310-win_amd64.whl" | Out-File -Append -Encoding utf8 -NoNewline $env:GITHUB_ENV }
-          elseif ("${{ matrix.python-version }}" -eq "3.11") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp311-cp311-win_amd64.whl" | Out-File -Append -Encoding utf8 -NoNewline $env:GITHUB_ENV }
-          
-          echo "PYTHON_PATH_SEGMENT=$pythonSegment" | Out-File -Append -Encoding utf8 -NoNewline $env:GITHUB_ENV
+          # Determine the wheel filename based on the Python version
+          $wheelFilename = switch ("${{ matrix.python-version }}") {
+            "3.7" { "psycopg2-2.9.3-cp37-cp37m-win_amd64.whl" }
+            "3.8" { "psycopg2-2.9.3-cp38-cp38-win_amd64.whl" }
+            "3.9" { "psycopg2-2.9.3-cp39-cp39-win_amd64.whl" }
+            "3.10" { "psycopg2-2.9.3-cp310-cp310-win_amd64.whl" }
+            "3.11" { "psycopg2-2.9.3-cp311-cp311-win_amd64.whl" }
+          }
 
           # Print the wheel filename for debugging
-          Write-Host "Determined wheel filename: $env:WHEEL_FILENAME"
+          Write-Host "Determined wheel filename: $wheelFilename"
+
+          # Install the wheel
+          pip install ./tests/whls/$wheelFilename
         shell: powershell
-
-      - name: Download psycopg2 wheel file for Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          # Print the download URL for debugging
-          $url = "https://download.lfd.uci.edu/pythonlibs/archived/$env:PYTHON_PATH_SEGMENT/" + $env:WHEEL_FILENAME
-          Write-Host "Downloading from URL: $url"
-
-          Invoke-WebRequest -Uri $url -OutFile $env:WHEEL_FILENAME
-        shell: powershell
-
-      - name: Install psycopg2-binary for Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          Write-Host "Installing: $env:WHEEL_FILENAME"
-          pip install ./${{ env.WHEEL_FILENAME }}
       # End Windows specific
 
       - name: Install pystackql
