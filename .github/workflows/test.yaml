@@ -1,34 +1,82 @@
 name: 'Run Tests'
 on:
-  push:
+  pull_request:
     branches:
       - main
-  pull_request:
-  
+
 jobs:
   run-tests:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.9"]
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+        python-version:
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "3.11"
+          - "3.12"
+        exclude:
+          - os: windows-latest
+            python-version: "3.12"
     runs-on: ${{matrix.os}}
-    name: 'Run Tests'
+    name: 'Run Tests on ${{matrix.os}} with Python ${{matrix.python-version}}'
 
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+
+      - name: Install dependencies from requirements.txt
         shell: bash
         run: |
           python3 -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -r requirements.txt
+
+      - name: Install psycopg2 for non-Windows OS
+        if: matrix.os != 'windows-latest'
+        run: |
+          pip install psycopg2
+
+      # Windows specific
+      # whl files downloaded from https://www.lfd.uci.edu/~gohlke/pythonlibs/#psycopg
+      - name: Install psycopg2-binary for Windows using local wheel
+        if: matrix.os == 'windows-latest'
+        run: |
+          # Determine the wheel filename based on the Python version
+          $wheelFilename = switch ("${{ matrix.python-version }}") {
+            "3.7" { "psycopg2-2.9.3-cp37-cp37m-win_amd64.whl" }
+            "3.8" { "psycopg2-2.9.3-cp38-cp38-win_amd64.whl" }
+            "3.9" { "psycopg2-2.9.3-cp39-cp39-win_amd64.whl" }
+            "3.10" { "psycopg2-2.9.3-cp310-cp310-win_amd64.whl" }
+            "3.11" { "psycopg2-2.9.3-cp311-cp311-win_amd64.whl" }
+          }
+
+          # Print the wheel filename for debugging
+          Write-Host "Determined wheel filename: $wheelFilename"
+
+          # Install the wheel
+          pip install ./tests/whls/$wheelFilename
+        shell: powershell
+      # End Windows specific
+
+      - name: Install pystackql
+        run: |
+          pip install .
+
       - name: Run tests
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          AWS_REGIONS: ${{ vars.AWS_REGIONS }}
+          GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+          GCP_ZONE: ${{ vars.GCP_ZONE }}          
         run: |
           python3 -m tests.pystackql_tests
-  

@@ -10,7 +10,7 @@ with open('LICENSE') as f:
 
 setup(
     name='pystackql',
-    version='2.0.1',
+    version='3.0.0',
     description='A Python interface for StackQL',
     long_description=readme,
     author='Jeffrey Aven',
@@ -36,6 +36,7 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'License :: OSI Approved :: MIT License',
     ]
 )
