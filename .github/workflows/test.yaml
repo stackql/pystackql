@@ -40,8 +40,8 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          AWS_REGIONS: ${{ env.AWS_REGIONS }}
-          GCP_PROJECT: ${{ env.GCP_PROJECT }}
-          GCP_ZONE: ${{ env.GCP_ZONE }}          
+          AWS_REGIONS: ${{ vars.AWS_REGIONS }}
+          GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+          GCP_ZONE: ${{ vars.GCP_ZONE }}          
         run: |
           python3 -m tests.pystackql_tests
