@@ -14,10 +14,10 @@ jobs:
           - windows-latest
           - macos-latest
         python-version:
-          # - "3.7"
-          # - "3.8"
-          # - "3.9"
-          # - "3.10"
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
           - "3.11"
           # - "3.12"
     runs-on: ${{matrix.os}}
@@ -46,17 +46,17 @@ jobs:
       - name: Determine psycopg2 wheel filename for Windows
         if: matrix.os == 'windows-latest'
         run: |
-          if ("${{ matrix.python-version }}" -eq "3.7") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp37-cp37m-win_amd64.whl" >> $GITHUB_ENV }
-          elseif ("${{ matrix.python-version }}" -eq "3.8") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp38-cp38-win_amd64.whl" >> $GITHUB_ENV }
-          elseif ("${{ matrix.python-version }}" -eq "3.9") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp39-cp39-win_amd64.whl" >> $GITHUB_ENV }
-          elseif ("${{ matrix.python-version }}" -eq "3.10") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp310-cp310-win_amd64.whl" >> $GITHUB_ENV }
-          elseif ("${{ matrix.python-version }}" -eq "3.11") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp311-cp311-win_amd64.whl" >> $GITHUB_ENV }
+          if ("${{ matrix.python-version }}" -eq "3.7") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp37-cp37m-win_amd64.whl" | Out-File -Append -Encoding utf8 -NoNewline $env:GITHUB_ENV }
+          elseif ("${{ matrix.python-version }}" -eq "3.8") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp38-cp38-win_amd64.whl" | Out-File -Append -Encoding utf8 -NoNewline $env:GITHUB_ENV }
+          elseif ("${{ matrix.python-version }}" -eq "3.9") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp39-cp39-win_amd64.whl" | Out-File -Append -Encoding utf8 -NoNewline $env:GITHUB_ENV }
+          elseif ("${{ matrix.python-version }}" -eq "3.10") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp310-cp310-win_amd64.whl" | Out-File -Append -Encoding utf8 -NoNewline $env:GITHUB_ENV }
+          elseif ("${{ matrix.python-version }}" -eq "3.11") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp311-cp311-win_amd64.whl" | Out-File -Append -Encoding utf8 -NoNewline $env:GITHUB_ENV }
         shell: powershell
 
       - name: Download psycopg2 wheel file for Windows
         if: matrix.os == 'windows-latest'
         run: |
-          Invoke-WebRequest -Uri https://download.lfd.uci.edu/pythonlibs/archived/${{ env.WHEEL_FILENAME }} -OutFile ${{ env.WHEEL_FILENAME }}
+          Invoke-WebRequest -Uri ("https://download.lfd.uci.edu/pythonlibs/archived/" + $env:WHEEL_FILENAME) -OutFile $env:WHEEL_FILENAME
         shell: powershell
 
       - name: Install psycopg2-binary for Windows
