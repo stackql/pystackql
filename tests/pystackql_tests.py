@@ -136,7 +136,7 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
                 print_test_result("Test execute method", False, debug_message=debug_info)
 
         except Exception as e:
-            debug_info = f"An error occurred: {str(e)}"
+            debug_info = f"An error occurred: {str(e)}\nQuery: {google_query}\nResult: {result}"
             print_test_result("Test execute method", False, debug_message=debug_info)
 
     @pystackql_test_setup
