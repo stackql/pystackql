@@ -301,7 +301,7 @@ class StackQLMagicTests(PyStackQLTestsBase):
             self.fail(debug_info)
 
 def main():
-    unittest.main()
+    unittest.main(verbosity=0)
 
 if __name__ == '__main__':
     main()
