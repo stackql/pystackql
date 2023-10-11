@@ -1,5 +1,3 @@
-nose
-sphinx
 pandas
 termcolor
 requests
