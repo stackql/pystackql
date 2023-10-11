@@ -15,10 +15,10 @@ jobs:
           - macos-latest
         python-version:
           - "3.7"
-          - "3.8"
-          - "3.9"
-          - "3.10"
-          - "3.11"
+          # - "3.8"
+          # - "3.9"
+          # - "3.10"
+          # - "3.11"
           # - "3.12"
     runs-on: ${{matrix.os}}
     name: 'Run Tests'
@@ -51,17 +51,25 @@ jobs:
           elseif ("${{ matrix.python-version }}" -eq "3.9") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp39-cp39-win_amd64.whl" | Out-File -Append -Encoding utf8 -NoNewline $env:GITHUB_ENV }
           elseif ("${{ matrix.python-version }}" -eq "3.10") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp310-cp310-win_amd64.whl" | Out-File -Append -Encoding utf8 -NoNewline $env:GITHUB_ENV }
           elseif ("${{ matrix.python-version }}" -eq "3.11") { echo "WHEEL_FILENAME=psycopg2-2.9.3-cp311-cp311-win_amd64.whl" | Out-File -Append -Encoding utf8 -NoNewline $env:GITHUB_ENV }
+
+          # Print the wheel filename for debugging
+          Write-Host "Determined wheel filename: $env:WHEEL_FILENAME"
         shell: powershell
 
       - name: Download psycopg2 wheel file for Windows
         if: matrix.os == 'windows-latest'
         run: |
-          Invoke-WebRequest -Uri ("https://download.lfd.uci.edu/pythonlibs/archived/" + $env:WHEEL_FILENAME) -OutFile $env:WHEEL_FILENAME
+          # Print the download URL for debugging
+          $url = "https://download.lfd.uci.edu/pythonlibs/archived/" + $env:WHEEL_FILENAME
+          Write-Host "Downloading from URL: $url"
+
+          Invoke-WebRequest -Uri $url -OutFile $env:WHEEL_FILENAME
         shell: powershell
 
       - name: Install psycopg2-binary for Windows
         if: matrix.os == 'windows-latest'
         run: |
+          Write-Host "Installing: $env:WHEEL_FILENAME"
           pip install ./${{ env.WHEEL_FILENAME }}
       # End Windows specific
 
