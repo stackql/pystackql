@@ -138,7 +138,7 @@ class StackQL:
 		"""Constructor method
 		"""
 		# get platform and set property
-		self.platform = _get_platform()
+		self.platform, this_os = _get_platform()
 
 		# get each kwarg and set property
 		self.parse_json = True
@@ -162,7 +162,7 @@ class StackQL:
 			self.params.append("json")
 
 		# set fq path
-		binary = _get_binary_name(self.platform)
+		binary = _get_binary_name(this_os)
 		# if download_dir not set, use site.getuserbase()
 		if not hasattr(self, 'download_dir'):
 			self.download_dir = _get_download_dir()
@@ -172,7 +172,7 @@ class StackQL:
 		if os.path.exists(self.bin_path):
 			self.version, self.sha = _get_version(self.bin_path)
 		else:
-			_setup(self.download_dir, self.platform)
+			_setup(self.download_dir, this_os)
 			self.version, self.sha = _get_version(self.bin_path)
 
 		# get package version
