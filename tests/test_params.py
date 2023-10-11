@@ -44,7 +44,7 @@ async_queries = [
     for region in regions
 ]
 
-def print_test_result(test_name, condition, debug_message=None, server_mode=False, is_ipython=False):
+def print_test_result(test_name, condition, server_mode=False, is_ipython=False):
     status_header = colored("[PASSED] ", 'green') if condition else colored("[FAILED] ", 'red')
     headers = [status_header]
     
@@ -57,10 +57,3 @@ def print_test_result(test_name, condition, debug_message=None, server_mode=Fals
     message = " ".join(headers)
     
     print("\n" + message)
-    
-    if not condition and debug_message:
-        print(colored(f"Debug Info: {debug_message}", 'red'))
-
-    # If the test failed, exit with a non-zero return code
-    # if not condition:
-    #     sys.exit(1)
