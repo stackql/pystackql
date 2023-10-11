@@ -1,15 +1,24 @@
-API Reference
-=============
+API Reference for pystackql
+===========================
 
-.. ``StackQL`` class
-.. *****************************
-.. .. autoclass:: pystackql.StackQL
-..     :members:
-..     :undoc-members:
-..     :show-inheritance:
-
+Module Contents
+---------------
 .. automodule:: pystackql
+   :members:
+   :undoc-members:
+
+StackQL Class
+-------------
+.. autoclass:: pystackql.StackQL
+    :noindex:
     :members:
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+    :undoc-members:
+    :show-inheritance:
+
+StackqlMagic Class (Jupyter Magic Extension)
+--------------------------------------------
+.. autoclass:: pystackql.stackql_magic.StackqlMagic
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
