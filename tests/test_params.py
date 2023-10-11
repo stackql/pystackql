@@ -13,6 +13,8 @@ expected_properties = [
 ]
 
 expected_version_pattern = r'^v?(\d+\.\d+\.\d+)$'
+expected_package_version_pattern = r'^(\d+\.\d+\.\d+)$'
+
 expected_platform_pattern = r'^(Windows|Linux|Darwin) (\w+) \(([^)]+)\), Python (\d+\.\d+\.\d+)$'
 custom_windows_download_dir = 'C:\\temp'
 custom_mac_linux_download_dir = '/tmp'

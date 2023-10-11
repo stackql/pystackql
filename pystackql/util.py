@@ -1,9 +1,24 @@
-import subprocess, platform, json, site, os, requests, zipfile, pkg_resources
+# import subprocess, platform, json, site, os, requests, zipfile, pkg_resources
+
+# def _get_package_version(package_name):
+#     try:
+#         return pkg_resources.get_distribution(package_name).version
+#     except pkg_resources.DistributionNotFound:
+#         return None
+
+import subprocess, platform, json, site, os, requests, zipfile
+
+# Conditional import for package metadata retrieval
+try:
+    from importlib.metadata import version, PackageNotFoundError
+except ImportError:
+    # This is for Python versions earlier than 3.8
+    from importlib_metadata import version, PackageNotFoundError
 
 def _get_package_version(package_name):
     try:
-        return pkg_resources.get_distribution(package_name).version
-    except pkg_resources.DistributionNotFound:
+        return version(package_name)
+    except PackageNotFoundError:
         return None
 
 def _get_platform():

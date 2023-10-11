@@ -58,6 +58,14 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         print_test_result("Test version attribute", is_valid_semver)
 
     @pystackql_test_setup
+    def test_02a_package_version_attribute(self):
+        package_version = self.stackql.package_version
+        self.assertIsNotNone(package_version)
+        is_valid_semver = bool(re.match(expected_package_version_pattern, package_version))
+        self.assertTrue(is_valid_semver)
+        print_test_result("Test package_version attribute", is_valid_semver)
+
+    @pystackql_test_setup
     def test_03_platform_attribute(self):
         platform_string = self.stackql.platform
         self.assertIsNotNone(platform_string)
@@ -106,7 +114,7 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
     @pystackql_test_setup
     def test_08_execute(self):
         result = self.stackql.execute(google_query)
-        
+
         # Convert the result to a pandas dataframe
         df = pd.DataFrame(result)
 
