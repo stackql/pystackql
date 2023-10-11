@@ -33,19 +33,15 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
     @pystackql_test_setup
     def test_01_properties_class_method(self):
         properties = self.stackql.properties()
-        
         # Check that properties is a dictionary
         self.assertTrue(isinstance(properties, dict), "properties should be a dictionary")
-        
         # List of keys we expect to be in the properties
         missing_keys = [key for key in expected_properties if key not in properties]
         self.assertTrue(len(missing_keys) == 0, f"Missing keys in properties: {', '.join(missing_keys)}")
-
         # Further type checks (as examples)
         self.assertIsInstance(properties["bin_path"], str, "bin_path should be of type str")
         self.assertIsInstance(properties["params"], list, "params should be of type list")
         self.assertIsInstance(properties["parse_json"], bool, "parse_json should be of type bool")
-
         # If all the assertions pass, then the properties are considered valid.
         print_test_result("Test properties method", True)
 
@@ -69,7 +65,6 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
     def test_03_platform_attribute(self):
         platform_string = self.stackql.platform
         self.assertIsNotNone(platform_string)
-        
         is_valid_platform = bool(re.match(expected_platform_pattern, platform_string))
         self.assertTrue(is_valid_platform)
         print_test_result("Test platform attribute", is_valid_platform)
@@ -100,29 +95,23 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
 
     @pystackql_test_setup
     def test_07_executeStmt(self):
-        
         result = self.stackql.executeStmt(registry_pull_google_query)
         expected_pattern = registry_pull_resp_pattern("google")
         self.assertTrue(re.search(expected_pattern, result), f"Expected pattern not found in result: {result}")
-        
         result = self.stackql.executeStmt(registry_pull_aws_query)
         expected_pattern = registry_pull_resp_pattern("aws")
         self.assertTrue(re.search(expected_pattern, result), f"Expected pattern not found in result: {result}")
-
         print_test_result("Test executeStmt method", True)
 
     @pystackql_test_setup
     def test_08_execute(self):
         result = self.stackql.execute(google_query)
-
         try:
             # Convert the result to a pandas dataframe
             df = pd.DataFrame(result)
-
             # Check the dataframe structure
             columns_exist = 'num_instances' in df.columns and 'status' in df.columns
             has_rows = len(df) >= 1
-
             if columns_exist and has_rows:
                 print_test_result("Test execute method", True)
             else:
@@ -131,33 +120,31 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
                     failure_messages.append("Columns 'num_instances' and 'status' should exist in the DataFrame")
                 if not has_rows:
                     failure_messages.append("DataFrame should have one or more rows")
-
                 debug_info = "\n".join(failure_messages)
                 print_test_result("Test execute method", False)
                 self.fail(debug_info)
-
         except Exception as e:
-            debug_info = f"An error occurred: {str(e)}\n*********\nQuery: {google_query}\n*********\nResult: {result}"
+            debug_info = (f"{str(e)}"
+              f"\n****DEBUG INFO****\n"
+              f"Query: \n{google_query}\n"
+              f"Result: \n{result}\n"
+              f"****END DEBUG INFO****")
             print_test_result("Test execute method", False)
             self.fail(debug_info)
 
     @pystackql_test_setup
     def test_09_executeQueriesAsync(self):
         results = self.stackql.executeQueriesAsync(async_queries)
-
         # Convert the results to a pandas DataFrame
         df = pd.DataFrame(results)
-
         # Check that the DataFrame has the required columns
         self.assertTrue('region' in df.columns, "'region' column missing in DataFrame")
         self.assertTrue('instanceType' in df.columns, "'instanceType' column missing in DataFrame")
         self.assertTrue('num_instances' in df.columns, "'num_instances' column missing in DataFrame")
-
         # Check that all regions are represented in the DataFrame
         unique_regions_in_df = df['region'].unique()
         for region in regions:
             self.assertTrue(region in unique_regions_in_df, f"Region '{region}' not found in DataFrame")
-
         print_test_result("Test executeQueriesAsync method", True)
 
 class PyStackQLServerModeTests(PyStackQLTestsBase):
@@ -180,11 +167,9 @@ class PyStackQLServerModeTests(PyStackQLTestsBase):
     def test_12_execute_server_mode_to_pandas(self):
         self.stackql = StackQL(server_mode=True, server_port=server_port)
         result = self.stackql.execute(google_query)
-
         # If the result is a list of dictionaries, then proceed to convert to DataFrame
         if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict):
             df = pd.DataFrame(result)
-            
             # Continue with your assertions
             self.assertTrue('num_instances' in df.columns and 'status' in df.columns, "Columns 'num_instances' and 'status' should exist in the DataFrame")
             self.assertTrue(len(df) >= 1, "DataFrame should have one or more rows")
