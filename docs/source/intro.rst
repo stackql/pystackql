@@ -175,3 +175,24 @@ Here is an example of using the ``json_extract`` function to extract a field fro
     df = pd.read_json(res)
     print(df)
 
+Using the Jupyter Magic Extension
+=================================
+
+For those using Jupyter Notebook or Jupyter Lab, `pystackql` offers a Jupyter magic extension that makes it even simpler to execute StackQL commands directly within your Jupyter cells. 
+
+To get started with the magic extension, first load it into your Jupyter environment:
+
+.. code-block:: ipython
+
+    %load_ext pystackql
+
+After loading the magic extension, you can use the `%%stackql` magic to execute StackQL commands in a dedicated Jupyter cell. The output will be displayed directly below the cell, just like any other Jupyter command output.
+
+Example:
+
+.. code-block:: ipython
+
+    %%stackql
+    SHOW SERVICES in aws
+
+This Jupyter magic extension provides a seamless integration of `pystackql` into your Jupyter workflows, allowing you to explore cloud and SaaS provider data interactively within your notebooks.
