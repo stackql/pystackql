@@ -138,17 +138,40 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
     @pystackql_test_setup
     def test_09_executeQueriesAsync(self):
         results = self.stackql.executeQueriesAsync(async_queries)
-        # Convert the results to a pandas DataFrame
-        df = pd.DataFrame(results)
-        # Check that the DataFrame has the required columns
-        self.assertTrue('region' in df.columns, "'region' column missing in DataFrame")
-        self.assertTrue('instanceType' in df.columns, "'instanceType' column missing in DataFrame")
-        self.assertTrue('num_instances' in df.columns, "'num_instances' column missing in DataFrame")
-        # Check that all regions are represented in the DataFrame
-        unique_regions_in_df = df['region'].unique()
-        for region in regions:
-            self.assertTrue(region in unique_regions_in_df, f"Region '{region}' not found in DataFrame")
-        print_test_result("Test executeQueriesAsync method", True)
+        failure_messages = []  # List to accumulate failure messages
+        try:
+            # Convert the results to a pandas DataFrame
+            df = pd.DataFrame(results)
+            # Check that the DataFrame has the required columns
+            if 'region' not in df.columns:
+                failure_messages.append("'region' column missing in DataFrame")
+            if 'instanceType' not in df.columns:
+                failure_messages.append("'instanceType' column missing in DataFrame")
+            if 'num_instances' not in df.columns:
+                failure_messages.append("'num_instances' column missing in DataFrame")
+            # Check that all regions are represented in the DataFrame
+            unique_regions_in_df = df['region'].unique()
+            for region in regions:
+                if region not in unique_regions_in_df:
+                    failure_messages.append(f"Region '{region}' not found in DataFrame")
+            if not failure_messages:
+                print_test_result("Test executeQueriesAsync method", True)
+            else:
+                debug_info = "\n".join(failure_messages) + \
+                            f"\n****DEBUG INFO****\n" + \
+                            f"Queries: \n{async_queries}\n" + \
+                            f"Result: \n{results}\n" + \
+                            f"****END DEBUG INFO****"
+                print_test_result("Test executeQueriesAsync method", False)
+                self.fail(debug_info)
+        except Exception as e:
+            debug_info = (f"{str(e)}"
+                        f"\n****DEBUG INFO****\n"
+                        f"Queries: \n{async_queries}\n"
+                        f"Result: \n{results}\n"
+                        f"****END DEBUG INFO****")
+            print_test_result("Test executeQueriesAsync method", False)
+            self.fail(debug_info)
 
 class PyStackQLServerModeTests(PyStackQLTestsBase):
 
@@ -161,24 +184,56 @@ class PyStackQLServerModeTests(PyStackQLTestsBase):
 
     @pystackql_test_setup
     def test_11_executeStmt_server_mode(self):
-        self.stackql = StackQL(server_mode=True, server_port=server_port)
-        result = self.stackql.executeStmt(registry_pull_google_query)
-        self.assertEqual(result, "[]", f"Expected empty list, got: {result}")
-        print_test_result("Test executeStmt in server mode", True, True)
+        failure_messages = []  # List to accumulate failure messages
+        result = None
+        try:
+            self.stackql = StackQL(server_mode=True, server_port=server_port)
+            result = self.stackql.executeStmt(registry_pull_google_query)
+            if result != "[]":
+                failure_messages.append(f"Expected empty list, got: {result}")
+        except Exception as e:
+            failure_messages.append(f"Runtime error occurred: {str(e)}")
+        if not failure_messages:
+            print_test_result("Test executeStmt in server mode", True, True)
+        else:
+            debug_info = "\n".join(failure_messages) + \
+                        f"\n****DEBUG INFO****\n" + \
+                        f"Query: \n{registry_pull_google_query}\n" + \
+                        (f"Result: \n{result}\n" if result else "") + \
+                        f"****END DEBUG INFO****"
+            print_test_result("Test executeStmt in server mode", False, True)
+            self.fail(debug_info)
 
     @pystackql_test_setup
     def test_12_execute_server_mode_to_pandas(self):
-        self.stackql = StackQL(server_mode=True, server_port=server_port)
-        result = self.stackql.execute(google_query)
-        # If the result is a list of dictionaries, then proceed to convert to DataFrame
-        if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict):
-            df = pd.DataFrame(result)
-            # Continue with your assertions
-            self.assertTrue('num_instances' in df.columns and 'status' in df.columns, "Columns 'num_instances' and 'status' should exist in the DataFrame")
-            self.assertTrue(len(df) >= 1, "DataFrame should have one or more rows")
+        failure_messages = []  # List to accumulate failure messages
+        result = None
+        df = None
+        try:
+            self.stackql = StackQL(server_mode=True, server_port=server_port)
+            result = self.stackql.execute(google_query)
+            # If the result is a list of dictionaries, then proceed to convert to DataFrame
+            if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict):
+                df = pd.DataFrame(result)
+                if 'num_instances' not in df.columns or 'status' not in df.columns:
+                    failure_messages.append("Columns 'num_instances' and 'status' should exist in the DataFrame")
+                if len(df) < 1:
+                    failure_messages.append("DataFrame should have one or more rows")
+            else:
+                failure_messages.append(f"Unexpected result format: {result}")
+        except Exception as e:
+            failure_messages.append(f"Runtime error occurred: {str(e)}")
+        if not failure_messages:
             print_test_result("Test execute method in server mode", True, True)
         else:
-            self.fail(f"Unexpected result format: {result}")
+            debug_info = "\n".join(failure_messages) + \
+                        f"\n****DEBUG INFO****\n" + \
+                        f"Query: \n{google_query}\n" + \
+                        (f"Result: \n{result}\n" if result else "") + \
+                        (f"DataFrame: \n{df}\n" if df is not None else "") + \
+                        f"****END DEBUG INFO****"
+            print_test_result("Test execute method in server mode", False, True)
+            self.fail(debug_info)
 
 class MockInteractiveShell:
     """A mock class for IPython's InteractiveShell."""
@@ -202,17 +257,48 @@ class StackQLMagicTests(PyStackQLTestsBase):
         self.stackql_magic = StackqlMagic(shell=self.shell)
 
     def test_14_magic_cell_query(self):
-        # Test the cell magic functionality
-        df = self.stackql_magic.stackql("", google_query)  # Cell magic uses both line and cell arguments
-        self.assertTrue(isinstance(df, pd.DataFrame))
-        self.assertTrue('num_instances' in df.columns and 'status' in df.columns)
-        print_test_result("test cell magic", True, True, True)
+        failure_messages = []  # List to accumulate failure messages
+        df = None
+        try:
+            # Test the cell magic functionality
+            df = self.stackql_magic.stackql("", google_query)  # Cell magic uses both line and cell arguments
+            if not isinstance(df, pd.DataFrame):
+                failure_messages.append("Result is not a pandas DataFrame")
+            if 'num_instances' not in df.columns or 'status' not in df.columns:
+                failure_messages.append("Expected columns 'num_instances' and 'status' are missing in DataFrame")
+        except Exception as e:
+            failure_messages.append(f"Runtime error occurred: {str(e)}")
+        if not failure_messages:
+            print_test_result("test cell magic", True, True, True)
+        else:
+            debug_info = "\n".join(failure_messages) + \
+                        f"\n****DEBUG INFO****\n" + \
+                        f"Query: \n{google_query}\n" + \
+                        (f"DataFrame: \n{df}\n" if df is not None else "") + \
+                        f"****END DEBUG INFO****"
+            print_test_result("test cell magic", False, True, True)
+            self.fail(debug_info)
 
     def test_15_magic_cell_query_no_display(self):
-        # Test the cell magic functionality with the --no-display option
-        df = self.stackql_magic.stackql("--no-display", google_query)
-        self.assertIsNone(df)
-        print_test_result("test cell magic with --no-display", True, True, True)
+        failure_messages = []  # List to accumulate failure messages
+        df = None
+        try:
+            # Test the cell magic functionality with the --no-display option
+            df = self.stackql_magic.stackql("--no-display", google_query)
+            if df is not None:
+                failure_messages.append("Expected result to be None, but it wasn't.")
+        except Exception as e:
+            failure_messages.append(f"Runtime error occurred: {str(e)}")
+        if not failure_messages:
+            print_test_result("test cell magic with --no-display", True, True, True)
+        else:
+            debug_info = "\n".join(failure_messages) + \
+                        f"\n****DEBUG INFO****\n" + \
+                        f"Query: \n{google_query}\n" + \
+                        (f"Result: \n{df}\n" if df is not None else "") + \
+                        f"****END DEBUG INFO****"
+            print_test_result("test cell magic with --no-display", False, True, True)
+            self.fail(debug_info)
 
 def main():
     unittest.main()
