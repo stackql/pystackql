@@ -115,14 +115,29 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
     def test_08_execute(self):
         result = self.stackql.execute(google_query)
 
-        # Convert the result to a pandas dataframe
-        df = pd.DataFrame(result)
+        try:
+            # Convert the result to a pandas dataframe
+            df = pd.DataFrame(result)
 
-        # Assert the dataframe structure
-        self.assertTrue('num_instances' in df.columns and 'status' in df.columns, "Columns 'num_instances' and 'status' should exist in the DataFrame")
-        self.assertTrue(len(df) >= 1, "DataFrame should have one or more rows")
-        
-        print_test_result("Test execute method", True)
+            # Check the dataframe structure
+            columns_exist = 'num_instances' in df.columns and 'status' in df.columns
+            has_rows = len(df) >= 1
+
+            if columns_exist and has_rows:
+                print_test_result("Test execute method", True)
+            else:
+                failure_messages = []
+                if not columns_exist:
+                    failure_messages.append("Columns 'num_instances' and 'status' should exist in the DataFrame")
+                if not has_rows:
+                    failure_messages.append("DataFrame should have one or more rows")
+
+                debug_info = "\n".join(failure_messages)
+                print_test_result("Test execute method", False, debug_message=debug_info)
+
+        except Exception as e:
+            debug_info = f"An error occurred: {str(e)}"
+            print_test_result("Test execute method", False, debug_message=debug_info)
 
     @pystackql_test_setup
     def test_09_executeQueriesAsync(self):
