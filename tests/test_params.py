@@ -62,5 +62,5 @@ def print_test_result(test_name, condition, debug_message=None, server_mode=Fals
         print(colored(f"Debug Info: {debug_message}", 'red'))
 
     # If the test failed, exit with a non-zero return code
-    if not condition:
-        sys.exit(1)
+    # if not condition:
+    #     sys.exit(1)

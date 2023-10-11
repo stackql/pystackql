@@ -134,10 +134,12 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
 
                 debug_info = "\n".join(failure_messages)
                 print_test_result("Test execute method", False, debug_message=debug_info)
+                self.fail(debug_info)
 
         except Exception as e:
             debug_info = f"An error occurred: {str(e)}\n*********\nQuery: {google_query}\n*********\nResult: {result}"
             print_test_result("Test execute method", False, debug_message=debug_info)
+            self.fail(debug_info)
 
     @pystackql_test_setup
     def test_09_executeQueriesAsync(self):
