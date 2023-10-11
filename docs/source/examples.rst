@@ -205,7 +205,7 @@ To make the lifecycle operation synchronous (blocking), use the ``/*+ AWAIT */``
     print(res)
 
 Jupyter Notebook Examples
-=========================
+*************************
 
 Using StackQL in a Jupyter Notebook provides a seamless way to execute and visualize your queries. You can make use of Jupyter's line and cell magics to run your StackQL commands directly within notebook cells.
 
