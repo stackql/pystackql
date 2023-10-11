@@ -1,3 +1,5 @@
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from pystackql import StackQL
 from pystackql.stackql_magic import StackqlMagic, load_ipython_extension
 from .test_params import *
@@ -56,6 +58,7 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
     @pystackql_test_setup
     def test_02a_package_version_attribute(self):
         package_version = self.stackql.package_version
+        print(f"""PACKAGE VERSION: {package_version}""")
         self.assertIsNotNone(package_version)
         is_valid_semver = bool(re.match(expected_package_version_pattern, package_version))
         self.assertTrue(is_valid_semver)

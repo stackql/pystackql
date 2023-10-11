@@ -3,8 +3,6 @@ import pandas as pd
 from termcolor import colored
 import unittest.mock as mock
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 server_port = 5466
 
 expected_properties = [

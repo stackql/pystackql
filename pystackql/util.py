@@ -17,8 +17,12 @@ except ImportError:
 
 def _get_package_version(package_name):
     try:
-        return version(package_name)
+        pkg_version = version(package_name)
+        if pkg_version is None:
+            print(f"Warning: Retrieved version for '{package_name}' is None!")
+        return pkg_version
     except PackageNotFoundError:
+        print(f"Warning: Package '{package_name}' not found!")
         return None
 
 def _get_platform():
