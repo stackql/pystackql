@@ -184,9 +184,7 @@ class StackQL:
 			self.server_address = kwargs.get("server_address", "0.0.0.0")
 			self.server_port = kwargs.get("server_port", 5466)
    			# establish the connection
-			self._conn = None
-			if self.server_mode:
-				self._conn = self._connect_to_server()			
+			self._conn = self._connect_to_server()			
 
 	def properties(self):
 		"""

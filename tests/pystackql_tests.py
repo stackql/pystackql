@@ -21,7 +21,7 @@ def setUpModule():
     print("downloading stackql binary...")
     PyStackQLTestsBase.stackql = StackQL()
     print("starting stackql server...")
-    PyStackQLTestsBase.server_process = subprocess.Popen([PyStackQLTestsBase.stackql.bin_path, "srv", "--pgsrv.address", "127.0.0.1", "--pgsrv.port", str(server_port)])
+    PyStackQLTestsBase.server_process = subprocess.Popen([PyStackQLTestsBase.stackql.bin_path, "srv", "--pgsrv.address", server_address, "--pgsrv.port", str(server_port)])
     time.sleep(5)
 
 def tearDownModule():
@@ -177,7 +177,7 @@ class PyStackQLServerModeTests(PyStackQLTestsBase):
 
     @pystackql_test_setup
     def test_10_server_mode_connectivity(self):
-        self.stackql = StackQL(server_mode=True, server_port=server_port)
+        self.stackql = StackQL(server_mode=True, server_address=server_address, server_port=server_port)
         self.assertTrue(self.stackql.server_mode, "StackQL should be in server mode")
         self.assertIsNotNone(self.stackql._conn, "Connection object should not be None")
         print_test_result("Test server mode connectivity", True, True)
@@ -187,7 +187,7 @@ class PyStackQLServerModeTests(PyStackQLTestsBase):
         failure_messages = []  # List to accumulate failure messages
         result = None
         try:
-            self.stackql = StackQL(server_mode=True, server_port=server_port)
+            self.stackql = StackQL(server_mode=True, server_address=server_address, server_port=server_port)
             result = self.stackql.executeStmt(registry_pull_google_query)
             if result != "[]":
                 failure_messages.append(f"Expected empty list, got: {result}")
@@ -210,7 +210,7 @@ class PyStackQLServerModeTests(PyStackQLTestsBase):
         result = None
         df = None
         try:
-            self.stackql = StackQL(server_mode=True, server_port=server_port)
+            self.stackql = StackQL(server_mode=True, server_address=server_address, server_port=server_port)
             result = self.stackql.execute(google_query)
             # If the result is a list of dictionaries, then proceed to convert to DataFrame
             if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict):
