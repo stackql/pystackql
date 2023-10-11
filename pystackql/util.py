@@ -82,6 +82,7 @@ def _download_file(url, path, showprogress=True):
 		exit(1)
 
 def _setup(download_dir, platform, showprogress=False):
+	system_val = platform.system()
 	print('installing stackql...')
 	try:
 		binary_name = _get_binary_name(platform)
@@ -89,7 +90,7 @@ def _setup(download_dir, platform, showprogress=False):
 		print("downloading latest version of stackql from %s to %s" % (url, download_dir))
 		archive_file_name = os.path.join(download_dir, os.path.basename(url))
 		_download_file(url, archive_file_name, showprogress)
-		if platform == 'Darwin':
+		if system_val == 'Darwin':
 			unpacked_file_name = os.path.join(download_dir, 'stackql')
 			command = 'pkgutil --expand-full {} {}'.format(archive_file_name, unpacked_file_name)
 			os.system(command)
