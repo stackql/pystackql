@@ -15,7 +15,8 @@ For StackQL provider information, see the `StackQL Provider Registry <https://re
    
    intro
    examples
-   pystackql   
+   pystackql  
+   magic_ext 
 
 Indices and tables
 ==================
