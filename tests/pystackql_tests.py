@@ -91,10 +91,10 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
 
     @pystackql_test_setup
     def test_06_custom_params_and_table_output(self):
-        self.stackql = StackQL(output="table")
+        self.stackql = StackQL(output="csv")
         self.assertIn("table", self.stackql.params)
         self.assertFalse(self.stackql.parse_json)
-        print_test_result("Test setting table output", not self.stackql.parse_json)
+        print_test_result("Test setting csv output", not self.stackql.parse_json)
 
     @pystackql_test_setup
     def test_07_executeStmt(self):
