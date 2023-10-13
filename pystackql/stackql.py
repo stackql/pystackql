@@ -19,6 +19,7 @@ class StackQL:
 	download_dir: The download directory for the StackQL executable.
 		:type download_dir: str
 		:default: site.getuserbase()
+		:note: only applicable when server_mode=False.
 
 	server_mode: Connect to a StackQL server.
 		:type server_mode: bool
@@ -27,15 +28,18 @@ class StackQL:
 	server_address: The address of the StackQL server.
 		:type server_address: str
 		:default: '0.0.0.0'
+		:note: only applicable when server_mode=True.
 	
 	server_port: The port of the StackQL server.
 		:type server_port: int
 		:default: 5466
+		:note: only applicable when server_mode=True.
 	
 	output: Determines the format of the output, options are 'dict', 'pandas', and 'csv'.
 		:type output: str
 		:default: 'dict'
 		:options: ['dict', 'pandas', 'csv']
+		:note: 'csv' is not supported in server_mode
 	
 	delimiter: (Only if output='csv') Delimiter character for CSV output.
 		:type delimiter: str
