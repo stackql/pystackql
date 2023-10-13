@@ -4,15 +4,17 @@ from pystackql import StackQL
 from pystackql.stackql_magic import StackqlMagic, load_ipython_extension
 from .test_params import *
 
-def pystackql_test_setup(func):
-    def wrapper(self):
-        try:
-            del self.stackql
-        except AttributeError:
-            pass
-        self.stackql = StackQL()
-        func(self)
-    return wrapper
+def pystackql_test_setup(**kwargs):
+    def decorator(func):
+        def wrapper(self):
+            try:
+                del self.stackql
+            except AttributeError:
+                pass
+            self.stackql = StackQL(**kwargs)
+            func(self)
+        return wrapper
+    return decorator
 
 class PyStackQLTestsBase(unittest.TestCase):
     pass
@@ -32,7 +34,7 @@ def tearDownModule():
 
 class PyStackQLNonServerModeTests(PyStackQLTestsBase):
 
-    @pystackql_test_setup
+    @pystackql_test_setup()
     def test_01_properties_class_method(self):
         properties = self.stackql.properties()
         # Check that properties is a dictionary
@@ -46,66 +48,109 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         self.assertIsInstance(properties["server_mode"], bool, "server_mode should be of type bool")
         self.assertIsInstance(properties["output"], str, "output should be of type str")
         # If all the assertions pass, then the properties are considered valid.
-        print_test_result("Test properties method", True)
+        print_test_result(f"""Test properties method\nPROPERTIES: {properties}""", True)
 
-    @pystackql_test_setup
+    @pystackql_test_setup()
     def test_02_version_attribute(self):
         version = self.stackql.version
         self.assertIsNotNone(version)
         is_valid_semver = bool(re.match(expected_version_pattern, version))
         self.assertTrue(is_valid_semver)
-        print_test_result("Test version attribute", is_valid_semver)
+        print_test_result(f"""Test version attribute\nVERSION: {version}""", is_valid_semver)
 
-    @pystackql_test_setup
-    def test_02a_package_version_attribute(self):
+    @pystackql_test_setup()
+    def test_03_package_version_attribute(self):
         package_version = self.stackql.package_version
-        print(f"""PACKAGE VERSION: {package_version}""")
         self.assertIsNotNone(package_version)
         is_valid_semver = bool(re.match(expected_package_version_pattern, package_version))
         self.assertTrue(is_valid_semver)
-        print_test_result("Test package_version attribute", is_valid_semver)
+        print_test_result(f"""Test package_version attribute\nPACKAGE VERSION: {package_version}""", is_valid_semver)
 
-    @pystackql_test_setup
-    def test_03_platform_attribute(self):
+    @pystackql_test_setup()
+    def test_04_platform_attribute(self):
         platform_string = self.stackql.platform
         self.assertIsNotNone(platform_string)
         is_valid_platform = bool(re.match(expected_platform_pattern, platform_string))
         self.assertTrue(is_valid_platform)
-        print_test_result("Test platform attribute", is_valid_platform)
+        print_test_result(f"""Test platform attribute\nPLATFORM: {platform_string}""", is_valid_platform)
 
-    @pystackql_test_setup
-    def test_04_bin_path_attribute(self):
+    @pystackql_test_setup()
+    def test_05_bin_path_attribute(self):
         self.assertTrue(os.path.exists(self.stackql.bin_path))
-        print_test_result("Test bin_path attribute with default download path", os.path.exists(self.stackql.bin_path))
+        print_test_result(f"""Test bin_path attribute with default download path\nBINARY PATH: {self.stackql.bin_path}""", os.path.exists(self.stackql.bin_path))
 
-    @pystackql_test_setup
-    def test_05_set_custom_download_dir(self):
-        this_platform = platform.system().lower()
-        if this_platform == "windows":
-            download_dir = custom_windows_download_dir
-        else:
-            download_dir = custom_mac_linux_download_dir
-        self.stackql = StackQL(download_dir=download_dir)
+    @pystackql_test_setup(download_dir=get_custom_download_dir(platform.system().lower()))
+    def test_06_set_custom_download_dir(self):
+        # Checking that version is not None
         version = self.stackql.version
         self.assertIsNotNone(version)
-        print_test_result("Test setting a custom download_dir", version is not None)
+        
+        # Checking that download_dir is correctly set
+        expected_download_dir = get_custom_download_dir(platform.system().lower())
+        self.assertEqual(self.stackql.download_dir, expected_download_dir, "Download directory is not set correctly.")
+        
+        # Checking that the binary exists at the expected location
+        binary_name = 'stackql' if platform.system().lower() != 'windows' else 'stackql.exe'
+        expected_binary_path = os.path.join(expected_download_dir, binary_name)
+        self.assertTrue(os.path.exists(expected_binary_path), f"No binary found at {expected_binary_path}")
+        
+        # Final test result print
+        print_test_result(f"""Test setting a custom download_dir\nCUSTOM_DOWNLOAD_DIR: {expected_download_dir}""", version is not None and os.path.exists(expected_binary_path))
 
-    @pystackql_test_setup
-    def test_06_custom_params_and_csv_output(self):
-        self.stackql = StackQL(output="csv")
+    @pystackql_test_setup(output="csv")
+    def test_07_csv_output_with_defaults(self):
+        # Check if output is set correctly
+        self.assertEqual(self.stackql.output, "csv", "Output type is not set to 'csv'")
+        
+        # Check if sep is set to default (',')
+        self.assertEqual(self.stackql.sep, ",", "Separator is not set to default ','")
+        
+        # Check if header is set to default (should be False)
+        self.assertFalse(self.stackql.header, "Header is not set to default (False)")
+        
+        # Check if params list has --output and csv
+        self.assertIn("--output", self.stackql.params)
         self.assertIn("csv", self.stackql.params)
-        self.assertEqual(self.stackql.output, "csv")
-        print_test_result("Test setting csv output", True)
+        
+        # Check if params list has default --delimiter and ,
+        self.assertIn("--delimiter", self.stackql.params)
+        self.assertIn(",", self.stackql.params)
+        
+        # Check if params list has --hideheaders (default header value is False)
+        self.assertIn("--hideheaders", self.stackql.params)
+        print_test_result(f"""Test csv output with defaults (comma delimited without headers)\nPARAMS: {self.stackql.params}""", True)
 
-    # @pystackql_test_setup
-    # def test_07_executeStmt(self):
-    #     result = self.stackql.executeStmt(registry_pull_google_query)
-    #     expected_pattern = registry_pull_resp_pattern("google")
-    #     self.assertTrue(re.search(expected_pattern, result), f"Expected pattern not found in result: {result}")
-    #     result = self.stackql.executeStmt(registry_pull_aws_query)
-    #     expected_pattern = registry_pull_resp_pattern("aws")
-    #     self.assertTrue(re.search(expected_pattern, result), f"Expected pattern not found in result: {result}")
-    #     print_test_result("Test executeStmt method", True)
+    @pystackql_test_setup(output="csv", sep="|")
+    def test_08_csv_output_with_pipe_separator(self):
+        # Check if sep is set to '|'
+        self.assertEqual(self.stackql.sep, "|", "Separator is not set to '|'")
+
+        # Check if params list has --delimiter and |
+        self.assertIn("--delimiter", self.stackql.params)
+        self.assertIn("|", self.stackql.params)
+        
+        # Check if --hideheaders is in params list
+        self.assertIn("--hideheaders", self.stackql.params)
+        print_test_result(f"""Test csv output with custom sep (pipe delimited without headers)\nPARAMS: {self.stackql.params}""", True)
+
+    @pystackql_test_setup(output="csv", header=True)
+    def test_09_csv_output_with_header(self):
+        # Check if header is set to True
+        self.assertTrue(self.stackql.header, "Header is not set to True")
+
+        # Check if params list does not have --hideheaders
+        self.assertNotIn("--hideheaders", self.stackql.params)
+        print_test_result(f"""Test csv output with headers (comma delimited with headers)\nPARAMS: {self.stackql.params}""", True)
+
+    @pystackql_test_setup(debug=True)
+    def test_10_executeStmt(self):
+        google_result = self.stackql.executeStmt(registry_pull_google_query)
+        expected_pattern = registry_pull_resp_pattern("google")
+        self.assertTrue(re.search(expected_pattern, google_result), f"Expected pattern not found in result: {google_result}")
+        aws_result = self.stackql.executeStmt(registry_pull_aws_query)
+        expected_pattern = registry_pull_resp_pattern("aws")
+        self.assertTrue(re.search(expected_pattern, aws_result), f"Expected pattern not found in result: {aws_result}")
+        print_test_result(f"""Test executeStmt method\nRESULT1: {google_result}\nRESULT2: {aws_result}""", True)
 
     # @pystackql_test_setup
     # def test_08_execute(self):

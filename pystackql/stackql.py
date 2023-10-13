@@ -20,11 +20,11 @@ class StackQL:
 		:type server_mode: bool
 		:default: False
 	
-	server_address: The address of the StackQL server (only applicable when server_mode=True).
+	server_address: The address of the StackQL server (server_mode only).
 		:type server_address: str
 		:default: '0.0.0.0'
 	
-	server_port: The port of the StackQL server (only applicable when server_mode=True).
+	server_port: The port of the StackQL server (server_mode only).
 		:type server_port: int
 		:default: 5466
 	
@@ -34,23 +34,23 @@ class StackQL:
 		:options: ['dict', 'pandas', 'csv']
 		:note: 'csv' is not supported in server_mode
 	
-	delimiter: Delimiter character for CSV output (Only applicable if output='csv').
-		:type delimiter: str
+	sep: Seperator for values in CSV output (output='csv' only).
+		:type sep: str
 		:default: ','
 
-	hide_headers: Whether to hide headers in CSV output (only applicable if output='csv').
-		:type hide_headers: bool
+	header: Show column headers in CSV output (output='csv' only).
+		:type header: bool
 		:default: False
 
-	download_dir: The download directory for the StackQL executable (server_mode=False only).
+	download_dir: The download directory for the StackQL executable (not supported in server_mode).
 		:type download_dir: str
 		:default: site.getuserbase()
 
-	api_timeout: API timeout (server_mode=False only).
+	api_timeout: API timeout (not supported in server_mode).
 		:type api_timeout: int
 		:default: 45
 	
-	proxy_host: HTTP proxy host (server_mode=False only).
+	proxy_host: HTTP proxy host (not supported in server_mode).
 		:type proxy_host: str
 		:default: None
 	
@@ -70,18 +70,26 @@ class StackQL:
 		:type proxy_user: str
 		:default: None
 	
-	max_results: Max results per HTTP request (server_mode=False only).
+	max_results: Max results per HTTP request (not supported in server_mode).
 		:type max_results: int
 		:default: -1
 	
-	page_limit: Max pages of results that will be returned per resource (server_mode=False only).
+	page_limit: Max pages of results that will be returned per resource (not supported in server_mode).
 		:type page_limit: int
 		:default: 20
 	
-	max_depth: Max depth for indirect queries: views and subqueries (server_mode=False only).
+	max_depth: Max depth for indirect queries: views and subqueries (not supported in server_mode).
 		:type max_depth: int
 		:default: 5
-	
+
+	debug: Enable debug logging.
+		:type debug: bool
+		:default: False
+
+	debug_log_file: Path to debug log file (if debug is True).
+		:type debug_log_file: str
+		:default: ~/.pystackql/debug.log
+
 	--- Read-Only Attributes ---
 	
 	platform: The operating system platform.
@@ -90,21 +98,25 @@ class StackQL:
 	package_version: The version number of the pystackql Python package.
 		:type package_version: str
 	
-	version: The version number of the StackQL executable (server_mode=False only).
+	version: The version number of the StackQL executable (not supported in server_mode).
 		:type version: str
 	
-	params: A list of command-line parameters passed to the StackQL executable (server_mode=False only).
+	params: A list of command-line parameters passed to the StackQL executable (not supported in server_mode).
 		:type params: list
 	
-	bin_path: The full path of the StackQL executable (server_mode=False only).
+	bin_path: The full path of the StackQL executable (not supported in server_mode).
 		:type bin_path: str
 	
-	sha: The commit (short) sha for the installed `stackql` binary build (server_mode=False only).
+	sha: The commit (short) sha for the installed `stackql` binary build (not supported in server_mode).
 		:type sha: str
 	
-	auth: Custom StackQL provider authentication object supplied using the class constructor (server_mode=False only).
+	auth: Custom StackQL provider authentication object supplied using the class constructor (not supported in server_mode).
 		:type auth: dict
 	"""
+
+	def _debug_log(self, message):
+		with open(self.debug_log_file, "a") as log_file:
+			log_file.write(message + "\n")
 
 	def _connect_to_server(self):
 		"""Establishes a connection to the server using psycopg.
@@ -152,7 +164,7 @@ class StackQL:
 			else:
 				raise
 
-	def _run_query(self, query):
+	def _run_query(self, query, is_statement=False):
 		"""
 		Internal method to execute a StackQL query using a subprocess.
 
@@ -177,13 +189,29 @@ class StackQL:
 		local_params.insert(1, query)
 		try:
 			with subprocess.Popen([self.bin_path] + local_params,
-								stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as iqlPopen:
-				stdout, _ = iqlPopen.communicate()
-				return stdout.decode('utf-8')
+								stdout=subprocess.PIPE, stderr=subprocess.PIPE) as iqlPopen:  # Capturing stderr separately
+				stdout, stderr = iqlPopen.communicate()
+				if self.debug:
+					self._debug_log(f"Query: {query}")
+					self._debug_log(f"stdout: {stdout}")
+					self._debug_log(f"stderr: {stderr}")
+				if stderr:
+					# Prioritizing stderr since that’s where the expected messages seem to be
+					return stderr.decode('utf-8') if isinstance(stderr, bytes) else str(stderr)
+				else:
+					# Here, we may consider concatenating stdout and stderr, or handling them separately based on the use case
+					return stdout.decode('utf-8') if isinstance(stdout, bytes) else str(stdout)
 		except FileNotFoundError:
 			return "ERROR %s not found" % self.bin_path
 		except Exception as e:
-			return "ERROR %s %s" % (str(e), e.__doc__)
+			if 'stdout' in locals() and 'stderr' in locals():
+				return f"ERROR: {str(e)} {e.__doc__}, PARAMS: {local_params}, STDOUT: {stdout}, STDERR: {stderr}"
+			if 'stdout' in locals() and 'stderr' not in locals():
+				return f"ERROR: {str(e)} {e.__doc__}, PARAMS: {local_params},STDOUT: {stdout}"
+			elif 'stderr' in locals():
+				return f"ERROR: {str(e)} {e.__doc__}, PARAMS: {local_params},STDERR: {stderr}"
+			else:
+				return f"ERROR: {str(e)} {e.__doc__}, PARAMS: {local_params}"
 
 	def __init__(self, 
 				 server_mode=False, 
@@ -192,8 +220,8 @@ class StackQL:
 				 download_dir=None, 
 				 output='dict',
 				 custom_auth=None,
-				 delimiter=',', 
-				 hide_headers=False, 
+				 sep=',', 
+				 header=False, 
 				 api_timeout=45, 
 				 proxy_host=None, 
 				 proxy_password=None, 
@@ -202,7 +230,9 @@ class StackQL:
 				 proxy_user=None, 
 				 max_results=-1, 
 				 page_limit=20, 
-				 max_depth=5):
+				 max_depth=5,
+				 debug=False,
+				 debug_log_file=None):
 		"""Constructor method
 		"""
         # read only properties
@@ -219,6 +249,19 @@ class StackQL:
 		if self.server_mode and self.output == 'csv':
 			raise ValueError("CSV output is not supported in server mode, use 'dict' or 'pandas' instead.")
 		
+		self.debug = debug
+		if debug:
+			if debug_log_file is None:
+				self.debug_log_file = os.path.join(os.path.expanduser("~"), '.pystackql', 'debug.log')
+			else:
+				self.debug_log_file = debug_log_file
+			# Check if the path exists. If not, try to create it.
+			log_dir = os.path.dirname(self.debug_log_file)
+			if not os.path.exists(log_dir):
+				try:
+					os.makedirs(log_dir, exist_ok=True)  # exist_ok=True will not raise an error if the directory exists.
+				except OSError as e:
+					raise ValueError(f"Unable to create the log directory {log_dir}: {str(e)}")
 
 		if self.server_mode:
 			# server mode, connect to a server via the postgres wire protocol
@@ -232,7 +275,10 @@ class StackQL:
 			self.params.append("exec")
 
 			self.params.append("--output")
-			self.params.append(self.output)
+			if self.output == "csv":
+				self.params.append("csv")
+			else:
+				self.params.append("json")
 			
 			# get or download the stackql binary
 			binary = _get_binary_name(this_os)
@@ -258,31 +304,31 @@ class StackQL:
 				self.params.append(authstr)
 
 			# csv output
-			if output == 'csv':
-				self.delimiter = delimiter
+			if self.output == "csv":
+				self.sep = sep
 				self.params.append("--delimiter")
-				self.params.append(delimiter)
+				self.params.append(sep)
 
-				self.hide_headers = hide_headers
-				if self.hide_headers:
+				self.header = header
+				if not self.header:
 					self.params.append("--hideheaders")
 
 			# app behavioural properties
 			self.max_results = max_results
 			self.params.append("--http.response.maxResults")
-			self.params.append(max_results)
+			self.params.append(str(max_results))
 
 			self.page_limit = page_limit
 			self.params.append("--http.response.pageLimit")
-			self.params.append(page_limit)
+			self.params.append(str(page_limit))
 
 			self.max_depth = max_depth
 			self.params.append("--indirect.depth.max")
-			self.params.append(max_depth)
+			self.params.append(str(max_depth))
 
 			self.api_timeout = api_timeout
 			self.params.append("--apirequesttimeout")
-			self.params.append(api_timeout)
+			self.params.append(str(api_timeout))
 
 			# proxy settings
 			if proxy_host is not None:
@@ -380,7 +426,7 @@ class StackQL:
 			result = self._run_server_query(query)
 			return json.dumps(result)
 		else:
-			return self._run_query(query)
+			return self._run_query(query, is_statement=True)
 	
 	def execute(self, query):
 		"""Executes a query using the StackQL instance and returns the output as a string 
