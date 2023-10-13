@@ -8,7 +8,7 @@ server_address = "127.0.0.1"
 
 expected_properties = [
     "bin_path", "download_dir", "package_version", "params", 
-    "parse_json", "platform", "server_mode", "sha", "version"
+    "output", "platform", "server_mode", "sha", "version"
 ]
 
 expected_version_pattern = r'^v?(\d+\.\d+\.\d+)$'

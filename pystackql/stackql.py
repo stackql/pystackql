@@ -16,24 +16,17 @@ class StackQL:
 	"""
 	A class representing an instance of the StackQL query engine.
 
-	download_dir: The download directory for the StackQL executable.
-		:type download_dir: str
-		:default: site.getuserbase()
-		:note: only applicable when server_mode=False.
-
 	server_mode: Connect to a StackQL server.
 		:type server_mode: bool
 		:default: False
 	
-	server_address: The address of the StackQL server.
+	server_address: The address of the StackQL server (only applicable when server_mode=True).
 		:type server_address: str
 		:default: '0.0.0.0'
-		:note: only applicable when server_mode=True.
 	
-	server_port: The port of the StackQL server.
+	server_port: The port of the StackQL server (only applicable when server_mode=True).
 		:type server_port: int
 		:default: 5466
-		:note: only applicable when server_mode=True.
 	
 	output: Determines the format of the output, options are 'dict', 'pandas', and 'csv'.
 		:type output: str
@@ -41,47 +34,51 @@ class StackQL:
 		:options: ['dict', 'pandas', 'csv']
 		:note: 'csv' is not supported in server_mode
 	
-	delimiter: (Only if output='csv') Delimiter character for CSV output.
+	delimiter: Delimiter character for CSV output (Only applicable if output='csv').
 		:type delimiter: str
 		:default: ','
 
-	hide_headers: (Only if output='csv') Whether to hide headers in CSV output.
+	hide_headers: Whether to hide headers in CSV output (only applicable if output='csv').
 		:type hide_headers: bool
 		:default: False
 
-	api_timeout: (server_mode=False only) API timeout.
+	download_dir: The download directory for the StackQL executable (server_mode=False only).
+		:type download_dir: str
+		:default: site.getuserbase()
+
+	api_timeout: API timeout (server_mode=False only).
 		:type api_timeout: int
 		:default: 45
 	
-	proxy_host: (server_mode=False only) HTTP proxy host.
+	proxy_host: HTTP proxy host (server_mode=False only).
 		:type proxy_host: str
 		:default: None
 	
-	proxy_password: (server_mode=False only) HTTP proxy password.
+	proxy_password: HTTP proxy password (only applicable when proxy_host is set).
 		:type proxy_password: str
 		:default: None
 
-	proxy_port: (server_mode=False only) HTTP proxy port.
+	proxy_port: HTTP proxy port (only applicable when proxy_host is set).
 		:type proxy_port: int
 		:default: -1
 	
-	proxy_scheme: (server_mode=False only) HTTP proxy scheme.
+	proxy_scheme: HTTP proxy scheme (only applicable when proxy_host is set).
 		:type proxy_scheme: str
 		:default: 'http'
 	
-	proxy_user: (server_mode=False only) HTTP proxy user.
+	proxy_user: HTTP proxy user (only applicable when proxy_host is set).
 		:type proxy_user: str
 		:default: None
 	
-	max_results: (server_mode=False only) Max results per HTTP request.
+	max_results: Max results per HTTP request (server_mode=False only).
 		:type max_results: int
 		:default: -1
 	
-	page_limit: (server_mode=False only) Max pages of results that will be returned per resource.
+	page_limit: Max pages of results that will be returned per resource (server_mode=False only).
 		:type page_limit: int
 		:default: 20
 	
-	max_depth: (server_mode=False only) Max depth for indirect queries: views and subqueries.
+	max_depth: Max depth for indirect queries: views and subqueries (server_mode=False only).
 		:type max_depth: int
 		:default: 5
 	
@@ -93,19 +90,19 @@ class StackQL:
 	package_version: The version number of the pystackql Python package.
 		:type package_version: str
 	
-	version: (server_mode=False only) The version number of the StackQL executable.
+	version: The version number of the StackQL executable (server_mode=False only).
 		:type version: str
 	
-	params: (server_mode=False only) A list of command-line parameters passed to the StackQL executable.
+	params: A list of command-line parameters passed to the StackQL executable (server_mode=False only).
 		:type params: list
 	
-	bin_path: (server_mode=False only) The full path of the StackQL executable.
+	bin_path: The full path of the StackQL executable (server_mode=False only).
 		:type bin_path: str
 	
-	sha: (server_mode=False only) The commit (short) sha for the installed `stackql` binary build.
+	sha: The commit (short) sha for the installed `stackql` binary build (server_mode=False only).
 		:type sha: str
 	
-	auth: (server_mode=False only) StackQL provider authentication object supplied using the class constructor.
+	auth: Custom StackQL provider authentication object supplied using the class constructor (server_mode=False only).
 		:type auth: dict
 	"""
 
@@ -222,6 +219,7 @@ class StackQL:
 		if self.server_mode and self.output == 'csv':
 			raise ValueError("CSV output is not supported in server mode, use 'dict' or 'pandas' instead.")
 		
+
 		if self.server_mode:
 			# server mode, connect to a server via the postgres wire protocol
 			self.server_address = server_address
@@ -233,6 +231,9 @@ class StackQL:
 			self.params = []
 			self.params.append("exec")
 
+			self.params.append("--output")
+			self.params.append(self.output)
+			
 			# get or download the stackql binary
 			binary = _get_binary_name(this_os)
 			# if download_dir not set, use site.getuserbase()
