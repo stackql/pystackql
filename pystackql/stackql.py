@@ -13,44 +13,96 @@ from concurrent.futures import ProcessPoolExecutor
 from psycopg2.extras import RealDictCursor
 
 class StackQL:
-	"""A class representing an instance of the StackQL query engine.
+	"""
+	A class representing an instance of the StackQL query engine.
 
-	:param platform: the operating system platform (read only)
-	:type platform: str
+	download_dir: The download directory for the StackQL executable.
+		:type download_dir: str
+		:default: site.getuserbase()
 
-	:param parse_json: whether to parse the output as JSON, defaults to `False` 
-		unless overridden by setting `output` to `csv`, `table` or `text` as a `kwarg` in the `StackQL` object constructor (read only)
-	:type parse_json: bool
+	server_mode: Connect to a StackQL server.
+		:type server_mode: bool
+		:default: False
+	
+	server_address: The address of the StackQL server.
+		:type server_address: str
+		:default: '0.0.0.0'
+	
+	server_port: The port of the StackQL server.
+		:type server_port: int
+		:default: 5466
+	
+	output: Determines the format of the output, options are 'dict', 'pandas', and 'csv'.
+		:type output: str
+		:default: 'dict'
+		:options: ['dict', 'pandas', 'csv']
+	
+	delimiter: (Only if output='csv') Delimiter character for CSV output.
+		:type delimiter: str
+		:default: ','
 
-	:param params: a list of command-line parameters passed to the StackQL executable, populated by the class constructor (read only)
-	:type params: list
-	
-	:param download_dir: the download directory for the StackQL executable - defaults to site.getuserbase() unless overridden in the `StackQL` object constructor (read only)
-	:type download_dir: str
-	
-	:param bin_path: the full path of the StackQL executable (read only)
-	:type bin_path: str
-	
-	:param version: the version number of the StackQL executable (read only)
-	:type version: str
-	
-	:param package_version: the version number of the pystackql Python package (read only)
-	:type package_version: str	
-	
-	:param sha: the commit (short) sha for the installed `stackql` binary build (read only)
-	:type sha: str
-	
-	:param auth: StackQL provider authentication object supplied using the class constructor (read only)
-	:type auth: dict
-	
-	:param server_mode: Connect to a stackql server - defaults to `False` unless overridden in the `StackQL` object constructor (read only)
-	:type server_mode: bool
-	
-	:param server_address: The address of the stackql server - defaults to `0.0.0.0` unless overridden in the `StackQL` object constructor (read only), only used if `server_mode` (read only)
-	:type auth: str
+	hide_headers: (Only if output='csv') Whether to hide headers in CSV output.
+		:type hide_headers: bool
+		:default: False
 
-	:param server_port: The port of the stackql server - defaults to `5466` unless overridden in the `StackQL` object constructor (read only), only used if `server_mode` (read only)
-	:type auth: int
+	api_timeout: (server_mode=False only) API timeout.
+		:type api_timeout: int
+		:default: 45
+	
+	proxy_host: (server_mode=False only) HTTP proxy host.
+		:type proxy_host: str
+		:default: None
+	
+	proxy_password: (server_mode=False only) HTTP proxy password.
+		:type proxy_password: str
+		:default: None
+
+	proxy_port: (server_mode=False only) HTTP proxy port.
+		:type proxy_port: int
+		:default: -1
+	
+	proxy_scheme: (server_mode=False only) HTTP proxy scheme.
+		:type proxy_scheme: str
+		:default: 'http'
+	
+	proxy_user: (server_mode=False only) HTTP proxy user.
+		:type proxy_user: str
+		:default: None
+	
+	max_results: (server_mode=False only) Max results per HTTP request.
+		:type max_results: int
+		:default: -1
+	
+	page_limit: (server_mode=False only) Max pages of results that will be returned per resource.
+		:type page_limit: int
+		:default: 20
+	
+	max_depth: (server_mode=False only) Max depth for indirect queries: views and subqueries.
+		:type max_depth: int
+		:default: 5
+	
+	--- Read-Only Attributes ---
+	
+	platform: The operating system platform.
+		:type platform: str
+	
+	package_version: The version number of the pystackql Python package.
+		:type package_version: str
+	
+	version: (server_mode=False only) The version number of the StackQL executable.
+		:type version: str
+	
+	params: (server_mode=False only) A list of command-line parameters passed to the StackQL executable.
+		:type params: list
+	
+	bin_path: (server_mode=False only) The full path of the StackQL executable.
+		:type bin_path: str
+	
+	sha: (server_mode=False only) The commit (short) sha for the installed `stackql` binary build.
+		:type sha: str
+	
+	auth: (server_mode=False only) StackQL provider authentication object supplied using the class constructor.
+		:type auth: dict
 	"""
 
 	def _connect_to_server(self):
@@ -132,57 +184,126 @@ class StackQL:
 		except Exception as e:
 			return "ERROR %s %s" % (str(e), e.__doc__)
 
-	def __init__(self, **kwargs):
+	def __init__(self, 
+				 server_mode=False, 
+				 server_address='0.0.0.0', 
+				 server_port=5466, 
+				 download_dir=None, 
+				 output='dict',
+				 custom_auth=None,
+				 delimiter=',', 
+				 hide_headers=False, 
+				 api_timeout=45, 
+				 proxy_host=None, 
+				 proxy_password=None, 
+				 proxy_port=-1, 
+				 proxy_scheme='http', 
+				 proxy_user=None, 
+				 max_results=-1, 
+				 page_limit=20, 
+				 max_depth=5):
 		"""Constructor method
 		"""
-		# get platform and set property
+        # read only properties
 		self.platform, this_os = _get_platform()
-
-		# get each kwarg and set property
-		self.parse_json = True
-		self.params = ["exec"]
-		output_set = False
-		for key, value in kwargs.items():
-			self.params.append("--%s" % key)
-			if key == "output":
-				output_set = True
-				if value != "json":
-					self.parse_json = False
-			if key == "auth":
-				authobj, authstr = _format_auth(value)
-				value = authstr
-				self.auth = authobj
-			if key == "download_dir":
-				self.download_dir = value
-			self.params.append(value)
-		if not output_set:
-			self.params.append("--output")
-			self.params.append("json")
-
-		# set fq path
-		binary = _get_binary_name(this_os)
-		# if download_dir not set, use site.getuserbase()
-		if not hasattr(self, 'download_dir'):
-			self.download_dir = _get_download_dir()
-		self.bin_path = os.path.join(self.download_dir, binary)
-
-		# get and set version
-		if os.path.exists(self.bin_path):
-			self.version, self.sha = _get_version(self.bin_path)
-		else:
-			_setup(self.download_dir, this_os)
-			self.version, self.sha = _get_version(self.bin_path)
-
-		# get package version
 		self.package_version = _get_package_version("pystackql")
 
-		# server_mode props, connects to a server via the postgres wire protocol
-		self.server_mode = kwargs.get("server_mode", False)
+		# common constructor args
+		# Check and assign the output if it is allowed, else raise ValueError
+		ALLOWED_OUTPUTS = {'dict', 'pandas', 'csv'}
+		if output.lower() not in ALLOWED_OUTPUTS:
+			raise ValueError(f"Invalid output. Expected one of {ALLOWED_OUTPUTS}, got {output}.")
+		self.output = output.lower()
+		self.server_mode = server_mode
+		if self.server_mode and self.output == 'csv':
+			raise ValueError("CSV output is not supported in server mode, use 'dict' or 'pandas' instead.")
+		
 		if self.server_mode:
-			self.server_address = kwargs.get("server_address", "0.0.0.0")
-			self.server_port = kwargs.get("server_port", 5466)
+			# server mode, connect to a server via the postgres wire protocol
+			self.server_address = server_address
+			self.server_port = server_port
    			# establish the connection
-			self._conn = self._connect_to_server()			
+			self._conn = self._connect_to_server()
+		else:
+			# local mode, executes the binary locally
+			self.params = []
+			self.params.append("exec")
+
+			# get or download the stackql binary
+			binary = _get_binary_name(this_os)
+			# if download_dir not set, use site.getuserbase()
+			if download_dir is None:
+				self.download_dir = _get_download_dir()
+			else:
+				self.download_dir = download_dir
+			self.bin_path = os.path.join(self.download_dir, binary)
+			# get and set version
+			if os.path.exists(self.bin_path):
+				self.version, self.sha = _get_version(self.bin_path)
+			else:
+				# not installed, download
+				_setup(self.download_dir, this_os)
+				self.version, self.sha = _get_version(self.bin_path)
+
+			# if custom_auth is set, use it
+			if custom_auth is not None:
+				authobj, authstr = _format_auth(custom_auth)
+				self.auth = authobj
+				self.params.append("--auth")
+				self.params.append(authstr)
+
+			# csv output
+			if output == 'csv':
+				self.delimiter = delimiter
+				self.params.append("--delimiter")
+				self.params.append(delimiter)
+
+				self.hide_headers = hide_headers
+				if self.hide_headers:
+					self.params.append("--hideheaders")
+
+			# app behavioural properties
+			self.max_results = max_results
+			self.params.append("--http.response.maxResults")
+			self.params.append(max_results)
+
+			self.page_limit = page_limit
+			self.params.append("--http.response.pageLimit")
+			self.params.append(page_limit)
+
+			self.max_depth = max_depth
+			self.params.append("--indirect.depth.max")
+			self.params.append(max_depth)
+
+			self.api_timeout = api_timeout
+			self.params.append("--apirequesttimeout")
+			self.params.append(api_timeout)
+
+			# proxy settings
+			if proxy_host is not None:
+				self.proxy_host = proxy_host
+				self.params.append("--http.proxy.host")
+				self.params.append(proxy_host)				
+
+				self.proxy_port = proxy_port
+				self.params.append("--http.proxy.port")
+				self.params.append(proxy_port)
+
+				self.proxy_user = proxy_user
+				self.params.append("--http.proxy.user")
+				self.params.append(proxy_user)
+
+				self.proxy_password = proxy_password
+				self.params.append("--http.proxy.password")
+				self.params.append(proxy_password)
+
+				# Check and assign the proxy_scheme if it is allowed, else raise ValueError
+				ALLOWED_PROXY_SCHEMES = {'http', 'https'}
+				if proxy_scheme.lower() not in ALLOWED_PROXY_SCHEMES:
+					raise ValueError(f"Invalid proxy_scheme. Expected one of {ALLOWED_PROXY_SCHEMES}, got {proxy_scheme}.")
+				self.proxy_scheme = proxy_scheme.lower()
+				self.params.append("--http.proxy.scheme")
+				self.params.append(proxy_scheme)				
 
 	def properties(self):
 		"""

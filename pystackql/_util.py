@@ -1,11 +1,3 @@
-# import subprocess, platform, json, site, os, requests, zipfile, pkg_resources
-
-# def _get_package_version(package_name):
-#     try:
-#         return pkg_resources.get_distribution(package_name).version
-#     except pkg_resources.DistributionNotFound:
-#         return None
-
 import subprocess, platform, json, site, os, requests, zipfile
 
 # Conditional import for package metadata retrieval
