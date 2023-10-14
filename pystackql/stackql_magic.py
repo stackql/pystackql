@@ -22,7 +22,7 @@ class StackqlMagic(Magics):
         """
         from . import StackQL
         super(StackqlMagic, self).__init__(shell)
-        self.stackql_instance = StackQL(server_mode=True, output='pandas', server_address="127.0.0.1", server_port=5466)
+        self.stackql_instance = StackQL(server_mode=True, output='pandas')
 
     def get_rendered_query(self, data):
         """
