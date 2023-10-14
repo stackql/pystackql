@@ -27,6 +27,8 @@ def get_custom_download_dir(platform_name):
 
 registry_pull_google_query = "REGISTRY PULL google"
 registry_pull_aws_query = "REGISTRY PULL aws"
+registry_pull_okta_query = "REGISTRY PULL okta"
+registry_pull_github_query = "REGISTRY PULL github"
 
 def registry_pull_resp_pattern(provider):
     return r"%s provider, version 'v\d+\.\d+\.\d+' successfully installed\s*" % provider

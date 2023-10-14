@@ -31,6 +31,12 @@ class PyStackQLTestsBase(unittest.TestCase):
 def setUpModule():
     print("downloading stackql binary...")
     PyStackQLTestsBase.stackql = StackQL()
+    print("downloading aws provider for tests...")
+    res = PyStackQLTestsBase.stackql.executeStmt(registry_pull_aws_query)
+    print(res)
+    print("downloading google provider for tests...")
+    res = PyStackQLTestsBase.stackql.executeStmt(registry_pull_google_query)
+    print(res)
     print("starting stackql server...")
     PyStackQLTestsBase.server_process = subprocess.Popen([PyStackQLTestsBase.stackql.bin_path, "srv", "--pgsrv.address", server_address, "--pgsrv.port", str(server_port)])
     time.sleep(5)
@@ -142,13 +148,13 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
 
     @pystackql_test_setup()
     def test_10_executeStmt(self):
-        google_result = self.stackql.executeStmt(registry_pull_google_query)
-        expected_pattern = registry_pull_resp_pattern("google")
-        self.assertTrue(re.search(expected_pattern, google_result), f"Expected pattern not found in result: {google_result}")
-        aws_result = self.stackql.executeStmt(registry_pull_aws_query)
-        expected_pattern = registry_pull_resp_pattern("aws")
-        self.assertTrue(re.search(expected_pattern, aws_result), f"Expected pattern not found in result: {aws_result}")
-        print_test_result(f"""Test executeStmt method\nRESULTS:\n{google_result}{aws_result}""", True)
+        okta_result = self.stackql.executeStmt(registry_pull_okta_query)
+        expected_pattern = registry_pull_resp_pattern("okta")
+        self.assertTrue(re.search(expected_pattern, okta_result), f"Expected pattern not found in result: {okta_result}")
+        github_result = self.stackql.executeStmt(registry_pull_github_query)
+        expected_pattern = registry_pull_resp_pattern("github")
+        self.assertTrue(re.search(expected_pattern, github_result), f"Expected pattern not found in result: {github_result}")
+        print_test_result(f"""Test executeStmt method\nRESULTS:\n{okta_result}{github_result}""", True)
 
     @pystackql_test_setup()
     def test_11_execute_with_defaults(self):
