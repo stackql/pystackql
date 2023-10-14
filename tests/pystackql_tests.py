@@ -1,4 +1,5 @@
 import sys, os, unittest, asyncio
+from unittest.mock import MagicMock
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from pystackql import StackQL
 from pystackql.stackql_magic import StackqlMagic, load_ipython_extension
@@ -266,50 +267,41 @@ class StackQLMagicTests(PyStackQLTestsBase):
         self.shell = MockInteractiveShell.instance()
         load_ipython_extension(self.shell)
         self.stackql_magic = StackqlMagic(shell=self.shell)
+        self.query = "SELECT 1 as fred"
+        self.expected_result = pd.DataFrame({"fred": [1]})
 
-    # def test_14_magic_cell_query(self):
-    #     failure_messages = []  # List to accumulate failure messages
-    #     df = None
-    #     try:
-    #         # Test the cell magic functionality
-    #         df = self.stackql_magic.stackql("", google_query)  # Cell magic uses both line and cell arguments
-    #         if not isinstance(df, pd.DataFrame):
-    #             failure_messages.append("Result is not a pandas DataFrame")
-    #         if 'num_instances' not in df.columns or 'status' not in df.columns:
-    #             failure_messages.append("Expected columns 'num_instances' and 'status' are missing in DataFrame")
-    #     except Exception as e:
-    #         failure_messages.append(f"Runtime error occurred: {str(e)}")
-    #     if not failure_messages:
-    #         print_test_result("test cell magic", True, True, True)
-    #     else:
-    #         debug_info = "\n".join(failure_messages) + \
-    #                     f"\n****DEBUG INFO****\n" + \
-    #                     f"Query: \n{google_query}\n" + \
-    #                     (f"DataFrame: \n{df}\n" if df is not None else "") + \
-    #                     f"****END DEBUG INFO****"
-    #         print_test_result("test cell magic", False, True, True)
-    #         self.fail(debug_info)
+    def test_23_line_magic_query(self):
+        # Mock the run_query method to return a known DataFrame.
+        self.stackql_magic.run_query = MagicMock(return_value=self.expected_result)
+        # Execute the line magic with our query.
+        result = self.stackql_magic.stackql(line=self.query, cell=None)
+        # Check if the result is as expected and if 'stackql_df' is set in the namespace.
+        self.assertTrue(result.equals(self.expected_result))
+        self.assertTrue('stackql_df' in self.shell.user_ns)
+        self.assertTrue(self.shell.user_ns['stackql_df'].equals(self.expected_result))
+        print_test_result(f"""Line magic test""", True, True, True)
 
-    # def test_15_magic_cell_query_no_display(self):
-    #     failure_messages = []  # List to accumulate failure messages
-    #     df = None
-    #     try:
-    #         # Test the cell magic functionality with the --no-display option
-    #         df = self.stackql_magic.stackql("--no-display", google_query)
-    #         if df is not None:
-    #             failure_messages.append("Expected result to be None, but it wasn't.")
-    #     except Exception as e:
-    #         failure_messages.append(f"Runtime error occurred: {str(e)}")
-    #     if not failure_messages:
-    #         print_test_result("test cell magic with --no-display", True, True, True)
-    #     else:
-    #         debug_info = "\n".join(failure_messages) + \
-    #                     f"\n****DEBUG INFO****\n" + \
-    #                     f"Query: \n{google_query}\n" + \
-    #                     (f"Result: \n{df}\n" if df is not None else "") + \
-    #                     f"****END DEBUG INFO****"
-    #         print_test_result("test cell magic with --no-display", False, True, True)
-    #         self.fail(debug_info)
+    def test_24_cell_magic_query(self):
+        # Mock the run_query method to return a known DataFrame.
+        self.stackql_magic.run_query = MagicMock(return_value=self.expected_result)
+        # Execute the cell magic with our query.
+        result = self.stackql_magic.stackql(line="", cell=self.query)
+        # Validate the outcome.
+        self.assertTrue(result.equals(self.expected_result))
+        self.assertTrue('stackql_df' in self.shell.user_ns)
+        self.assertTrue(self.shell.user_ns['stackql_df'].equals(self.expected_result))
+        print_test_result(f"""Cell magic test""", True, True, True)
+
+    def test_25_cell_magic_query_no_output(self):
+        # Mock the run_query method to return a known DataFrame.
+        self.stackql_magic.run_query = MagicMock(return_value=self.expected_result)
+        # Execute the cell magic with our query and the no-display argument.
+        result = self.stackql_magic.stackql(line="--no-display", cell=self.query)
+        # Validate the outcome.
+        self.assertIsNone(result)
+        self.assertTrue('stackql_df' in self.shell.user_ns)
+        self.assertTrue(self.shell.user_ns['stackql_df'].equals(self.expected_result))
+        print_test_result(f"""Cell magic test (with --no-display)""", True, True, True)
 
 def main():
     unittest.main(verbosity=0)
