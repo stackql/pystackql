@@ -1,4 +1,4 @@
-name: 'Run Tests'
+name: 'Run Async Server Tests'
 on:
   pull_request:
     branches:
@@ -79,4 +79,4 @@ jobs:
           GCP_PROJECT: ${{ vars.GCP_PROJECT }}
           GCP_ZONE: ${{ vars.GCP_ZONE }}          
         run: |
-          python3 -m tests.pystackql_tests
+          python3 -m tests.pystackql_async_server_tests

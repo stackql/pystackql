@@ -206,22 +206,6 @@ class PyStackQLAsyncTests(PyStackQLTestsBase):
             pass
         print_test_result(f"[ASYNC] Test executeQueriesAsync with unsupported csv output", exception_caught)
 
-#     @async_test_decorator
-#     async def test_17_executeQueriesAsync_server_mode_default_output(self):
-#         stackql = StackQL(server_mode=True)
-#         result = await stackql.executeQueriesAsync(async_queries)
-#         is_valid_result = isinstance(result, list) and all(isinstance(res, dict) for res in result)
-#         self.assertTrue(is_valid_result, f"Result is not a valid list of dicts: {result}")
-#         print_test_result(f"[ASYNC] Test executeQueriesAsync in server_mode with default output\nRESULT_COUNT: {len(result)}", is_valid_result, True)
-
-#     @async_test_decorator
-#     async def test_18_executeQueriesAsync_server_mode_pandas_output(self):
-#         stackql = StackQL(server_mode=True, output='pandas')
-#         result = await stackql.executeQueriesAsync(async_queries)
-#         is_valid_dataframe = isinstance(result, pd.DataFrame) and not result.empty
-#         self.assertTrue(is_valid_dataframe, f"Result is not a valid DataFrame: {result}")
-#         print_test_result(f"[ASYNC] Test executeQueriesAsync in server_mode with pandas output\nRESULT_COUNT: {len(result)}", is_valid_dataframe, True)
-
 class PyStackQLServerModeNonAsyncTests(PyStackQLTestsBase):
 
     @pystackql_test_setup(server_mode=True)
