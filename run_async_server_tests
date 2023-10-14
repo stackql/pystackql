@@ -1,0 +1,3 @@
+#!/bin/bash
+. tests/creds/env_vars/test.env
+python3 -m tests.pystackql_async_server_tests

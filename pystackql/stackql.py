@@ -5,53 +5,118 @@ from ._util import (
     _get_binary_name,
     _setup,
     _get_version,
-    _format_auth,
-    _execute_queries_in_parallel
+    _format_auth
 )
 import sys, subprocess, json, os, asyncio, functools, psycopg2
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from psycopg2.extras import RealDictCursor
+import pandas as pd
 
 class StackQL:
-	"""A class representing an instance of the StackQL query engine.
-
-	:param platform: the operating system platform (read only)
-	:type platform: str
-
-	:param parse_json: whether to parse the output as JSON, defaults to `False` 
-		unless overridden by setting `output` to `csv`, `table` or `text` as a `kwarg` in the `StackQL` object constructor (read only)
-	:type parse_json: bool
-
-	:param params: a list of command-line parameters passed to the StackQL executable, populated by the class constructor (read only)
-	:type params: list
-	
-	:param download_dir: the download directory for the StackQL executable - defaults to site.getuserbase() unless overridden in the `StackQL` object constructor (read only)
-	:type download_dir: str
-	
-	:param bin_path: the full path of the StackQL executable (read only)
-	:type bin_path: str
-	
-	:param version: the version number of the StackQL executable (read only)
-	:type version: str
-	
-	:param package_version: the version number of the pystackql Python package (read only)
-	:type package_version: str	
-	
-	:param sha: the commit (short) sha for the installed `stackql` binary build (read only)
-	:type sha: str
-	
-	:param auth: StackQL provider authentication object supplied using the class constructor (read only)
-	:type auth: dict
-	
-	:param server_mode: Connect to a stackql server - defaults to `False` unless overridden in the `StackQL` object constructor (read only)
-	:type server_mode: bool
-	
-	:param server_address: The address of the stackql server - defaults to `0.0.0.0` unless overridden in the `StackQL` object constructor (read only), only used if `server_mode` (read only)
-	:type auth: str
-
-	:param server_port: The port of the stackql server - defaults to `5466` unless overridden in the `StackQL` object constructor (read only), only used if `server_mode` (read only)
-	:type auth: int
 	"""
+	A class representing an instance of the StackQL query engine.
+
+	server_mode: Connect to a StackQL server.
+		:type server_mode: bool
+		:default: False
+	
+	server_address: The address of the StackQL server (server_mode only).
+		:type server_address: str
+		:default: '0.0.0.0'
+	
+	server_port: The port of the StackQL server (server_mode only).
+		:type server_port: int
+		:default: 5466
+	
+	output: Determines the format of the output, options are 'dict', 'pandas', and 'csv'.
+		:type output: str
+		:default: 'dict'
+		:options: ['dict', 'pandas', 'csv']
+		:note: 'csv' is not supported in server_mode
+	
+	sep: Seperator for values in CSV output (output='csv' only).
+		:type sep: str
+		:default: ','
+
+	header: Show column headers in CSV output (output='csv' only).
+		:type header: bool
+		:default: False
+
+	download_dir: The download directory for the StackQL executable (not supported in server_mode).
+		:type download_dir: str
+		:default: site.getuserbase()
+
+	api_timeout: API timeout (not supported in server_mode).
+		:type api_timeout: int
+		:default: 45
+	
+	proxy_host: HTTP proxy host (not supported in server_mode).
+		:type proxy_host: str
+		:default: None
+	
+	proxy_password: HTTP proxy password (only applicable when proxy_host is set).
+		:type proxy_password: str
+		:default: None
+
+	proxy_port: HTTP proxy port (only applicable when proxy_host is set).
+		:type proxy_port: int
+		:default: -1
+	
+	proxy_scheme: HTTP proxy scheme (only applicable when proxy_host is set).
+		:type proxy_scheme: str
+		:default: 'http'
+	
+	proxy_user: HTTP proxy user (only applicable when proxy_host is set).
+		:type proxy_user: str
+		:default: None
+	
+	max_results: Max results per HTTP request (not supported in server_mode).
+		:type max_results: int
+		:default: -1
+	
+	page_limit: Max pages of results that will be returned per resource (not supported in server_mode).
+		:type page_limit: int
+		:default: 20
+	
+	max_depth: Max depth for indirect queries: views and subqueries (not supported in server_mode).
+		:type max_depth: int
+		:default: 5
+
+	debug: Enable debug logging.
+		:type debug: bool
+		:default: False
+
+	debug_log_file: Path to debug log file (if debug is True).
+		:type debug_log_file: str
+		:default: ~/.pystackql/debug.log
+
+	--- Read-Only Attributes ---
+	
+	platform: The operating system platform.
+		:type platform: str
+	
+	package_version: The version number of the pystackql Python package.
+		:type package_version: str
+	
+	version: The version number of the StackQL executable (not supported in server_mode).
+		:type version: str
+	
+	params: A list of command-line parameters passed to the StackQL executable (not supported in server_mode).
+		:type params: list
+	
+	bin_path: The full path of the StackQL executable (not supported in server_mode).
+		:type bin_path: str
+	
+	sha: The commit (short) sha for the installed `stackql` binary build (not supported in server_mode).
+		:type sha: str
+	
+	auth: Custom StackQL provider authentication object supplied using the class constructor (not supported in server_mode).
+		:type auth: dict
+	"""
+
+	def _debug_log(self, message):
+		with open(self.debug_log_file, "a") as log_file:
+			log_file.write(message + "\n")
 
 	def _connect_to_server(self):
 		"""Establishes a connection to the server using psycopg.
@@ -86,9 +151,8 @@ class StackQL:
 		:raises: psycopg2.ProgrammingError for issues related to the SQL query, 
 				unless the error is "no results to fetch", in which case an empty list is returned.
 		"""
-		conn = self._connect_to_server()
 		try:
-			cur = conn.cursor(cursor_factory=RealDictCursor)
+			cur = self._conn.cursor(cursor_factory=RealDictCursor)
 			cur.execute(query)
 			rows = cur.fetchall()
 			cur.close()
@@ -99,7 +163,7 @@ class StackQL:
 			else:
 				raise
 
-	def _run_query(self, query):
+	def _run_query(self, query, is_statement=False):
 		"""
 		Internal method to execute a StackQL query using a subprocess.
 
@@ -124,65 +188,174 @@ class StackQL:
 		local_params.insert(1, query)
 		try:
 			with subprocess.Popen([self.bin_path] + local_params,
-								stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as iqlPopen:
-				stdout, _ = iqlPopen.communicate()
-				return stdout.decode('utf-8')
+								stdout=subprocess.PIPE, stderr=subprocess.PIPE) as iqlPopen:  # Capturing stderr separately
+				stdout, stderr = iqlPopen.communicate()
+				if self.debug:
+					self._debug_log(f"Query: {query}")
+					self._debug_log(f"stdout: {stdout}")
+					self._debug_log(f"stderr: {stderr}")
+				if stderr:
+					# Prioritizing stderr since that’s where the expected messages seem to be
+					return stderr.decode('utf-8') if isinstance(stderr, bytes) else str(stderr)
+				else:
+					# Here, we may consider concatenating stdout and stderr, or handling them separately based on the use case
+					return stdout.decode('utf-8') if isinstance(stdout, bytes) else str(stdout)
 		except FileNotFoundError:
 			return "ERROR %s not found" % self.bin_path
 		except Exception as e:
-			return "ERROR %s %s" % (str(e), e.__doc__)
+			if 'stdout' in locals() and 'stderr' in locals():
+				return f"ERROR: {str(e)} {e.__doc__}, PARAMS: {local_params}, STDOUT: {stdout}, STDERR: {stderr}"
+			if 'stdout' in locals() and 'stderr' not in locals():
+				return f"ERROR: {str(e)} {e.__doc__}, PARAMS: {local_params},STDOUT: {stdout}"
+			elif 'stderr' in locals():
+				return f"ERROR: {str(e)} {e.__doc__}, PARAMS: {local_params},STDERR: {stderr}"
+			else:
+				return f"ERROR: {str(e)} {e.__doc__}, PARAMS: {local_params}"
 
-	def __init__(self, **kwargs):
+	def __init__(self, 
+				 server_mode=False, 
+				 server_address='0.0.0.0', 
+				 server_port=5466, 
+				 download_dir=None, 
+				 output='dict',
+				 custom_auth=None,
+				 sep=',', 
+				 header=False, 
+				 api_timeout=45, 
+				 proxy_host=None, 
+				 proxy_password=None, 
+				 proxy_port=-1, 
+				 proxy_scheme='http', 
+				 proxy_user=None, 
+				 max_results=-1, 
+				 page_limit=20, 
+				 max_depth=5,
+				 debug=False,
+				 debug_log_file=None):
 		"""Constructor method
 		"""
-		# get platform and set property
+        # read only properties
 		self.platform, this_os = _get_platform()
-
-		# get each kwarg and set property
-		self.parse_json = True
-		self.params = ["exec"]
-		output_set = False
-		for key, value in kwargs.items():
-			self.params.append("--%s" % key)
-			if key == "output":
-				output_set = True
-				if value != "json":
-					self.parse_json = False
-			if key == "auth":
-				authobj, authstr = _format_auth(value)
-				value = authstr
-				self.auth = authobj
-			if key == "download_dir":
-				self.download_dir = value
-			self.params.append(value)
-		if not output_set:
-			self.params.append("--output")
-			self.params.append("json")
-
-		# set fq path
-		binary = _get_binary_name(this_os)
-		# if download_dir not set, use site.getuserbase()
-		if not hasattr(self, 'download_dir'):
-			self.download_dir = _get_download_dir()
-		self.bin_path = os.path.join(self.download_dir, binary)
-
-		# get and set version
-		if os.path.exists(self.bin_path):
-			self.version, self.sha = _get_version(self.bin_path)
-		else:
-			_setup(self.download_dir, this_os)
-			self.version, self.sha = _get_version(self.bin_path)
-
-		# get package version
 		self.package_version = _get_package_version("pystackql")
 
-		# server_mode props, connects to a server via the postgres wire protocol
-		self.server_mode = kwargs.get("server_mode", False)
+		# common constructor args
+		# Check and assign the output if it is allowed, else raise ValueError
+		ALLOWED_OUTPUTS = {'dict', 'pandas', 'csv'}
+		if output.lower() not in ALLOWED_OUTPUTS:
+			raise ValueError(f"Invalid output. Expected one of {ALLOWED_OUTPUTS}, got {output}.")
+		self.output = output.lower()
+		self.server_mode = server_mode
+		if self.server_mode and self.output == 'csv':
+			raise ValueError("CSV output is not supported in server mode, use 'dict' or 'pandas' instead.")
+		
+		self.debug = debug
+		if debug:
+			if debug_log_file is None:
+				self.debug_log_file = os.path.join(os.path.expanduser("~"), '.pystackql', 'debug.log')
+			else:
+				self.debug_log_file = debug_log_file
+			# Check if the path exists. If not, try to create it.
+			log_dir = os.path.dirname(self.debug_log_file)
+			if not os.path.exists(log_dir):
+				try:
+					os.makedirs(log_dir, exist_ok=True)  # exist_ok=True will not raise an error if the directory exists.
+				except OSError as e:
+					raise ValueError(f"Unable to create the log directory {log_dir}: {str(e)}")
+
 		if self.server_mode:
-			self.server_address = kwargs.get("server_address", "0.0.0.0")
-			self.server_port = kwargs.get("server_port", 5466)
+			# server mode, connect to a server via the postgres wire protocol
+			if this_os == 'Windows':
+				server_address = '127.0.0.1'
+			self.server_address = server_address
+			self.server_port = server_port
    			# establish the connection
-			self._conn = self._connect_to_server()			
+			self._conn = self._connect_to_server()
+		else:
+			# local mode, executes the binary locally
+			self.params = []
+			self.params.append("exec")
+
+			self.params.append("--output")
+			if self.output == "csv":
+				self.params.append("csv")
+			else:
+				self.params.append("json")
+			
+			# get or download the stackql binary
+			binary = _get_binary_name(this_os)
+			# if download_dir not set, use site.getuserbase()
+			if download_dir is None:
+				self.download_dir = _get_download_dir()
+			else:
+				self.download_dir = download_dir
+			self.bin_path = os.path.join(self.download_dir, binary)
+			# get and set version
+			if os.path.exists(self.bin_path):
+				self.version, self.sha = _get_version(self.bin_path)
+			else:
+				# not installed, download
+				_setup(self.download_dir, this_os)
+				self.version, self.sha = _get_version(self.bin_path)
+
+			# if custom_auth is set, use it
+			if custom_auth is not None:
+				authobj, authstr = _format_auth(custom_auth)
+				self.auth = authobj
+				self.params.append("--auth")
+				self.params.append(authstr)
+
+			# csv output
+			if self.output == "csv":
+				self.sep = sep
+				self.params.append("--delimiter")
+				self.params.append(sep)
+
+				self.header = header
+				if not self.header:
+					self.params.append("--hideheaders")
+
+			# app behavioural properties
+			self.max_results = max_results
+			self.params.append("--http.response.maxResults")
+			self.params.append(str(max_results))
+
+			self.page_limit = page_limit
+			self.params.append("--http.response.pageLimit")
+			self.params.append(str(page_limit))
+
+			self.max_depth = max_depth
+			self.params.append("--indirect.depth.max")
+			self.params.append(str(max_depth))
+
+			self.api_timeout = api_timeout
+			self.params.append("--apirequesttimeout")
+			self.params.append(str(api_timeout))
+
+			# proxy settings
+			if proxy_host is not None:
+				self.proxy_host = proxy_host
+				self.params.append("--http.proxy.host")
+				self.params.append(proxy_host)				
+
+				self.proxy_port = proxy_port
+				self.params.append("--http.proxy.port")
+				self.params.append(proxy_port)
+
+				self.proxy_user = proxy_user
+				self.params.append("--http.proxy.user")
+				self.params.append(proxy_user)
+
+				self.proxy_password = proxy_password
+				self.params.append("--http.proxy.password")
+				self.params.append(proxy_password)
+
+				# Check and assign the proxy_scheme if it is allowed, else raise ValueError
+				ALLOWED_PROXY_SCHEMES = {'http', 'https'}
+				if proxy_scheme.lower() not in ALLOWED_PROXY_SCHEMES:
+					raise ValueError(f"Invalid proxy_scheme. Expected one of {ALLOWED_PROXY_SCHEMES}, got {proxy_scheme}.")
+				self.proxy_scheme = proxy_scheme.lower()
+				self.params.append("--http.proxy.scheme")
+				self.params.append(proxy_scheme)				
 
 	def properties(self):
 		"""
@@ -254,94 +427,154 @@ class StackQL:
 			result = self._run_server_query(query)
 			return json.dumps(result)
 		else:
-			return self._run_query(query)
+			return self._run_query(query, is_statement=True)
 	
 	def execute(self, query):
-		"""Executes a query using the StackQL instance and returns the output as a string 
-			or JSON object depending on the value of `parse_json` property.
+		"""
+		Executes a query using the StackQL instance and returns the output 
+		in the format specified by the `output` attribute.
 
-		Depending on the `server_mode` attribute of the instance, this method either runs the 
-		query against the StackQL server or executes it locally using a subprocess. 
-
-		If the `parse_json` attribute is set to True, the method tries to return the result 
-		as a JSON object. If parsing fails (in local execution), it returns an error message 
-		within a JSON string.
+		Depending on the `server_mode` and `output` attribute of the instance, 
+		this method either runs the query against the StackQL server or executes 
+		it locally using a subprocess, returning the data in a dictionary, Pandas 
+		DataFrame, or CSV format.
 
 		:param query: The StackQL query string to be executed.
 		:type query: str
 
-		:return: The output result of the query. Depending on the `parse_json` attribute and 
-				the mode of execution, the result can be a JSON object, a JSON string, or a 
-				raw string.
-		:rtype: str or dict
+		:return: The output result of the query. Depending on the `output` attribute, 
+				the result can be a dictionary, a Pandas DataFrame, or a raw CSV string.
+		:rtype: dict, pd.DataFrame, or str
 
-		Note: If `server_mode` is enabled and `parse_json` is True, the result is directly 
-			returned as a JSON object.
+		Note: In server_mode, if `output` is set to 'pandas', the result is converted into a
+			Pandas DataFrame; otherwise, it is returned as a dictionary by default. CSV output
+			is currently not supported in server_mode.
 		"""
 		if self.server_mode:
 			# Use server mode
 			result = self._run_server_query(query)
-			if self.parse_json:
-				return result  # Directly return the parsed result as a JSON object
-			else:
-				return json.dumps(result)  # Convert it into a string and then return
+			
+			if self.output == 'pandas':
+				return pd.DataFrame(result)	 # Convert dict results to DataFrame
+			elif self.output == 'csv':
+				raise ValueError("CSV output is not supported in server_mode.")
+			else:  # Assume 'dict' output
+				return result
+			
 		else:
+			# Local mode handling (existing logic)
 			output = self._run_query(query)
-			if self.parse_json:
+			if self.output == 'csv':
+				return output
+			elif self.output == 'pandas':
+				try:
+					json_output = json.loads(output)
+					return pd.DataFrame(json_output)
+				except ValueError:
+					return pd.DataFrame([{"error": "Invalid JSON output: {}".format(output.strip())}])
+			else:  # Assume 'dict' output
 				try:
 					return json.loads(output)
 				except ValueError:
-					return '[{"error": "%s"}]' % output.strip()
-			return output
+					return [{"error": "Invalid JSON output: {}".format(output.strip())}]
+	#
+	# asnyc query support
+	#
 
-	async def _execute_queries_async(self, queries_list):
-		loop = asyncio.get_event_loop()
+	def _run_server_query_with_new_connection(self, query):
+		conn = None
+		try:
+			# Establish a new connection using credentials and configurations
+			conn = psycopg2.connect(
+				dbname='stackql',
+				user='stackql',
+				host=self.server_address,
+				port=self.server_port
+			)
+			# Create a new cursor and execute the query
+			with conn.cursor(cursor_factory=RealDictCursor) as cur:
+				cur.execute(query)
+				try:
+					rows = cur.fetchall()
+				except psycopg2.ProgrammingError as e:
+					if str(e) == "no results to fetch":
+						rows = []
+					else:
+						raise
+				return rows
+		except psycopg2.OperationalError as oe:
+			print(f"OperationalError while connecting to the server: {oe}")
+		except Exception as e:
+			print(f"Unexpected error while connecting to the server: {e}")
+		finally:
+			# Ensure the connection is always closed, even if an error occurs
+			if conn is not None:
+				conn.close()
 
-		# Use functools.partial to bind the necessary arguments
-		func = functools.partial(_execute_queries_in_parallel, self, queries_list)
+	def _sync_query(self, query, new_connection=False):
+		"""
+		Synchronous function to perform the query.
+		"""
+		if self.server_mode and new_connection:
+			# Directly get the list of dicts; no JSON string conversion needed.
+			result = self._run_server_query_with_new_connection(query)
+		elif self.server_mode:
+			# Also directly get the list of dicts here.
+			result = self._run_server_query(query)  # Assuming this is a method that exists
+		else:
+			# Convert the JSON string to a Python object (list of dicts).
+			result = json.loads(self._run_query(query))
+		# Convert the result to a DataFrame if necessary.
+		if self.output == 'pandas':
+			return pd.DataFrame(result)
+		else:
+			return result
 
-		with ProcessPoolExecutor() as executor:
-			results = await loop.run_in_executor(executor, func)
-
-		# Process results based on their type:
-		combined = []
-		for res in results:
-			if isinstance(res, str):
-				combined.extend(json.loads(res))
-			elif isinstance(res, list):
-				combined.extend(res)
-			else:
-				# Optionally handle other types, or raise an error.
-				pass
-
-		return combined
-
-	def executeQueriesAsync(self, queries):
+	async def executeQueriesAsync(self, queries):
 		"""
 		Executes multiple StackQL queries asynchronously using the current StackQL instance.
 
 		This method utilizes an asyncio event loop to concurrently run a list of provided 
 		StackQL queries. Each query is executed independently, and the combined results of 
-		all the queries are returned as a list of JSON objects.
+		all the queries are returned as a list of JSON objects if 'dict' output mode is selected,
+		or as a concatenated DataFrame if 'pandas' output mode is selected.
 
-		Note: The order of the results in the returned list may not necessarily correspond
-		to the order of the queries in the input list due to the asynchronous nature of execution.
+		The order of the results in the returned list or DataFrame may not necessarily 
+		correspond to the order of the queries in the input list due to the asynchronous nature 
+		of execution.
 
 		:param queries: A list of StackQL query strings to be executed concurrently.
 		:type queries: list[str], required
-
-		:return: A list of results corresponding to each query. Each result is a JSON object.
-		:rtype: list[dict]
+		:return: A list of results corresponding to each query. Each result is a JSON object or a DataFrame.
+		:rtype: list[dict] or pd.DataFrame
+		:raises ValueError: If method is used in `server_mode` on an unsupported OS (anything other than Linux).
+		:raises ValueError: If an unsupported output mode is selected (anything other than 'dict' or 'pandas').
 
 		Example:
 			>>> queries = [
 			>>> "SELECT '%s' as region, instanceType, COUNT(*) as num_instances FROM aws.ec2.instances WHERE region = '%s' GROUP BY instanceType" % (region, region)
 			>>> for region in regions ]
 			>>> res = stackql.executeQueriesAsync(queries)
+
+		Note:
+			- When operating in `server_mode`, this method is not supported.
 		"""
-		
-		loop = asyncio.new_event_loop()
-		asyncio.set_event_loop(loop)
-		combined_results = loop.run_until_complete(self._execute_queries_async(queries))
-		loop.close()
-		return combined_results
+		if self.server_mode:
+			raise ValueError("executeQueriesAsync are not supported in sever_mode.")
+		if self.output not in ['dict', 'pandas']:
+			raise ValueError("executeQueriesAsync supports only 'dict' or 'pandas' output modes.")
+		async def main():
+			with ThreadPoolExecutor() as executor:
+				# New connection is created for each query in server_mode, reused otherwise.
+				new_connection = self.server_mode
+				# Gather results from all the async calls.
+				loop = asyncio.get_event_loop()
+				futures = [loop.run_in_executor(executor, self._sync_query, query, new_connection) for query in queries]
+				results = await asyncio.gather(*futures)
+			# Concatenate DataFrames if output mode is 'pandas'.
+			if self.output == 'pandas':
+				return pd.concat(results, ignore_index=True)
+			else:
+				return [item for sublist in results for item in sublist]
+		# Running the async function
+		return await main()

@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.1.1 (2023-10-16)
+
+### Updates
+
+ * updated class parameters
+ * added additional tests
+
 ## v3.0.0 (2023-10-11)
 
 ### Updates

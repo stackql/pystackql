@@ -1,11 +1,3 @@
-# import subprocess, platform, json, site, os, requests, zipfile, pkg_resources
-
-# def _get_package_version(package_name):
-#     try:
-#         return pkg_resources.get_distribution(package_name).version
-#     except pkg_resources.DistributionNotFound:
-#         return None
-
 import subprocess, platform, json, site, os, requests, zipfile
 
 # Conditional import for package metadata retrieval
@@ -143,6 +135,3 @@ def _format_auth(auth):
 		error_message = e.args[0]
 		print("ERROR: [_format_auth] %s" % (error_message))
 		exit(1)
-
-def _execute_queries_in_parallel(stackql_instance, queries):
-    return [stackql_instance.execute(query) for query in queries]

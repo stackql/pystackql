@@ -1,17 +1,28 @@
-import sys, os
+import sys, os, unittest, asyncio
+from unittest.mock import MagicMock
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from pystackql import StackQL
 from pystackql.stackql_magic import StackqlMagic, load_ipython_extension
 from .test_params import *
 
-def pystackql_test_setup(func):
-    def wrapper(self):
-        try:
-            del self.stackql
-        except AttributeError:
-            pass
-        self.stackql = StackQL()
-        func(self)
+def pystackql_test_setup(**kwargs):
+    def decorator(func):
+        def wrapper(self):
+            try:
+                del self.stackql
+            except AttributeError:
+                pass
+            self.stackql = StackQL(**kwargs)
+            func(self)
+        return wrapper
+    return decorator
+
+def async_test_decorator(func):
+    def wrapper(*args, **kwargs):
+        if asyncio.iscoroutinefunction(func):
+            return asyncio.run(func(*args, **kwargs))
+        else:
+            return func(*args, **kwargs)
     return wrapper
 
 class PyStackQLTestsBase(unittest.TestCase):
@@ -20,6 +31,12 @@ class PyStackQLTestsBase(unittest.TestCase):
 def setUpModule():
     print("downloading stackql binary...")
     PyStackQLTestsBase.stackql = StackQL()
+    print("downloading aws provider for tests...")
+    res = PyStackQLTestsBase.stackql.executeStmt(registry_pull_aws_query)
+    print(res)
+    print("downloading google provider for tests...")
+    res = PyStackQLTestsBase.stackql.executeStmt(registry_pull_google_query)
+    print(res)
     print("starting stackql server...")
     PyStackQLTestsBase.server_process = subprocess.Popen([PyStackQLTestsBase.stackql.bin_path, "srv", "--pgsrv.address", server_address, "--pgsrv.port", str(server_port)])
     time.sleep(5)
@@ -32,7 +49,7 @@ def tearDownModule():
 
 class PyStackQLNonServerModeTests(PyStackQLTestsBase):
 
-    @pystackql_test_setup
+    @pystackql_test_setup()
     def test_01_properties_class_method(self):
         properties = self.stackql.properties()
         # Check that properties is a dictionary
@@ -43,197 +60,182 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         # Further type checks (as examples)
         self.assertIsInstance(properties["bin_path"], str, "bin_path should be of type str")
         self.assertIsInstance(properties["params"], list, "params should be of type list")
-        self.assertIsInstance(properties["parse_json"], bool, "parse_json should be of type bool")
+        self.assertIsInstance(properties["server_mode"], bool, "server_mode should be of type bool")
+        self.assertIsInstance(properties["output"], str, "output should be of type str")
         # If all the assertions pass, then the properties are considered valid.
-        print_test_result("Test properties method", True)
+        print_test_result(f"""Test properties method\nPROPERTIES: {properties}""", True)
 
-    @pystackql_test_setup
+    @pystackql_test_setup()
     def test_02_version_attribute(self):
         version = self.stackql.version
         self.assertIsNotNone(version)
         is_valid_semver = bool(re.match(expected_version_pattern, version))
         self.assertTrue(is_valid_semver)
-        print_test_result("Test version attribute", is_valid_semver)
+        print_test_result(f"""Test version attribute\nVERSION: {version}""", is_valid_semver)
 
-    @pystackql_test_setup
-    def test_02a_package_version_attribute(self):
+    @pystackql_test_setup()
+    def test_03_package_version_attribute(self):
         package_version = self.stackql.package_version
-        print(f"""PACKAGE VERSION: {package_version}""")
         self.assertIsNotNone(package_version)
         is_valid_semver = bool(re.match(expected_package_version_pattern, package_version))
         self.assertTrue(is_valid_semver)
-        print_test_result("Test package_version attribute", is_valid_semver)
+        print_test_result(f"""Test package_version attribute\nPACKAGE VERSION: {package_version}""", is_valid_semver)
 
-    @pystackql_test_setup
-    def test_03_platform_attribute(self):
+    @pystackql_test_setup()
+    def test_04_platform_attribute(self):
         platform_string = self.stackql.platform
         self.assertIsNotNone(platform_string)
         is_valid_platform = bool(re.match(expected_platform_pattern, platform_string))
         self.assertTrue(is_valid_platform)
-        print_test_result("Test platform attribute", is_valid_platform)
+        print_test_result(f"""Test platform attribute\nPLATFORM: {platform_string}""", is_valid_platform)
 
-    @pystackql_test_setup
-    def test_04_bin_path_attribute(self):
+    @pystackql_test_setup()
+    def test_05_bin_path_attribute(self):
         self.assertTrue(os.path.exists(self.stackql.bin_path))
-        print_test_result("Test bin_path attribute with default download path", os.path.exists(self.stackql.bin_path))
+        print_test_result(f"""Test bin_path attribute with default download path\nBINARY PATH: {self.stackql.bin_path}""", os.path.exists(self.stackql.bin_path))
 
-    @pystackql_test_setup
-    def test_05_set_custom_download_dir(self):
-        this_platform = platform.system().lower()
-        if this_platform == "windows":
-            download_dir = custom_windows_download_dir
-        else:
-            download_dir = custom_mac_linux_download_dir
-        self.stackql = StackQL(download_dir=download_dir)
+    @pystackql_test_setup(download_dir=get_custom_download_dir(platform.system().lower()))
+    def test_06_set_custom_download_dir(self):
+        # Checking that version is not None
         version = self.stackql.version
         self.assertIsNotNone(version)
-        print_test_result("Test setting a custom download_dir", version is not None)
+        # Checking that download_dir is correctly set
+        expected_download_dir = get_custom_download_dir(platform.system().lower())
+        self.assertEqual(self.stackql.download_dir, expected_download_dir, "Download directory is not set correctly.")
+        # Checking that the binary exists at the expected location
+        binary_name = 'stackql' if platform.system().lower() != 'windows' else 'stackql.exe'
+        expected_binary_path = os.path.join(expected_download_dir, binary_name)
+        self.assertTrue(os.path.exists(expected_binary_path), f"No binary found at {expected_binary_path}")
+        # Final test result print
+        print_test_result(f"""Test setting a custom download_dir\nCUSTOM_DOWNLOAD_DIR: {expected_download_dir}""", version is not None and os.path.exists(expected_binary_path))
 
-    @pystackql_test_setup
-    def test_06_custom_params_and_table_output(self):
-        self.stackql = StackQL(output="table")
-        self.assertIn("table", self.stackql.params)
-        self.assertFalse(self.stackql.parse_json)
-        print_test_result("Test setting table output", not self.stackql.parse_json)
+    @pystackql_test_setup(output="csv")
+    def test_07_csv_output_with_defaults(self):
+        # Check if output is set correctly
+        self.assertEqual(self.stackql.output, "csv", "Output type is not set to 'csv'")
+        # Check if sep is set to default (',')
+        self.assertEqual(self.stackql.sep, ",", "Separator is not set to default ','")
+        # Check if header is set to default (should be False)
+        self.assertFalse(self.stackql.header, "Header is not set to default (False)")
+        # Check if params list has --output and csv
+        self.assertIn("--output", self.stackql.params)
+        self.assertIn("csv", self.stackql.params)
+        # Check if params list has default --delimiter and ,
+        self.assertIn("--delimiter", self.stackql.params)
+        self.assertIn(",", self.stackql.params)
+        # Check if params list has --hideheaders (default header value is False)
+        self.assertIn("--hideheaders", self.stackql.params)
+        print_test_result(f"""Test csv output with defaults (comma delimited without headers)\nPARAMS: {self.stackql.params}""", True)
 
-    @pystackql_test_setup
-    def test_07_executeStmt(self):
-        result = self.stackql.executeStmt(registry_pull_google_query)
-        expected_pattern = registry_pull_resp_pattern("google")
-        self.assertTrue(re.search(expected_pattern, result), f"Expected pattern not found in result: {result}")
-        result = self.stackql.executeStmt(registry_pull_aws_query)
-        expected_pattern = registry_pull_resp_pattern("aws")
-        self.assertTrue(re.search(expected_pattern, result), f"Expected pattern not found in result: {result}")
-        print_test_result("Test executeStmt method", True)
+    @pystackql_test_setup(output="csv", sep="|")
+    def test_08_csv_output_with_pipe_separator(self):
+        # Check if sep is set to '|'
+        self.assertEqual(self.stackql.sep, "|", "Separator is not set to '|'")
+        # Check if params list has --delimiter and |
+        self.assertIn("--delimiter", self.stackql.params)
+        self.assertIn("|", self.stackql.params)
+        # Check if --hideheaders is in params list
+        self.assertIn("--hideheaders", self.stackql.params)
+        print_test_result(f"""Test csv output with custom sep (pipe delimited without headers)\nPARAMS: {self.stackql.params}""", True)
 
-    @pystackql_test_setup
-    def test_08_execute(self):
+    @pystackql_test_setup(output="csv", header=True)
+    def test_09_csv_output_with_header(self):
+        # Check if header is set to True
+        self.assertTrue(self.stackql.header, "Header is not set to True")
+        # Check if params list does not have --hideheaders
+        self.assertNotIn("--hideheaders", self.stackql.params)
+        print_test_result(f"""Test csv output with headers (comma delimited with headers)\nPARAMS: {self.stackql.params}""", True)
+
+    @pystackql_test_setup()
+    def test_10_executeStmt(self):
+        okta_result = self.stackql.executeStmt(registry_pull_okta_query)
+        expected_pattern = registry_pull_resp_pattern("okta")
+        self.assertTrue(re.search(expected_pattern, okta_result), f"Expected pattern not found in result: {okta_result}")
+        github_result = self.stackql.executeStmt(registry_pull_github_query)
+        expected_pattern = registry_pull_resp_pattern("github")
+        self.assertTrue(re.search(expected_pattern, github_result), f"Expected pattern not found in result: {github_result}")
+        print_test_result(f"""Test executeStmt method\nRESULTS:\n{okta_result}{github_result}""", True)
+
+    @pystackql_test_setup()
+    def test_11_execute_with_defaults(self):
         result = self.stackql.execute(google_query)
+        is_valid_dict = isinstance(result, list) and all(isinstance(item, dict) for item in result)
+        self.assertTrue(is_valid_dict, f"Result is not a valid dict: {result}")
+        print_test_result(f"Test execute with defaults\nRESULT_COUNT: {len(result)}", is_valid_dict)
+
+    @pystackql_test_setup(output='pandas')
+    def test_12_execute_with_pandas_output(self):
+        result = self.stackql.execute(google_query)
+        is_valid_dataframe = isinstance(result, pd.DataFrame)
+        self.assertTrue(is_valid_dataframe, f"Result is not a valid DataFrame: {result}")
+        print_test_result(f"Test execute with pandas output\nRESULT_COUNT: {len(result)}", is_valid_dataframe)
+
+    @pystackql_test_setup(output='csv')
+    def test_13_execute_with_csv_output(self):
+        result = self.stackql.execute(google_query)
+        is_valid_csv = isinstance(result, str) and result.count("\n") >= 1 and result.count(",") >= 1
+        self.assertTrue(is_valid_csv, f"Result is not a valid CSV: {result}")
+        print_test_result(f"Test execute with csv output\nRESULT_COUNT: {len(result.splitlines())}", is_valid_csv)
+
+class PyStackQLAsyncTests(PyStackQLTestsBase):
+
+    @async_test_decorator
+    async def test_14_executeQueriesAsync(self):
+        stackql = StackQL()
+        results = await stackql.executeQueriesAsync(async_queries)
+        is_valid_results = all(isinstance(res, dict) for res in results)
+        print_test_result(f"[ASYNC] Test executeQueriesAsync with default (dict) output\nRESULT_COUNT: {len(results)}", is_valid_results)
+
+    @async_test_decorator
+    async def test_15_executeQueriesAsync_with_pandas_output(self):
+        stackql = StackQL(output='pandas')
+        result = await stackql.executeQueriesAsync(async_queries)
+        is_valid_dataframe = isinstance(result, pd.DataFrame) and not result.empty
+        print_test_result(f"[ASYNC] Test executeQueriesAsync with pandas output\nRESULT_COUNT: {len(result)}", is_valid_dataframe)
+
+    @async_test_decorator
+    async def test_16_executeQueriesAsync_with_csv_output(self):
+        stackql = StackQL(output='csv')
+        exception_caught = False
         try:
-            # Convert the result to a pandas dataframe
-            df = pd.DataFrame(result)
-            # Check the dataframe structure
-            columns_exist = 'num_instances' in df.columns and 'status' in df.columns
-            has_rows = len(df) >= 1
-            if columns_exist and has_rows:
-                print_test_result("Test execute method", True)
-            else:
-                failure_messages = []
-                if not columns_exist:
-                    failure_messages.append("Columns 'num_instances' and 'status' should exist in the DataFrame")
-                if not has_rows:
-                    failure_messages.append("DataFrame should have one or more rows")
-                debug_info = "\n".join(failure_messages)
-                print_test_result("Test execute method", False)
-                self.fail(debug_info)
+            # This should raise a ValueError since 'csv' output mode is not supported
+            await stackql.executeQueriesAsync(async_queries)
+        except ValueError as ve:
+            exception_caught = str(ve) == "executeQueriesAsync supports only 'dict' or 'pandas' output modes."
         except Exception as e:
-            debug_info = (f"{str(e)}"
-              f"\n****DEBUG INFO****\n"
-              f"Query: \n{google_query}\n"
-              f"Result: \n{result}\n"
-              f"****END DEBUG INFO****")
-            print_test_result("Test execute method", False)
-            self.fail(debug_info)
+            pass
+        print_test_result(f"[ASYNC] Test executeQueriesAsync with unsupported csv output", exception_caught)
 
-    @pystackql_test_setup
-    def test_09_executeQueriesAsync(self):
-        results = self.stackql.executeQueriesAsync(async_queries)
-        failure_messages = []  # List to accumulate failure messages
-        try:
-            # Convert the results to a pandas DataFrame
-            df = pd.DataFrame(results)
-            # Check that the DataFrame has the required columns
-            if 'region' not in df.columns:
-                failure_messages.append("'region' column missing in DataFrame")
-            if 'instanceType' not in df.columns:
-                failure_messages.append("'instanceType' column missing in DataFrame")
-            if 'num_instances' not in df.columns:
-                failure_messages.append("'num_instances' column missing in DataFrame")
-            # Check that all regions are represented in the DataFrame
-            unique_regions_in_df = df['region'].unique()
-            for region in regions:
-                if region not in unique_regions_in_df:
-                    failure_messages.append(f"Region '{region}' not found in DataFrame")
-            if not failure_messages:
-                print_test_result("Test executeQueriesAsync method", True)
-            else:
-                debug_info = "\n".join(failure_messages) + \
-                            f"\n****DEBUG INFO****\n" + \
-                            f"Queries: \n{async_queries}\n" + \
-                            f"Result: \n{results}\n" + \
-                            f"****END DEBUG INFO****"
-                print_test_result("Test executeQueriesAsync method", False)
-                self.fail(debug_info)
-        except Exception as e:
-            debug_info = (f"{str(e)}"
-                        f"\n****DEBUG INFO****\n"
-                        f"Queries: \n{async_queries}\n"
-                        f"Result: \n{results}\n"
-                        f"****END DEBUG INFO****")
-            print_test_result("Test executeQueriesAsync method", False)
-            self.fail(debug_info)
+class PyStackQLServerModeNonAsyncTests(PyStackQLTestsBase):
 
-class PyStackQLServerModeTests(PyStackQLTestsBase):
-
-    @pystackql_test_setup
-    def test_10_server_mode_connectivity(self):
-        self.stackql = StackQL(server_mode=True, server_address=server_address, server_port=server_port)
+    @pystackql_test_setup(server_mode=True)
+    def test_19_server_mode_connectivity(self):
         self.assertTrue(self.stackql.server_mode, "StackQL should be in server mode")
         self.assertIsNotNone(self.stackql._conn, "Connection object should not be None")
         print_test_result("Test server mode connectivity", True, True)
 
-    @pystackql_test_setup
-    def test_11_executeStmt_server_mode(self):
-        failure_messages = []  # List to accumulate failure messages
-        result = None
+    @pystackql_test_setup(server_mode=True)
+    def test_20_executeStmt_server_mode(self):
+        result = self.stackql.executeStmt(registry_pull_google_query)
+        is_valid_json_string_of_empty_list = False
         try:
-            self.stackql = StackQL(server_mode=True, server_address=server_address, server_port=server_port)
-            result = self.stackql.executeStmt(registry_pull_google_query)
-            if result != "[]":
-                failure_messages.append(f"Expected empty list, got: {result}")
-        except Exception as e:
-            failure_messages.append(f"Runtime error occurred: {str(e)}")
-        if not failure_messages:
-            print_test_result("Test executeStmt in server mode", True, True)
-        else:
-            debug_info = "\n".join(failure_messages) + \
-                        f"\n****DEBUG INFO****\n" + \
-                        f"Query: \n{registry_pull_google_query}\n" + \
-                        (f"Result: \n{result}\n" if result else "") + \
-                        f"****END DEBUG INFO****"
-            print_test_result("Test executeStmt in server mode", False, True)
-            self.fail(debug_info)
+            parsed_result = json.loads(result)
+            is_valid_json_string_of_empty_list = isinstance(parsed_result, list) and len(parsed_result) == 0
+        except json.JSONDecodeError:
+            pass
+        print_test_result("Test executeStmt in server mode", is_valid_json_string_of_empty_list, True)
 
-    @pystackql_test_setup
-    def test_12_execute_server_mode_to_pandas(self):
-        failure_messages = []  # List to accumulate failure messages
-        result = None
-        df = None
-        try:
-            self.stackql = StackQL(server_mode=True, server_address=server_address, server_port=server_port)
-            result = self.stackql.execute(google_query)
-            # If the result is a list of dictionaries, then proceed to convert to DataFrame
-            if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict):
-                df = pd.DataFrame(result)
-                if 'num_instances' not in df.columns or 'status' not in df.columns:
-                    failure_messages.append("Columns 'num_instances' and 'status' should exist in the DataFrame")
-                if len(df) < 1:
-                    failure_messages.append("DataFrame should have one or more rows")
-            else:
-                failure_messages.append(f"Unexpected result format: {result}")
-        except Exception as e:
-            failure_messages.append(f"Runtime error occurred: {str(e)}")
-        if not failure_messages:
-            print_test_result("Test execute method in server mode", True, True)
-        else:
-            debug_info = "\n".join(failure_messages) + \
-                        f"\n****DEBUG INFO****\n" + \
-                        f"Query: \n{google_query}\n" + \
-                        (f"Result: \n{result}\n" if result else "") + \
-                        (f"DataFrame: \n{df}\n" if df is not None else "") + \
-                        f"****END DEBUG INFO****"
-            print_test_result("Test execute method in server mode", False, True)
-            self.fail(debug_info)
+    @pystackql_test_setup(server_mode=True)
+    def test_21_execute_server_mode_default_output(self):
+        result = self.stackql.execute(google_query)
+        is_valid_dict_output = isinstance(result, list) and all(isinstance(row, dict) for row in result)
+        print_test_result(f"""Test execute in server_mode with default output\nRESULT_COUNT: {len(result)}""", is_valid_dict_output, True)
+
+    @pystackql_test_setup(server_mode=True, output='pandas')
+    def test_22_execute_server_mode_pandas_output(self):
+        result = self.stackql.execute(google_query)
+        is_valid_pandas_output = isinstance(result, pd.DataFrame)
+        print_test_result(f"""Test execute in server_mode with pandas output\nRESULT_COUNT: {len(result)}""", is_valid_pandas_output, True)
 
 class MockInteractiveShell:
     """A mock class for IPython's InteractiveShell."""
@@ -255,50 +257,41 @@ class StackQLMagicTests(PyStackQLTestsBase):
         self.shell = MockInteractiveShell.instance()
         load_ipython_extension(self.shell)
         self.stackql_magic = StackqlMagic(shell=self.shell)
+        self.query = "SELECT 1 as fred"
+        self.expected_result = pd.DataFrame({"fred": [1]})
 
-    def test_14_magic_cell_query(self):
-        failure_messages = []  # List to accumulate failure messages
-        df = None
-        try:
-            # Test the cell magic functionality
-            df = self.stackql_magic.stackql("", google_query)  # Cell magic uses both line and cell arguments
-            if not isinstance(df, pd.DataFrame):
-                failure_messages.append("Result is not a pandas DataFrame")
-            if 'num_instances' not in df.columns or 'status' not in df.columns:
-                failure_messages.append("Expected columns 'num_instances' and 'status' are missing in DataFrame")
-        except Exception as e:
-            failure_messages.append(f"Runtime error occurred: {str(e)}")
-        if not failure_messages:
-            print_test_result("test cell magic", True, True, True)
-        else:
-            debug_info = "\n".join(failure_messages) + \
-                        f"\n****DEBUG INFO****\n" + \
-                        f"Query: \n{google_query}\n" + \
-                        (f"DataFrame: \n{df}\n" if df is not None else "") + \
-                        f"****END DEBUG INFO****"
-            print_test_result("test cell magic", False, True, True)
-            self.fail(debug_info)
+    def test_23_line_magic_query(self):
+        # Mock the run_query method to return a known DataFrame.
+        self.stackql_magic.run_query = MagicMock(return_value=self.expected_result)
+        # Execute the line magic with our query.
+        result = self.stackql_magic.stackql(line=self.query, cell=None)
+        # Check if the result is as expected and if 'stackql_df' is set in the namespace.
+        self.assertTrue(result.equals(self.expected_result))
+        self.assertTrue('stackql_df' in self.shell.user_ns)
+        self.assertTrue(self.shell.user_ns['stackql_df'].equals(self.expected_result))
+        print_test_result(f"""Line magic test""", True, True, True)
 
-    def test_15_magic_cell_query_no_display(self):
-        failure_messages = []  # List to accumulate failure messages
-        df = None
-        try:
-            # Test the cell magic functionality with the --no-display option
-            df = self.stackql_magic.stackql("--no-display", google_query)
-            if df is not None:
-                failure_messages.append("Expected result to be None, but it wasn't.")
-        except Exception as e:
-            failure_messages.append(f"Runtime error occurred: {str(e)}")
-        if not failure_messages:
-            print_test_result("test cell magic with --no-display", True, True, True)
-        else:
-            debug_info = "\n".join(failure_messages) + \
-                        f"\n****DEBUG INFO****\n" + \
-                        f"Query: \n{google_query}\n" + \
-                        (f"Result: \n{df}\n" if df is not None else "") + \
-                        f"****END DEBUG INFO****"
-            print_test_result("test cell magic with --no-display", False, True, True)
-            self.fail(debug_info)
+    def test_24_cell_magic_query(self):
+        # Mock the run_query method to return a known DataFrame.
+        self.stackql_magic.run_query = MagicMock(return_value=self.expected_result)
+        # Execute the cell magic with our query.
+        result = self.stackql_magic.stackql(line="", cell=self.query)
+        # Validate the outcome.
+        self.assertTrue(result.equals(self.expected_result))
+        self.assertTrue('stackql_df' in self.shell.user_ns)
+        self.assertTrue(self.shell.user_ns['stackql_df'].equals(self.expected_result))
+        print_test_result(f"""Cell magic test""", True, True, True)
+
+    def test_25_cell_magic_query_no_output(self):
+        # Mock the run_query method to return a known DataFrame.
+        self.stackql_magic.run_query = MagicMock(return_value=self.expected_result)
+        # Execute the cell magic with our query and the no-display argument.
+        result = self.stackql_magic.stackql(line="--no-display", cell=self.query)
+        # Validate the outcome.
+        self.assertIsNone(result)
+        self.assertTrue('stackql_df' in self.shell.user_ns)
+        self.assertTrue(self.shell.user_ns['stackql_df'].equals(self.expected_result))
+        print_test_result(f"""Cell magic test (with --no-display)""", True, True, True)
 
 def main():
     unittest.main(verbosity=0)

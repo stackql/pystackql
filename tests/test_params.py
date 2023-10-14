@@ -8,20 +8,30 @@ server_address = "127.0.0.1"
 
 expected_properties = [
     "bin_path", "download_dir", "package_version", "params", 
-    "parse_json", "platform", "server_mode", "sha", "version"
+    "output", "platform", "server_mode", "sha", "version"
 ]
 
 expected_version_pattern = r'^v?(\d+\.\d+\.\d+)$'
 expected_package_version_pattern = r'^(\d+\.\d+\.\d+)$'
 
 expected_platform_pattern = r'^(Windows|Linux|Darwin) (\w+) \(([^)]+)\), Python (\d+\.\d+\.\d+)$'
-custom_windows_download_dir = 'C:\\temp'
-custom_mac_linux_download_dir = '/tmp'
+# custom_windows_download_dir = 'C:\\temp'
+# custom_mac_linux_download_dir = '/tmp'
+def get_custom_download_dir(platform_name):
+    custom_download_dirs = {
+        'windows': 'C:\\temp',
+        'darwin': '/tmp',
+        'linux': '/tmp'
+    }
+    return custom_download_dirs.get(platform_name, '/tmp')
+
 registry_pull_google_query = "REGISTRY PULL google"
 registry_pull_aws_query = "REGISTRY PULL aws"
+registry_pull_okta_query = "REGISTRY PULL okta"
+registry_pull_github_query = "REGISTRY PULL github"
 
 def registry_pull_resp_pattern(provider):
-    return r"%s provider, version 'v\d+\.\d+\.\d+' successfully installed" % provider
+    return r"%s provider, version 'v\d+\.\d+\.\d+' successfully installed\s*" % provider
 
 google_query = f"""
 SELECT status, count(*) as num_instances

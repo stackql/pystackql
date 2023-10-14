@@ -26,7 +26,7 @@ author = 'StackQL Studios'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '3.0.0'
+release = '3.1.1'
 
 
 # -- General configuration ---------------------------------------------------

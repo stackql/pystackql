@@ -22,7 +22,7 @@ class StackqlMagic(Magics):
         """
         from . import StackQL
         super(StackqlMagic, self).__init__(shell)
-        self.stackql_instance = StackQL(server_mode=True, server_address="127.0.0.1", server_port=5466)
+        self.stackql_instance = StackQL(server_mode=True, output='pandas')
 
     def get_rendered_query(self, data):
         """
@@ -38,20 +38,15 @@ class StackqlMagic(Magics):
 
     def run_query(self, query):
         """
-        Execute an SQL query against the StackQL database.
+        Execute a StackQL query
         
-        :param query: SQL query to be executed.
+        :param query: StackQL query to be executed.
         :type query: str
-        :return: Query results, returned as a Pandas DataFrame or raw output.
+        :return: Query results, returned as a Pandas DataFrame.
         :rtype: pandas.DataFrame or str
         """
-        result = self.stackql_instance.execute(query)
-        if self.stackql_instance.parse_json:
-            if isinstance(result, list) and all(isinstance(item, dict) for item in result):
-                return pd.DataFrame(result)
-            return pd.read_json(result)
-        return result
-
+        return self.stackql_instance.execute(query)
+    
     @line_cell_magic
     def stackql(self, line, cell=None):
         """
@@ -61,9 +56,9 @@ class StackqlMagic(Magics):
         - As a line magic: `%stackql QUERY`
         - As a cell magic: `%%stackql [OPTIONS]` followed by the QUERY in the next line.
         
-        :param line: The arguments and/or SQL query when used as line magic.
-        :param cell: The SQL query when used as cell magic.
-        :return: SQL query results as a named Pandas DataFrame (`stackql_df`).
+        :param line: The arguments and/or StackQL query when used as line magic.
+        :param cell: The StackQL query when used as cell magic.
+        :return: StackQL query results as a named Pandas DataFrame (`stackql_df`).
         """
         is_cell_magic = cell is not None
 
