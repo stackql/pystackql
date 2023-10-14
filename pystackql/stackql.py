@@ -5,12 +5,12 @@ from ._util import (
     _get_binary_name,
     _setup,
     _get_version,
-    _format_auth,
-    _execute_queries_in_parallel
+    _format_auth
 )
 import sys, subprocess, json, os, asyncio, functools, psycopg2
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from psycopg2.extras import RealDictCursor
+import pandas as pd
 
 class StackQL:
 	"""
@@ -151,9 +151,8 @@ class StackQL:
 		:raises: psycopg2.ProgrammingError for issues related to the SQL query, 
 				unless the error is "no results to fetch", in which case an empty list is returned.
 		"""
-		conn = self._connect_to_server()
 		try:
-			cur = conn.cursor(cursor_factory=RealDictCursor)
+			cur = self._conn.cursor(cursor_factory=RealDictCursor)
 			cur.execute(query)
 			rows = cur.fetchall()
 			cur.close()
@@ -429,81 +428,124 @@ class StackQL:
 			return self._run_query(query, is_statement=True)
 	
 	def execute(self, query):
-		"""Executes a query using the StackQL instance and returns the output as a string 
-			or JSON object depending on the value of `parse_json` property.
+		"""
+		Executes a query using the StackQL instance and returns the output 
+		in the format specified by the `output` attribute.
 
-		Depending on the `server_mode` attribute of the instance, this method either runs the 
-		query against the StackQL server or executes it locally using a subprocess. 
-
-		If the `parse_json` attribute is set to True, the method tries to return the result 
-		as a JSON object. If parsing fails (in local execution), it returns an error message 
-		within a JSON string.
+		Depending on the `server_mode` and `output` attribute of the instance, 
+		this method either runs the query against the StackQL server or executes 
+		it locally using a subprocess, returning the data in a dictionary, Pandas 
+		DataFrame, or CSV format.
 
 		:param query: The StackQL query string to be executed.
 		:type query: str
 
-		:return: The output result of the query. Depending on the `parse_json` attribute and 
-				the mode of execution, the result can be a JSON object, a JSON string, or a 
-				raw string.
-		:rtype: str or dict
+		:return: The output result of the query. Depending on the `output` attribute, 
+				the result can be a dictionary, a Pandas DataFrame, or a raw CSV string.
+		:rtype: dict, pd.DataFrame, or str
 
-		Note: If `server_mode` is enabled and `parse_json` is True, the result is directly 
-			returned as a JSON object.
+		Note: In server_mode, if `output` is set to 'pandas', the result is converted into a
+			Pandas DataFrame; otherwise, it is returned as a dictionary by default. CSV output
+			is currently not supported in server_mode.
 		"""
 		if self.server_mode:
 			# Use server mode
 			result = self._run_server_query(query)
-			if self.parse_json:
-				return result  # Directly return the parsed result as a JSON object
-			else:
-				return json.dumps(result)  # Convert it into a string and then return
+			
+			if self.output == 'pandas':
+				return pd.DataFrame(result)	 # Convert dict results to DataFrame
+			elif self.output == 'csv':
+				raise ValueError("CSV output is not supported in server_mode.")
+			else:  # Assume 'dict' output
+				return result
+			
 		else:
+			# Local mode handling (existing logic)
 			output = self._run_query(query)
-			if self.parse_json:
+			if self.output == 'csv':
+				return output
+			elif self.output == 'pandas':
+				try:
+					json_output = json.loads(output)
+					return pd.DataFrame(json_output)
+				except ValueError:
+					return pd.DataFrame([{"error": "Invalid JSON output: {}".format(output.strip())}])
+			else:  # Assume 'dict' output
 				try:
 					return json.loads(output)
 				except ValueError:
-					return '[{"error": "%s"}]' % output.strip()
-			return output
+					return [{"error": "Invalid JSON output: {}".format(output.strip())}]
+	#
+	# asnyc query support
+	#
 
-	async def _execute_queries_async(self, queries_list):
-		loop = asyncio.get_event_loop()
+	def _run_server_query_with_new_connection(self, query):
+		conn = None
+		try:
+			# Establish a new connection using credentials and configurations
+			conn = psycopg2.connect(
+				dbname='stackql',
+				user='stackql',
+				host=self.server_address,
+				port=self.server_port
+			)
+			# Create a new cursor and execute the query
+			with conn.cursor(cursor_factory=RealDictCursor) as cur:
+				cur.execute(query)
+				try:
+					rows = cur.fetchall()
+				except psycopg2.ProgrammingError as e:
+					if str(e) == "no results to fetch":
+						rows = []
+					else:
+						raise
+				return rows
+		except psycopg2.OperationalError as oe:
+			print(f"OperationalError while connecting to the server: {oe}")
+		except Exception as e:
+			print(f"Unexpected error while connecting to the server: {e}")
+		finally:
+			# Ensure the connection is always closed, even if an error occurs
+			if conn is not None:
+				conn.close()
 
-		# Use functools.partial to bind the necessary arguments
-		func = functools.partial(_execute_queries_in_parallel, self, queries_list)
+	def _sync_query(self, query, new_connection=False):
+		"""
+		Synchronous function to perform the query.
+		"""
+		if self.server_mode and new_connection:
+			# Directly get the list of dicts; no JSON string conversion needed.
+			result = self._run_server_query_with_new_connection(query)
+		elif self.server_mode:
+			# Also directly get the list of dicts here.
+			result = self._run_server_query(query)  # Assuming this is a method that exists
+		else:
+			# Convert the JSON string to a Python object (list of dicts).
+			result = json.loads(self._run_query(query))
+		# Convert the result to a DataFrame if necessary.
+		if self.output == 'pandas':
+			return pd.DataFrame(result)
+		else:
+			return result
 
-		with ProcessPoolExecutor() as executor:
-			results = await loop.run_in_executor(executor, func)
-
-		# Process results based on their type:
-		combined = []
-		for res in results:
-			if isinstance(res, str):
-				combined.extend(json.loads(res))
-			elif isinstance(res, list):
-				combined.extend(res)
-			else:
-				# Optionally handle other types, or raise an error.
-				pass
-
-		return combined
-
-	def executeQueriesAsync(self, queries):
+	async def executeQueriesAsync(self, queries):
 		"""
 		Executes multiple StackQL queries asynchronously using the current StackQL instance.
 
 		This method utilizes an asyncio event loop to concurrently run a list of provided 
 		StackQL queries. Each query is executed independently, and the combined results of 
-		all the queries are returned as a list of JSON objects.
+		all the queries are returned as a list of JSON objects if 'dict' output mode is selected,
+		or as a concatenated DataFrame if 'pandas' output mode is selected.
 
-		Note: The order of the results in the returned list may not necessarily correspond
-		to the order of the queries in the input list due to the asynchronous nature of execution.
+		Note: The order of the results in the returned list or DataFrame may not necessarily 
+		correspond to the order of the queries in the input list due to the asynchronous nature 
+		of execution.
 
 		:param queries: A list of StackQL query strings to be executed concurrently.
 		:type queries: list[str], required
 
-		:return: A list of results corresponding to each query. Each result is a JSON object.
-		:rtype: list[dict]
+		:return: A list of results corresponding to each query. Each result is a JSON object or a DataFrame.
+		:rtype: list[dict] or pd.DataFrame
 
 		Example:
 			>>> queries = [
@@ -511,9 +553,20 @@ class StackQL:
 			>>> for region in regions ]
 			>>> res = stackql.executeQueriesAsync(queries)
 		"""
-		
-		loop = asyncio.new_event_loop()
-		asyncio.set_event_loop(loop)
-		combined_results = loop.run_until_complete(self._execute_queries_async(queries))
-		loop.close()
-		return combined_results
+		if self.output not in ['dict', 'pandas']:
+			raise ValueError("executeQueriesAsync supports only 'dict' or 'pandas' output modes.")
+		async def main():
+			with ThreadPoolExecutor() as executor:
+				# New connection is created for each query in server_mode, reused otherwise.
+				new_connection = self.server_mode
+				# Gather results from all the async calls.
+				loop = asyncio.get_event_loop()
+				futures = [loop.run_in_executor(executor, self._sync_query, query, new_connection) for query in queries]
+				results = await asyncio.gather(*futures)
+			# Concatenate DataFrames if output mode is 'pandas'.
+			if self.output == 'pandas':
+				return pd.concat(results, ignore_index=True)
+			else:
+				return [item for sublist in results for item in sublist]
+		# Running the async function
+		return await main()

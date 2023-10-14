@@ -135,6 +135,3 @@ def _format_auth(auth):
 		error_message = e.args[0]
 		print("ERROR: [_format_auth] %s" % (error_message))
 		exit(1)
-
-def _execute_queries_in_parallel(stackql_instance, queries):
-    return [stackql_instance.execute(query) for query in queries]
