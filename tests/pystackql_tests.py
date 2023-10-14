@@ -177,34 +177,34 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         self.assertTrue(is_valid_csv, f"Result is not a valid CSV: {result}")
         print_test_result(f"Test execute with csv output\nRESULT_COUNT: {len(result.splitlines())}", is_valid_csv)
 
-# class PyStackQLAsyncTests(PyStackQLTestsBase):
+class PyStackQLAsyncTests(PyStackQLTestsBase):
 
-#     @async_test_decorator
-#     async def test_14_executeQueriesAsync(self):
-#         stackql = StackQL()
-#         results = await stackql.executeQueriesAsync(async_queries)
-#         is_valid_results = all(isinstance(res, dict) for res in results)
-#         print_test_result(f"[ASYNC] Test executeQueriesAsync with default (dict) output\nRESULT_COUNT: {len(results)}", is_valid_results)
+    @async_test_decorator
+    async def test_14_executeQueriesAsync(self):
+        stackql = StackQL()
+        results = await stackql.executeQueriesAsync(async_queries)
+        is_valid_results = all(isinstance(res, dict) for res in results)
+        print_test_result(f"[ASYNC] Test executeQueriesAsync with default (dict) output\nRESULT_COUNT: {len(results)}", is_valid_results)
 
-#     @async_test_decorator
-#     async def test_15_executeQueriesAsync_with_pandas_output(self):
-#         stackql = StackQL(output='pandas')
-#         result = await stackql.executeQueriesAsync(async_queries)
-#         is_valid_dataframe = isinstance(result, pd.DataFrame) and not result.empty
-#         print_test_result(f"[ASYNC] Test executeQueriesAsync with pandas output\nRESULT_COUNT: {len(result)}", is_valid_dataframe)
+    @async_test_decorator
+    async def test_15_executeQueriesAsync_with_pandas_output(self):
+        stackql = StackQL(output='pandas')
+        result = await stackql.executeQueriesAsync(async_queries)
+        is_valid_dataframe = isinstance(result, pd.DataFrame) and not result.empty
+        print_test_result(f"[ASYNC] Test executeQueriesAsync with pandas output\nRESULT_COUNT: {len(result)}", is_valid_dataframe)
 
-#     @async_test_decorator
-#     async def test_16_executeQueriesAsync_with_csv_output(self):
-#         stackql = StackQL(output='csv')
-#         exception_caught = False
-#         try:
-#             # This should raise a ValueError since 'csv' output mode is not supported
-#             await stackql.executeQueriesAsync(async_queries)
-#         except ValueError as ve:
-#             exception_caught = str(ve) == "executeQueriesAsync supports only 'dict' or 'pandas' output modes."
-#         except Exception as e:
-#             pass
-#         print_test_result(f"[ASYNC] Test executeQueriesAsync with unsupported csv output", exception_caught)
+    @async_test_decorator
+    async def test_16_executeQueriesAsync_with_csv_output(self):
+        stackql = StackQL(output='csv')
+        exception_caught = False
+        try:
+            # This should raise a ValueError since 'csv' output mode is not supported
+            await stackql.executeQueriesAsync(async_queries)
+        except ValueError as ve:
+            exception_caught = str(ve) == "executeQueriesAsync supports only 'dict' or 'pandas' output modes."
+        except Exception as e:
+            pass
+        print_test_result(f"[ASYNC] Test executeQueriesAsync with unsupported csv output", exception_caught)
 
 #     @async_test_decorator
 #     async def test_17_executeQueriesAsync_server_mode_default_output(self):
