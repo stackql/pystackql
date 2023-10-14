@@ -7,7 +7,7 @@ from ._util import (
     _get_version,
     _format_auth
 )
-import sys, subprocess, json, os, asyncio, functools, psycopg2, platform
+import sys, subprocess, json, os, asyncio, functools, psycopg2
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from psycopg2.extras import RealDictCursor
 import pandas as pd
@@ -557,10 +557,10 @@ class StackQL:
 			>>> res = stackql.executeQueriesAsync(queries)
 
 		Note:
-			- When operating in `server_mode`, this method is supported only on Linux systems.
+			- When operating in `server_mode`, this method is not supported.
 		"""
-		if self.server_mode and platform.system() != 'Linux':
-			raise ValueError("executeQueriesAsync in sever_mode not supported on MacOS or Linux.")
+		if self.server_mode:
+			raise ValueError("executeQueriesAsync are not supported in sever_mode.")
 		if self.output not in ['dict', 'pandas']:
 			raise ValueError("executeQueriesAsync supports only 'dict' or 'pandas' output modes.")
 		async def main():
