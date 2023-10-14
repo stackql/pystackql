@@ -7,7 +7,7 @@ from ._util import (
     _get_version,
     _format_auth
 )
-import sys, subprocess, json, os, asyncio, functools, psycopg2
+import sys, subprocess, json, os, asyncio, functools, psycopg2, platform
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from psycopg2.extras import RealDictCursor
 import pandas as pd
@@ -539,22 +539,28 @@ class StackQL:
 		all the queries are returned as a list of JSON objects if 'dict' output mode is selected,
 		or as a concatenated DataFrame if 'pandas' output mode is selected.
 
-		Note: The order of the results in the returned list or DataFrame may not necessarily 
+		The order of the results in the returned list or DataFrame may not necessarily 
 		correspond to the order of the queries in the input list due to the asynchronous nature 
 		of execution.
 
 		:param queries: A list of StackQL query strings to be executed concurrently.
 		:type queries: list[str], required
-
 		:return: A list of results corresponding to each query. Each result is a JSON object or a DataFrame.
 		:rtype: list[dict] or pd.DataFrame
+		:raises ValueError: If method is used in `server_mode` on an unsupported OS (anything other than Linux).
+		:raises ValueError: If an unsupported output mode is selected (anything other than 'dict' or 'pandas').
 
 		Example:
 			>>> queries = [
 			>>> "SELECT '%s' as region, instanceType, COUNT(*) as num_instances FROM aws.ec2.instances WHERE region = '%s' GROUP BY instanceType" % (region, region)
 			>>> for region in regions ]
 			>>> res = stackql.executeQueriesAsync(queries)
+
+		Note:
+			- When operating in `server_mode`, this method is supported only on Linux systems.
 		"""
+		if self.server_mode and platform.system() != 'Linux':
+			raise ValueError("executeQueriesAsync in sever_mode not supported on MacOS or Linux.")
 		if self.output not in ['dict', 'pandas']:
 			raise ValueError("executeQueriesAsync supports only 'dict' or 'pandas' output modes.")
 		async def main():

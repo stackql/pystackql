@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.1.0 (2023-10-16)
+
+### Updates
+
+ * updated class parameters
+ * enabled support for async queries in `server_mode` (Linux only)
+ * added additional tests
+
 ## v3.0.0 (2023-10-11)
 
 ### Updates
