@@ -31,6 +31,14 @@ class PyStackQLTestsBase(unittest.TestCase):
 def setUpModule():
     print("downloading stackql binary...")
     PyStackQLTestsBase.stackql = StackQL()
+	# Check whether code is running in GitHub Actions
+    is_github_actions = os.environ.get('GITHUB_ACTIONS') == 'true'
+
+    if not is_github_actions:
+        # Ensure you have the latest version of stackql, only when running locally
+        print("Running tests outside of GitHub Actions, upgrading stackql binary...")
+        PyStackQLTestsBase.stackql.upgrade()
+
     print("downloading aws provider for tests...")
     res = PyStackQLTestsBase.stackql.executeStmt(registry_pull_aws_query)
     print(res)
