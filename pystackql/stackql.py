@@ -214,7 +214,7 @@ class StackQL:
 
 	def __init__(self, 
 				 server_mode=False, 
-				 server_address='0.0.0.0', 
+				 server_address='127.0.0.1', 
 				 server_port=5466, 
 				 download_dir=None, 
 				 output='dict',
