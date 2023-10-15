@@ -22,7 +22,7 @@ class StackQL:
 	
 	server_address: The address of the StackQL server (server_mode only).
 		:type server_address: str
-		:default: '0.0.0.0'
+		:default: '127.0.0.1'
 	
 	server_port: The port of the StackQL server (server_mode only).
 		:type server_port: int
@@ -264,8 +264,6 @@ class StackQL:
 
 		if self.server_mode:
 			# server mode, connect to a server via the postgres wire protocol
-			if this_os == 'Windows':
-				server_address = '127.0.0.1'
 			self.server_address = server_address
 			self.server_port = server_port
    			# establish the connection
