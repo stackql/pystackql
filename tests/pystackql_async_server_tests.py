@@ -25,7 +25,7 @@ def setUpModule():
     print(res)
     print("starting stackql server...")
     PyStackQLTestsBase.server_process = subprocess.Popen([PyStackQLTestsBase.stackql.bin_path, "srv", "--pgsrv.address", server_address, "--pgsrv.port", str(server_port)])
-    time.sleep(5)
+    time.sleep(30)
 
 def tearDownModule():
     print("stopping stackql server...")
