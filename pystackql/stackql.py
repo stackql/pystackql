@@ -557,8 +557,8 @@ class StackQL:
 		Note:
 			- When operating in `server_mode`, this method is not supported.
 		"""
-		# if self.server_mode:
-		# 	raise ValueError("executeQueriesAsync are not supported in sever_mode.")
+		if self.server_mode:
+			raise ValueError("executeQueriesAsync are not supported in sever_mode.")
 		if self.output not in ['dict', 'pandas']:
 			raise ValueError("executeQueriesAsync supports only 'dict' or 'pandas' output modes.")
 		async def main():
