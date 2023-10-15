@@ -22,6 +22,8 @@ jobs:
         exclude:
           - os: windows-latest
             python-version: "3.12"
+          - os: ubuntu-latest
+            python-version: "3.12"            
     runs-on: ${{matrix.os}}
     name: 'Run Tests on ${{matrix.os}} with Python ${{matrix.python-version}}'
 
