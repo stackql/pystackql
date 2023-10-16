@@ -1,6 +1,12 @@
 # Changelog
 
-## v3.1.1 (2023-10-16)
+## v3.1.2 (2023-10-16)
+
+### Updates
+
+ * `pandas` type fixes
+ 
+## v3.1.1 (2023-10-14)
 
 ### Updates
 

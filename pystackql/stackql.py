@@ -12,6 +12,8 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from psycopg2.extras import RealDictCursor
 import pandas as pd
 
+from io import StringIO
+
 class StackQL:
 	"""
 	A class representing an instance of the StackQL query engine.
@@ -453,7 +455,8 @@ class StackQL:
 			result = self._run_server_query(query)
 			
 			if self.output == 'pandas':
-				return pd.DataFrame(result)	 # Convert dict results to DataFrame
+				json_str = json.dumps(result)
+				return pd.read_json(StringIO(json_str))
 			elif self.output == 'csv':
 				raise ValueError("CSV output is not supported in server_mode.")
 			else:  # Assume 'dict' output
@@ -466,8 +469,7 @@ class StackQL:
 				return output
 			elif self.output == 'pandas':
 				try:
-					json_output = json.loads(output)
-					return pd.DataFrame(json_output)
+					return pd.read_json(StringIO(output))
 				except ValueError:
 					return pd.DataFrame([{"error": "Invalid JSON output: {}".format(output.strip())}])
 			else:  # Assume 'dict' output
@@ -475,6 +477,7 @@ class StackQL:
 					return json.loads(output)
 				except ValueError:
 					return [{"error": "Invalid JSON output: {}".format(output.strip())}]
+
 	#
 	# asnyc query support
 	#

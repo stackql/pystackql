@@ -169,18 +169,26 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         result = self.stackql.execute(google_query)
         is_valid_dict = isinstance(result, list) and all(isinstance(item, dict) for item in result)
         self.assertTrue(is_valid_dict, f"Result is not a valid dict: {result}")
-        print_test_result(f"Test execute with defaults\nRESULT_COUNT: {len(result)}", is_valid_dict)
+        print_test_result(f"Test execute with defaults\nRESULT: {result}", is_valid_dict)
 
     @pystackql_test_setup(output='pandas')
     def test_12_execute_with_pandas_output(self):
-        result = self.stackql.execute(google_query)
+        result = self.stackql.execute(aws_query)
         is_valid_dataframe = isinstance(result, pd.DataFrame)
         self.assertTrue(is_valid_dataframe, f"Result is not a valid DataFrame: {result}")
-        print_test_result(f"Test execute with pandas output\nRESULT_COUNT: {len(result)}", is_valid_dataframe)
+        # Check datatypes of the columns
+        expected_dtypes = {
+            'instance_state': 'object',  # This should be 'object' for older Pandas versions
+            'num_instances': 'int64'
+        }
+        for col, expected_dtype in expected_dtypes.items():
+            actual_dtype = result[col].dtype
+            self.assertEqual(actual_dtype, expected_dtype, f"Column '{col}' has dtype '{actual_dtype}' but expected '{expected_dtype}'")
+        print_test_result(f"Test execute with pandas output\nRESULT COUNT: {len(result)}", is_valid_dataframe)
 
     @pystackql_test_setup(output='csv')
     def test_13_execute_with_csv_output(self):
-        result = self.stackql.execute(google_query)
+        result = self.stackql.execute(aws_query)
         is_valid_csv = isinstance(result, str) and result.count("\n") >= 1 and result.count(",") >= 1
         self.assertTrue(is_valid_csv, f"Result is not a valid CSV: {result}")
         print_test_result(f"Test execute with csv output\nRESULT_COUNT: {len(result.splitlines())}", is_valid_csv)
@@ -241,9 +249,18 @@ class PyStackQLServerModeNonAsyncTests(PyStackQLTestsBase):
 
     @pystackql_test_setup(server_mode=True, output='pandas')
     def test_22_execute_server_mode_pandas_output(self):
-        result = self.stackql.execute(google_query)
-        is_valid_pandas_output = isinstance(result, pd.DataFrame)
-        print_test_result(f"""Test execute in server_mode with pandas output\nRESULT_COUNT: {len(result)}""", is_valid_pandas_output, True)
+        result = self.stackql.execute(aws_query)
+        is_valid_dataframe = isinstance(result, pd.DataFrame)
+        self.assertTrue(is_valid_dataframe, f"Result is not a valid DataFrame: {result}")
+        # Check datatypes of the columns
+        expected_dtypes = {
+            'instance_state': 'object',  # This should be 'object' for older Pandas versions
+            'num_instances': 'int64'
+        }
+        for col, expected_dtype in expected_dtypes.items():
+            actual_dtype = result[col].dtype
+            self.assertEqual(actual_dtype, expected_dtype, f"Column '{col}' has dtype '{actual_dtype}' but expected '{expected_dtype}'")
+        print_test_result(f"Test execute in server_mode with pandas output\nRESULT COUNT: {len(result)}", is_valid_dataframe)
 
 class MockInteractiveShell:
     """A mock class for IPython's InteractiveShell."""
