@@ -43,7 +43,7 @@ class StackqlMagic(Magics):
         :param query: StackQL query to be executed.
         :type query: str
         :return: Query results, returned as a Pandas DataFrame.
-        :rtype: pandas.DataFrame or str
+        :rtype: pandas.DataFrame
         """
         return self.stackql_instance.execute(query)
     

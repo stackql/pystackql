@@ -41,6 +41,15 @@ AND zone = '{os.environ['GCP_ZONE']}'
 GROUP BY status
 """
 
+aws_query = f"""
+SELECT 
+split_part(instanceState, '\n', 3) as instance_state,
+count(*) as num_instances
+FROM aws.ec2.instances 
+WHERE region = '{os.environ['AWS_REGION']}'
+GROUP BY instance_state
+"""
+
 regions = os.environ.get('AWS_REGIONS').split(',')
 
 async_queries = [
