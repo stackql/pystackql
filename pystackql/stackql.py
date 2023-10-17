@@ -538,7 +538,10 @@ class StackQL:
 			>>> from pystackql import StackQL
 			>>> stackql = StackQL()		
 			>>> queries = [
-			>>> "SELECT '%s' as region, instanceType, COUNT(*) as num_instances FROM aws.ec2.instances WHERE region = '%s' GROUP BY instanceType" % (region, region)
+			>>> \"\"\"SELECT '%s' as region, instanceType, COUNT(*) as num_instances 
+			... FROM aws.ec2.instances 
+			... WHERE region = '%s' 
+			... GROUP BY instanceType\"\"\" % (region, region)
 			>>> for region in regions ]
 			>>> result = stackql.executeQueriesAsync(queries)
 
