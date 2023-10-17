@@ -426,9 +426,11 @@ class StackQL:
 		Example:
 			>>> from pystackql import StackQL
 			>>> stackql = StackQL()
-			>>> stackql_query = \"\"\"SELECT SPLIT_PART(machineType, '/', -1) as machine_type, status, COUNT(*) as num_instances
+			>>> stackql_query = \"\"\"SELECT SPLIT_PART(machineType, '/', -1) as machine_type, 
+			... status, COUNT(*) as num_instances
 			... FROM google.compute.instances 
-			... WHERE project = 'stackql-demo' AND zone = 'australia-southeast1-a'
+			... WHERE project = 'stackql-demo' 
+			... AND zone = 'australia-southeast1-a'
 			... GROUP BY machine_type, status
 			... HAVING COUNT(*) > 2\"\"\"
 			>>> result = stackql.execute(stackql_query)
