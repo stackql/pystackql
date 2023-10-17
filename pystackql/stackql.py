@@ -15,105 +15,84 @@ import pandas as pd
 from io import StringIO
 
 class StackQL:
-	"""
-	A class representing an instance of the StackQL query engine.
-
-	server_mode: Connect to a StackQL server.
-		:type server_mode: bool
-		:default: False
+	"""A class representing an instance of the StackQL query engine.
 	
-	server_address: The address of the StackQL server (server_mode only).
-		:type server_address: str
-		:default: '127.0.0.1'
-	
-	server_port: The port of the StackQL server (server_mode only).
-		:type server_port: int
-		:default: 5466
-	
-	output: Determines the format of the output, options are 'dict', 'pandas', and 'csv'.
-		:type output: str
-		:default: 'dict'
-		:options: ['dict', 'pandas', 'csv']
-		:note: 'csv' is not supported in server_mode
-	
-	sep: Seperator for values in CSV output (output='csv' only).
-		:type sep: str
-		:default: ','
-
-	header: Show column headers in CSV output (output='csv' only).
-		:type header: bool
-		:default: False
-
-	download_dir: The download directory for the StackQL executable (not supported in server_mode).
-		:type download_dir: str
-		:default: site.getuserbase()
-
-	api_timeout: API timeout (not supported in server_mode).
-		:type api_timeout: int
-		:default: 45
-	
-	proxy_host: HTTP proxy host (not supported in server_mode).
-		:type proxy_host: str
-		:default: None
-	
-	proxy_password: HTTP proxy password (only applicable when proxy_host is set).
-		:type proxy_password: str
-		:default: None
-
-	proxy_port: HTTP proxy port (only applicable when proxy_host is set).
-		:type proxy_port: int
-		:default: -1
-	
-	proxy_scheme: HTTP proxy scheme (only applicable when proxy_host is set).
-		:type proxy_scheme: str
-		:default: 'http'
-	
-	proxy_user: HTTP proxy user (only applicable when proxy_host is set).
-		:type proxy_user: str
-		:default: None
-	
-	max_results: Max results per HTTP request (not supported in server_mode).
-		:type max_results: int
-		:default: -1
-	
-	page_limit: Max pages of results that will be returned per resource (not supported in server_mode).
-		:type page_limit: int
-		:default: 20
-	
-	max_depth: Max depth for indirect queries: views and subqueries (not supported in server_mode).
-		:type max_depth: int
-		:default: 5
-
-	debug: Enable debug logging.
-		:type debug: bool
-		:default: False
-
-	debug_log_file: Path to debug log file (if debug is True).
-		:type debug_log_file: str
-		:default: ~/.pystackql/debug.log
+	:param server_mode: Connect to a StackQL server 
+		(defaults to `False`)
+	:type server_mode: bool, optional
+	:param server_address: The address of the StackQL server 
+		(`server_mode` only, defaults to `'127.0.0.1'`)
+	:type server_address: str, optional
+	:param server_port: The port of the StackQL server 
+		(`server_mode` only, defaults to `5466`)
+	:type server_port: int, optional
+	:param output: Determines the format of the output, options are 'dict', 'pandas', and 'csv' 
+		(defaults to `'dict'`, `'csv'` is not supported in `server_mode`)
+	:type output: str, optional
+	:param sep: Seperator for values in CSV output 
+		(defaults to `','`, `output='csv'` only)
+	:type sep: str, optional
+	:param header: Show column headers in CSV output 
+		(defaults to `False`, `output='csv'` only)
+	:type header: bool, optional
+	:param download_dir: The download directory for the StackQL executable 
+		(defaults to `site.getuserbase()`, not supported in `server_mode`)
+	:type download_dir: str, optional
+	:param api_timeout: API timeout 
+		(defaults to `45`, not supported in `server_mode`)
+	:type api_timeout: int, optional
+	:param proxy_host: HTTP proxy host 
+		(not supported in `server_mode`)
+	:type proxy_host: str, optional
+	:param proxy_password: HTTP proxy password 
+		(only applicable when `proxy_host` is set)
+	:type proxy_password: str, optional
+	:param proxy_port: HTTP proxy port 
+		(defaults to `-1`, only applicable when `proxy_host` is set)
+	:type proxy_port: int, optional
+	:param proxy_scheme: HTTP proxy scheme 
+		(defaults to `'http'`, only applicable when `proxy_host` is set)
+	:type proxy_scheme: str, optional
+	:param proxy_user: HTTP proxy user 
+		(only applicable when `proxy_host` is set)
+	:type proxy_user: str, optional
+	:param max_results: Max results per HTTP request 
+		(defaults to `-1` for no limit, not supported in `server_mode`)
+	:type max_results: int, optional
+	:param page_limit: Max pages of results that will be returned per resource 
+		(defaults to `20`, not supported in `server_mode`)
+	:type page_limit: int, optional
+	:param max_depth: Max depth for indirect queries: views and subqueries 
+		(defaults to `5`, not supported in `server_mode`)
+	:type max_depth: int, optional
+	:param custom_auth: Custom StackQL provider authentication object supplied using the class constructor 
+		(not supported in `server_mode`)
+	:type auth: dict, optional
+	:param debug: Enable debug logging 
+		(defaults to `False`)
+	:type debug: bool, optional
+	:param debug_log_file: Path to debug log file 
+		(defaults to `~/.pystackql/debug.log`, only available if debug is `True`)
+	:type debug_log_file: str, optional
 
 	--- Read-Only Attributes ---
 	
-	platform: The operating system platform.
-		:type platform: str
-	
-	package_version: The version number of the pystackql Python package.
-		:type package_version: str
-	
-	version: The version number of the StackQL executable (not supported in server_mode).
-		:type version: str
-	
-	params: A list of command-line parameters passed to the StackQL executable (not supported in server_mode).
-		:type params: list
-	
-	bin_path: The full path of the StackQL executable (not supported in server_mode).
-		:type bin_path: str
-	
-	sha: The commit (short) sha for the installed `stackql` binary build (not supported in server_mode).
-		:type sha: str
-	
-	auth: Custom StackQL provider authentication object supplied using the class constructor (not supported in server_mode).
-		:type auth: dict
+	:param platform: The operating system platform
+	:type platform: str, readonly
+	:param package_version: The version number of the `pystackql` Python package
+	:type package_version: str, readonly
+	:param version: The version number of the `stackql` executable 
+		(not supported in `server_mode`)
+	:type version: str, readonly
+	:param params: A list of command-line parameters passed to the `stackql` executable 
+		(not supported in `server_mode`)
+	:type params: list, readonly
+	:param bin_path: The full path of the `stackql` executable 
+		(not supported in `server_mode`).
+	:type bin_path: str, readonly
+	:param sha: The commit (short) sha for the installed `stackql` binary build 
+		(not supported in `server_mode`).
+	:type sha: str, readonly
 	"""
 
 	def _debug_log(self, message):
@@ -122,9 +101,11 @@ class StackQL:
 
 	def _connect_to_server(self):
 		"""Establishes a connection to the server using psycopg.
-		
-		Returns:
-			Connection object if successful, or None if an error occurred.
+
+		:return: Connection object if successful, or `None` if an error occurred.
+		:rtype: Connection or None
+		...
+		:raises `psycopg2.OperationalError`: Failed to connect to the server.
 		"""
 		try:
 			conn = psycopg2.connect(
@@ -143,8 +124,7 @@ class StackQL:
 		return None
 
 	def _run_server_query(self, query):
-		"""
-		Runs a query against the server using psycopg2.
+		"""Runs a query against the server using psycopg2.
 		
 		:param query: SQL query to be executed on the server.
 		:type query: str
@@ -166,8 +146,7 @@ class StackQL:
 				raise
 
 	def _run_query(self, query, is_statement=False):
-		"""
-		Internal method to execute a StackQL query using a subprocess.
+		"""Internal method to execute a StackQL query using a subprocess.
 
 		The method spawns a subprocess to run the StackQL binary with the specified query and parameters.
 		It waits for the subprocess to complete and captures its stdout as the output. This approach ensures 
@@ -185,7 +164,7 @@ class StackQL:
 
 		:raises FileNotFoundError: If the StackQL binary isn't found.
 		:raises Exception: For any other exceptions during the execution, providing a generic error message.
-		"""		
+		"""
 		local_params = self.params.copy()
 		local_params.insert(1, query)
 		try:
@@ -358,14 +337,13 @@ class StackQL:
 				self.params.append(proxy_scheme)				
 
 	def properties(self):
-		"""
-		Retrieves the properties of the StackQL instance.
+		"""Retrieves the properties of the StackQL instance.
 
 		This method collects all the attributes of the StackQL instance and
 		returns them in a dictionary format.
 
-		Returns:
-			dict: A dictionary containing the properties of the StackQL instance.
+		:return: A dictionary containing the properties of the StackQL instance.
+		:rtype: dict
 
 		Example:
 			::
@@ -382,22 +360,17 @@ class StackQL:
 		return props
 
 	def upgrade(self, showprogress=True):
-		"""
-		Upgrades the StackQL binary to the latest version available.
+		"""Upgrades the StackQL binary to the latest version available.
 
 		This method initiates an upgrade of the StackQL binary. Post-upgrade,
 		it updates the `version` and `sha` attributes of the StackQL instance
 		to reflect the newly installed version.
 
-		Parameters:
-			showprogress (bool, optional): Indicates if progress should be displayed
-										during the upgrade. Defaults to True.
+		:param showprogress: Indicates if progress should be displayed during the upgrade. Defaults to True.
+		:type showprogress: bool, optional
 
-		Prints:
-			str: A message indicating the new version of StackQL post-upgrade.
-
-		Example:
-			stackql upgraded to version v0.5.396
+		:return: A message indicating the new version of StackQL post-upgrade.
+		:rtype: str
 		"""
 		_setup(self.download_dir, self.platform, showprogress)
 		self.version, self.sha = _get_version(self.bin_path)
@@ -419,8 +392,12 @@ class StackQL:
 				returns a JSON string representation of the result. 
 		:rtype: str
 
-		Note: In `server_mode`, the method internally converts the result from the server to a 
-			JSON string before returning.
+		Example:
+			>>> from pystackql import StackQL
+			>>> stackql = StackQL()
+			>>> stackql_query = "REGISTRY PULL okta"
+			>>> result = stackql.executeStmt(stackql_query)
+			>>> print(result)
 		"""
 		if self.server_mode:
 			# Use server mode
@@ -430,8 +407,7 @@ class StackQL:
 			return self._run_query(query, is_statement=True)
 	
 	def execute(self, query):
-		"""
-		Executes a query using the StackQL instance and returns the output 
+		"""Executes a query using the StackQL instance and returns the output 
 		in the format specified by the `output` attribute.
 
 		Depending on the `server_mode` and `output` attribute of the instance, 
@@ -444,11 +420,18 @@ class StackQL:
 
 		:return: The output result of the query. Depending on the `output` attribute, 
 				the result can be a dictionary, a Pandas DataFrame, or a raw CSV string.
+				CSV output is currently not supported in `server_mode`.
 		:rtype: dict, pd.DataFrame, or str
 
-		Note: In server_mode, if `output` is set to 'pandas', the result is converted into a
-			Pandas DataFrame; otherwise, it is returned as a dictionary by default. CSV output
-			is currently not supported in server_mode.
+		Example:
+			>>> from pystackql import StackQL
+			>>> stackql = StackQL()
+			>>> stackql_query = \"\"\"SELECT SPLIT_PART(machineType, '/', -1) as machine_type, status, COUNT(*) as num_instances
+			... FROM google.compute.instances 
+			... WHERE project = 'stackql-demo' AND zone = 'australia-southeast1-a'
+			... GROUP BY machine_type, status
+			... HAVING COUNT(*) > 2\"\"\"
+			>>> result = stackql.execute(stackql_query)
 		"""
 		if self.server_mode:
 			# Use server mode
@@ -483,6 +466,8 @@ class StackQL:
 	#
 
 	def _run_server_query_with_new_connection(self, query):
+		"""Run a query against a StackQL postgres wire protocol server with a new connection.
+		"""
 		conn = None
 		try:
 			# Establish a new connection using credentials and configurations
@@ -513,8 +498,7 @@ class StackQL:
 				conn.close()
 
 	def _sync_query(self, query, new_connection=False):
-		"""
-		Synchronous function to perform the query.
+		"""Synchronous function to perform the query.
 		"""
 		if self.server_mode and new_connection:
 			# Directly get the list of dicts; no JSON string conversion needed.
@@ -532,8 +516,7 @@ class StackQL:
 			return result
 
 	async def executeQueriesAsync(self, queries):
-		"""
-		Executes multiple StackQL queries asynchronously using the current StackQL instance.
+		"""Executes multiple StackQL queries asynchronously using the current StackQL instance.
 
 		This method utilizes an asyncio event loop to concurrently run a list of provided 
 		StackQL queries. Each query is executed independently, and the combined results of 
@@ -552,10 +535,15 @@ class StackQL:
 		:raises ValueError: If an unsupported output mode is selected (anything other than 'dict' or 'pandas').
 
 		Example:
+			>>> from pystackql import StackQL
+			>>> stackql = StackQL()		
 			>>> queries = [
-			>>> "SELECT '%s' as region, instanceType, COUNT(*) as num_instances FROM aws.ec2.instances WHERE region = '%s' GROUP BY instanceType" % (region, region)
+			>>> \"\"\"SELECT '%s' as region, instanceType, COUNT(*) as num_instances 
+			... FROM aws.ec2.instances 
+			... WHERE region = '%s' 
+			... GROUP BY instanceType\"\"\" % (region, region)
 			>>> for region in regions ]
-			>>> res = stackql.executeQueriesAsync(queries)
+			>>> result = stackql.executeQueriesAsync(queries)
 
 		Note:
 			- When operating in `server_mode`, this method is not supported.

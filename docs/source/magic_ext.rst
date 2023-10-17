@@ -41,7 +41,7 @@ Options
 
 When using `StackqlMagic` as cell magic, you can pass in the following options:
 
-- **--no-display** : Suppresses the display of the results. Even when this option is enabled, the results are still saved in the `stackql_df` Pandas DataFrame.
+- ``--no-display`` : Suppresses the display of the results. Even when this option is enabled, the results are still saved in the `stackql_df` Pandas DataFrame.
 
 Example:
 
