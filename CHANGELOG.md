@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.2.0 (2023-10-18)
+
+* implemented non `server_mode` magic extension
+
+### Updates
+
+ * `pandas` type fixes
+
 ## v3.1.2 (2023-10-16)
 
 ### Updates

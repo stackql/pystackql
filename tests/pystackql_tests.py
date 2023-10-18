@@ -1,8 +1,7 @@
 import sys, os, unittest, asyncio
 from unittest.mock import MagicMock
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from pystackql import StackQL
-from pystackql.stackql_magic import StackqlMagic, load_ipython_extension
+from pystackql import StackQL, load_non_server_magic, load_server_magic, StackqlMagic, StackqlServerMagic
 from .test_params import *
 
 def pystackql_test_setup(**kwargs):
@@ -275,48 +274,61 @@ class MockInteractiveShell:
         """Return a mock instance of the shell."""
         return MockInteractiveShell()
 
-class StackQLMagicTests(PyStackQLTestsBase):
-
+class BaseStackQLMagicTests:
+    MAGIC_CLASS = None  # To be overridden by child classes
+    server_mode = None  # To be overridden by child classes
     def setUp(self):
         """Set up for the magic tests."""
+        assert self.MAGIC_CLASS, "MAGIC_CLASS should be set by child classes"
         self.shell = MockInteractiveShell.instance()
-        load_ipython_extension(self.shell)
-        self.stackql_magic = StackqlMagic(shell=self.shell)
+        if self.server_mode:
+            load_server_magic(self.shell)
+        else:
+            load_non_server_magic(self.shell)
+        self.stackql_magic = self.MAGIC_CLASS(shell=self.shell)
         self.query = "SELECT 1 as fred"
         self.expected_result = pd.DataFrame({"fred": [1]})
 
-    def test_23_line_magic_query(self):
-        # Mock the run_query method to return a known DataFrame.
-        self.stackql_magic.run_query = MagicMock(return_value=self.expected_result)
-        # Execute the line magic with our query.
-        result = self.stackql_magic.stackql(line=self.query, cell=None)
-        # Check if the result is as expected and if 'stackql_df' is set in the namespace.
-        self.assertTrue(result.equals(self.expected_result))
-        self.assertTrue('stackql_df' in self.shell.user_ns)
-        self.assertTrue(self.shell.user_ns['stackql_df'].equals(self.expected_result))
-        print_test_result(f"""Line magic test""", True, True, True)
+    def print_test_result(self, test_name, *checks):
+        all_passed = all(checks)
+        print_test_result(f"{test_name}, server_mode: {self.server_mode}", all_passed, True, True)
 
-    def test_24_cell_magic_query(self):
+    def run_magic_test(self, line, cell, expect_none=False):
         # Mock the run_query method to return a known DataFrame.
         self.stackql_magic.run_query = MagicMock(return_value=self.expected_result)
-        # Execute the cell magic with our query.
-        result = self.stackql_magic.stackql(line="", cell=self.query)
+        # Execute the magic with our query.
+        result = self.stackql_magic.stackql(line=line, cell=cell)
         # Validate the outcome.
-        self.assertTrue(result.equals(self.expected_result))
-        self.assertTrue('stackql_df' in self.shell.user_ns)
-        self.assertTrue(self.shell.user_ns['stackql_df'].equals(self.expected_result))
-        print_test_result(f"""Cell magic test""", True, True, True)
+        checks = []
+        if expect_none:
+            checks.append(result is None)
+        else:
+            checks.append(result.equals(self.expected_result))
+        checks.append('stackql_df' in self.shell.user_ns)
+        checks.append(self.shell.user_ns['stackql_df'].equals(self.expected_result))
+        return checks
+    
+    def test_line_magic_query(self):
+        checks = self.run_magic_test(line=self.query, cell=None)
+        self.print_test_result("Line magic test", *checks)
 
-    def test_25_cell_magic_query_no_output(self):
-        # Mock the run_query method to return a known DataFrame.
-        self.stackql_magic.run_query = MagicMock(return_value=self.expected_result)
-        # Execute the cell magic with our query and the no-display argument.
-        result = self.stackql_magic.stackql(line="--no-display", cell=self.query)
-        # Validate the outcome.
-        self.assertIsNone(result)
-        self.assertTrue('stackql_df' in self.shell.user_ns)
-        self.assertTrue(self.shell.user_ns['stackql_df'].equals(self.expected_result))
-        print_test_result(f"""Cell magic test (with --no-display)""", True, True, True)
+    def test_cell_magic_query(self):
+        checks = self.run_magic_test(line="", cell=self.query)
+        self.print_test_result("Cell magic test", *checks)
+
+    def test_cell_magic_query_no_output(self):
+        checks = self.run_magic_test(line="--no-display", cell=self.query, expect_none=True)
+        self.print_test_result("Cell magic test (with --no-display)", *checks)
+
+
+class StackQLMagicTests(BaseStackQLMagicTests, unittest.TestCase):
+
+    MAGIC_CLASS = StackqlMagic
+    server_mode = False
+
+class StackQLServerMagicTests(BaseStackQLMagicTests, unittest.TestCase):
+    MAGIC_CLASS = StackqlServerMagic
+    server_mode = True
 
 def main():
     unittest.main(verbosity=0)
