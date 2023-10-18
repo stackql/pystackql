@@ -1,7 +1,7 @@
 StackqlMagic Extension for Jupyter
 ==================================
 
-The ``StackqlMagic`` extension for Jupyter notebooks provides a convenient interface to run SQL queries against the StackQL database directly from within the notebook environment. Results can be visualized in a tabular format using Pandas DataFrames.
+The ``StackqlMagic`` extension for Jupyter notebooks provides a convenient interface to run StackQL queries against cloud or SaaS providers directly from within the notebook environment. Results can be visualized in a tabular format using Pandas DataFrames.
 
 Setup
 -----
@@ -10,7 +10,13 @@ To enable the `StackqlMagic` extension in your Jupyter notebook, use the followi
 
 .. code-block:: python
 
-    %load_ext pystackql
+    %load_ext stackql_magic
+
+To use the `StackqlMagic` extension in your Jupyter notebook to run queries against a StackQL server, use the following command:
+
+.. code-block:: python
+
+    %load_ext stackql_server_magic
 
 Usage
 -----
@@ -54,15 +60,22 @@ Example:
 .. code-block:: python
 
     %%stackql --no-display
-    SELECT name, status
+    SELECT SPLIT_PART(machineType, '/', -1) as machine_type, count(*) as num_instances 
     FROM google.compute.instances 
     WHERE project = '$project' AND zone = '$zone'
+    GROUP BY machine_type
 
 This will run the query but won't display the results in the notebook. Instead, you can later access the results via the `stackql_df` variable.
 
 .. note::
 
     The results of the queries are always saved in a Pandas DataFrame named `stackql_df` in the notebook's current namespace. This allows you to further process or visualize the data as needed.
+
+An example of visualizing the results using Pandas is shown below:
+
+.. code-block:: python
+
+    stackql_df.plot(kind='pie', y='num_instances', labels=_['machine_type'], title='Instances by Type', autopct='%1.1f%%')
 
 --------
 

@@ -62,7 +62,7 @@ async_queries = [
     for region in regions
 ]
 
-def print_test_result(test_name, condition, server_mode=False, is_ipython=False):
+def print_test_result(test_name, condition=True, server_mode=False, is_ipython=False):
     status_header = colored("[PASSED] ", 'green') if condition else colored("[FAILED] ", 'red')
     headers = [status_header]
     
