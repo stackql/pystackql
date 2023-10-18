@@ -1,7 +1,5 @@
 from __future__ import print_function
-import pandas as pd
-import json, argparse
-from IPython.core.magic import (Magics, line_cell_magic)
+from IPython.core.magic import (Magics)
 from string import Template
 
 class BaseStackqlMagic(Magics):
@@ -40,34 +38,3 @@ class BaseStackqlMagic(Magics):
         :rtype: pandas.DataFrame
         """
         return self.stackql_instance.execute(query)
-    
-    @line_cell_magic
-    def stackql(self, line, cell=None):
-        """A Jupyter magic command to run StackQL queries.
-        
-        Can be used as both line and cell magic:
-        - As a line magic: `%stackql QUERY`
-        - As a cell magic: `%%stackql [OPTIONS]` followed by the QUERY in the next line.
-        
-        :param line: The arguments and/or StackQL query when used as line magic.
-        :param cell: The StackQL query when used as cell magic.
-        :return: StackQL query results as a named Pandas DataFrame (`stackql_df`).
-        """
-        is_cell_magic = cell is not None
-
-        if is_cell_magic:
-            parser = argparse.ArgumentParser()
-            parser.add_argument("--no-display", action="store_true", help="Suppress result display.")
-            args = parser.parse_args(line.split())
-            query_to_run = self.get_rendered_query(cell)
-        else:
-            args = None
-            query_to_run = self.get_rendered_query(line)
-
-        results = self.run_query(query_to_run)
-        self.shell.user_ns['stackql_df'] = results
-
-        if is_cell_magic and args and not args.no_display:
-            return results
-        elif not is_cell_magic:
-            return results

@@ -1,23 +1,11 @@
 # Changelog
 
-## v3.2.1 (2023-10-18)
-
-* implemented non `server_mode` magic extension
+## v3.2.2 (2023-10-18)
 
 ### Updates
 
- * `pandas` type fixes
-
-## v3.1.2 (2023-10-16)
-
-### Updates
-
- * `pandas` type fixes
- 
-## v3.1.1 (2023-10-14)
-
-### Updates
-
+ * implemented non `server_mode` magic extension
+ * `pandas` type updates
  * updated class parameters
  * added additional tests
 
