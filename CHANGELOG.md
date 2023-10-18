@@ -1,6 +1,6 @@
 # Changelog
 
-## v3.2.0 (2023-10-18)
+## v3.2.1 (2023-10-18)
 
 * implemented non `server_mode` magic extension
 
