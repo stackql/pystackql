@@ -10,13 +10,13 @@ To enable the `StackqlMagic` extension in your Jupyter notebook, use the followi
 
 .. code-block:: python
 
-    %load_ext stackql_magic
+    %load_ext pystackql.magic
 
 To use the `StackqlMagic` extension in your Jupyter notebook to run queries against a StackQL server, use the following command:
 
 .. code-block:: python
 
-    %load_ext stackql_server_magic
+    %load_ext pystackql.magics
 
 Usage
 -----

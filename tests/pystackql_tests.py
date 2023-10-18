@@ -1,7 +1,7 @@
 import sys, os, unittest, asyncio
 from unittest.mock import MagicMock
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from pystackql import StackQL, load_non_server_magic, load_server_magic, StackqlMagic, StackqlServerMagic
+from pystackql import StackQL, magic, magics, StackqlMagic, StackqlServerMagic
 from .test_params import *
 
 def pystackql_test_setup(**kwargs):
@@ -282,9 +282,9 @@ class BaseStackQLMagicTests:
         assert self.MAGIC_CLASS, "MAGIC_CLASS should be set by child classes"
         self.shell = MockInteractiveShell.instance()
         if self.server_mode:
-            load_server_magic(self.shell)
+            magics.load_ipython_extension(self.shell)
         else:
-            load_non_server_magic(self.shell)
+            magic.load_ipython_extension(self.shell)
         self.stackql_magic = self.MAGIC_CLASS(shell=self.shell)
         self.query = "SELECT 1 as fred"
         self.expected_result = pd.DataFrame({"fred": [1]})
