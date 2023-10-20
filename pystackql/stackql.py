@@ -3,6 +3,7 @@ from ._util import (
     _get_platform,
     _get_download_dir,
     _get_binary_name,
+	_is_binary_local,
     _setup,
     _get_version,
     _format_auth
@@ -262,19 +263,27 @@ class StackQL:
 			
 			# get or download the stackql binary
 			binary = _get_binary_name(this_os)
-			# if download_dir not set, use site.getuserbase()
-			if download_dir is None:
-				self.download_dir = _get_download_dir()
-			else:
-				self.download_dir = download_dir
-			self.bin_path = os.path.join(self.download_dir, binary)
-			# get and set version
-			if os.path.exists(self.bin_path):
+
+			# check if the binary exists locally for Linux
+			if this_os == 'Linux' and _is_binary_local(this_os) and download_dir is None:
+				self.bin_path = '/usr/local/bin/stackql'
+				self.download_dir = '/usr/local/bin'
+				# get and set version
 				self.version, self.sha = _get_version(self.bin_path)
 			else:
-				# not installed, download
-				_setup(self.download_dir, this_os)
-				self.version, self.sha = _get_version(self.bin_path)
+				# if download_dir not set, use site.getuserbase() or the provided path
+				if download_dir is None:
+					self.download_dir = _get_download_dir()
+				else:
+					self.download_dir = download_dir
+				self.bin_path = os.path.join(self.download_dir, binary)
+				# get and set version
+				if os.path.exists(self.bin_path):
+					self.version, self.sha = _get_version(self.bin_path)
+				else:
+					# not installed, download
+					_setup(self.download_dir, this_os)
+					self.version, self.sha = _get_version(self.bin_path)
 
 			# if custom_auth is set, use it
 			if custom_auth is not None:
