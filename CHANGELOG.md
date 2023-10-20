@@ -1,6 +1,6 @@
 # Changelog
 
-## v3.2.2 (2023-10-18)
+## v3.2.3 (2023-10-20)
 
 ### Updates
 
@@ -8,6 +8,7 @@
  * `pandas` type updates
  * updated class parameters
  * added additional tests
+ * bin path defaults for codespaces notebooks
 
 ## v3.0.0 (2023-10-11)
 

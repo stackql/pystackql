@@ -7,6 +7,12 @@ except ImportError:
     # This is for Python versions earlier than 3.8
     from importlib_metadata import version, PackageNotFoundError
 
+def _is_binary_local(platform):
+	"""Checks if the binary exists at the specified local path."""
+	if platform == 'Linux' and os.path.exists('/usr/local/bin/stackql'):
+		return True
+	return False
+
 def _get_package_version(package_name):
     try:
         pkg_version = version(package_name)
