@@ -155,13 +155,37 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
 
     @pystackql_test_setup()
     def test_10_executeStmt(self):
+        okta_result_dict = self.stackql.executeStmt(registry_pull_okta_query)
+        okta_result = okta_result_dict[0]["message"]
+        expected_pattern = registry_pull_resp_pattern("okta")
+        self.assertTrue(re.search(expected_pattern, okta_result), f"Expected pattern not found in result: {okta_result}")
+        github_result_dict = self.stackql.executeStmt(registry_pull_github_query)
+        github_result = github_result_dict[0]["message"]
+        expected_pattern = registry_pull_resp_pattern("github")
+        self.assertTrue(re.search(expected_pattern, github_result), f"Expected pattern not found in result: {github_result}")
+        print_test_result(f"""Test executeStmt method\nRESULTS:\n{okta_result_dict}\n{github_result_dict}""", True)
+
+    @pystackql_test_setup(output="csv")
+    def test_10a_executeStmt_with_csv_output(self):
         okta_result = self.stackql.executeStmt(registry_pull_okta_query)
         expected_pattern = registry_pull_resp_pattern("okta")
         self.assertTrue(re.search(expected_pattern, okta_result), f"Expected pattern not found in result: {okta_result}")
         github_result = self.stackql.executeStmt(registry_pull_github_query)
         expected_pattern = registry_pull_resp_pattern("github")
         self.assertTrue(re.search(expected_pattern, github_result), f"Expected pattern not found in result: {github_result}")
-        print_test_result(f"""Test executeStmt method\nRESULTS:\n{okta_result}{github_result}""", True)
+        print_test_result(f"""Test executeStmt method with csv output\nRESULTS:\n{okta_result}\n{github_result}""", True)
+
+    @pystackql_test_setup(output="pandas")
+    def test_10b_executeStmt_with_pandas_output(self):
+        okta_result_df = self.stackql.executeStmt(registry_pull_okta_query)
+        okta_result = okta_result_df['message'].iloc[0]
+        expected_pattern = registry_pull_resp_pattern("okta")
+        self.assertTrue(re.search(expected_pattern, okta_result), f"Expected pattern not found in result: {okta_result}")
+        github_result_df = self.stackql.executeStmt(registry_pull_github_query)
+        github_result = github_result_df['message'].iloc[0]
+        expected_pattern = registry_pull_resp_pattern("github")
+        self.assertTrue(re.search(expected_pattern, github_result), f"Expected pattern not found in result: {github_result}")
+        print_test_result(f"""Test executeStmt method with pandas output\nRESULTS:\n{okta_result_df}\n{github_result_df}""", True)
 
     @pystackql_test_setup()
     def test_11_execute_with_defaults(self):
@@ -232,13 +256,16 @@ class PyStackQLServerModeNonAsyncTests(PyStackQLTestsBase):
     @pystackql_test_setup(server_mode=True)
     def test_20_executeStmt_server_mode(self):
         result = self.stackql.executeStmt(registry_pull_google_query)
-        is_valid_json_string_of_empty_list = False
-        try:
-            parsed_result = json.loads(result)
-            is_valid_json_string_of_empty_list = isinstance(parsed_result, list) and len(parsed_result) == 0
-        except json.JSONDecodeError:
-            pass
-        print_test_result("Test executeStmt in server mode", is_valid_json_string_of_empty_list, True)
+        # Checking if the result is a list containing a single dictionary with a key 'message' and value 'OK'
+        is_valid_response = isinstance(result, list) and len(result) == 1 and result[0].get('message') == 'OK'
+        print_test_result(f"Test executeStmt in server mode\n{result}", is_valid_response, True)
+
+    @pystackql_test_setup(server_mode=True, output='pandas')
+    def test_20a_executeStmt_server_mode_with_pandas_output(self):
+        result_df = self.stackql.executeStmt(registry_pull_google_query)
+        # Verifying if the result is a dataframe with a column 'message' containing the value 'OK' in its first row
+        is_valid_response = isinstance(result_df, pd.DataFrame) and 'message' in result_df.columns and result_df['message'].iloc[0] == 'OK'
+        print_test_result(f"Test executeStmt in server mode with pandas output\n{result_df}", is_valid_response, True)
 
     @pystackql_test_setup(server_mode=True)
     def test_21_execute_server_mode_default_output(self):
@@ -288,6 +315,7 @@ class BaseStackQLMagicTests:
         self.stackql_magic = self.MAGIC_CLASS(shell=self.shell)
         self.query = "SELECT 1 as fred"
         self.expected_result = pd.DataFrame({"fred": [1]})
+        self.statement = "REGISTRY PULL github"
 
     def print_test_result(self, test_name, *checks):
         all_passed = all(checks)
@@ -320,6 +348,31 @@ class BaseStackQLMagicTests:
         checks = self.run_magic_test(line="--no-display", cell=self.query, expect_none=True)
         self.print_test_result("Cell magic test (with --no-display)", *checks)
 
+    def run_magic_statement_test(self, line, cell, expect_none=False):
+        # Execute the magic with our statement.
+        result = self.stackql_magic.stackql(line=line, cell=cell)
+        # Validate the outcome.
+        checks = []
+        if expect_none:
+            checks.append(result is None)
+        else:
+            # Check that the output contains expected content
+            checks.append("OK" in result["message"].iloc[0])
+        checks.append('stackql_df' in self.shell.user_ns)
+        checks.append("OK" in self.shell.user_ns['stackql_df']["message"].iloc[0])
+        return checks
+
+    def test_line_magic_statement(self):
+        checks = self.run_magic_statement_test(line=self.statement, cell=None)
+        self.print_test_result("Line magic statement", *checks)
+
+    def test_cell_magic_statement(self):
+        checks = self.run_magic_statement_test(line="", cell=self.statement)
+        self.print_test_result("Cell magic statement", *checks)
+
+    def test_cell_magic_statement_no_output(self):
+        checks = self.run_magic_statement_test(line="--no-display", cell=self.statement, expect_none=True)
+        self.print_test_result("Cell magic statement (with --no-display)", *checks)
 
 class StackQLMagicTests(BaseStackQLMagicTests, unittest.TestCase):
 

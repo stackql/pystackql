@@ -124,19 +124,24 @@ class StackQL:
 			print(f"Unexpected error while connecting to the server: {e}")
 		return None
 
-	def _run_server_query(self, query):
+	def _run_server_query(self, query, is_statement=False):
 		"""Runs a query against the server using psycopg2.
 		
 		:param query: SQL query to be executed on the server.
 		:type query: str
 		:return: List of result rows if the query fetches results; empty list if there are no results.
-		:rtype: list
+		:rtype: list of dict objects
 		:raises: psycopg2.ProgrammingError for issues related to the SQL query, 
 				unless the error is "no results to fetch", in which case an empty list is returned.
 		"""
 		try:
 			cur = self._conn.cursor(cursor_factory=RealDictCursor)
 			cur.execute(query)
+			if is_statement:
+				# If the query is a statement, there are no results to fetch.
+				result_msg = cur.statusmessage
+				cur.close()
+				return [{'message': result_msg}]
 			rows = cur.fetchall()
 			cur.close()
 			return rows
@@ -146,7 +151,7 @@ class StackQL:
 			else:
 				raise
 
-	def _run_query(self, query, is_statement=False):
+	def _run_query(self, query):
 		"""Internal method to execute a StackQL query using a subprocess.
 
 		The method spawns a subprocess to run the StackQL binary with the specified query and parameters.
@@ -395,7 +400,7 @@ class StackQL:
 		against the server. Otherwise, it executes the query using a subprocess.
 
 		:param query: The StackQL query string to be executed.
-		:type query: str
+		:type query: str, list of dict objects, or Pandas DataFrame
 
 		:return: The output result of the query in string format. If in `server_mode`, it 
 				returns a JSON string representation of the result. 
@@ -406,14 +411,26 @@ class StackQL:
 			>>> stackql = StackQL()
 			>>> stackql_query = "REGISTRY PULL okta"
 			>>> result = stackql.executeStmt(stackql_query)
-			>>> print(result)
+			>>> result
 		"""
 		if self.server_mode:
 			# Use server mode
-			result = self._run_server_query(query)
-			return json.dumps(result)
+			result = self._run_server_query(query, True)
+			if self.output == 'pandas':
+				return pd.DataFrame(result)
+			elif self.output == 'csv':
+				# return the string representation of the result
+				return result[0]['message']
+			else:
+				return result
 		else:
-			return self._run_query(query, is_statement=True)
+			result_msg = self._run_query(query)
+			if self.output == 'pandas':
+				return pd.DataFrame({'message': [result_msg]})
+			elif self.output == 'csv':
+				return result_msg
+			else:
+				return [{'message': result_msg}]			
 	
 	def execute(self, query):
 		"""Executes a query using the StackQL instance and returns the output 
