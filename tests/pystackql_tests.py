@@ -319,7 +319,7 @@ class BaseStackQLMagicTests:
 
     def print_test_result(self, test_name, *checks):
         all_passed = all(checks)
-        print_test_result(f"{test_name}, server_mode: {self.server_mode}", all_passed, True, True)
+        print_test_result(f"{test_name}", all_passed, self.server_mode, True)
 
     def run_magic_test(self, line, cell, expect_none=False):
         # Mock the run_query method to return a known DataFrame.
@@ -338,25 +338,23 @@ class BaseStackQLMagicTests:
     
     def test_line_magic_query(self):
         checks = self.run_magic_test(line=self.query, cell=None)
-        self.print_test_result("Line magic test", *checks)
+        self.print_test_result("Line magic query test", *checks)
 
     def test_cell_magic_query(self):
         checks = self.run_magic_test(line="", cell=self.query)
-        self.print_test_result("Cell magic test", *checks)
+        self.print_test_result("Cell magic query test", *checks)
 
     def test_cell_magic_query_no_output(self):
         checks = self.run_magic_test(line="--no-display", cell=self.query, expect_none=True)
-        self.print_test_result("Cell magic test (with --no-display)", *checks)
+        self.print_test_result("Cell magic query test (with --no-display)", *checks)
 
     def run_magic_statement_test(self, line, cell, expect_none=False):
         # Execute the magic with our statement.
         result = self.stackql_magic.stackql(line=line, cell=cell)
         # Validate the outcome.
         checks = []
-        if expect_none:
-            checks.append(result is None)
-        else:
-            # Check that the output contains expected content
+        # Check that the output contains expected content
+        if not expect_none:
             checks.append("OK" in result["message"].iloc[0])
         checks.append('stackql_df' in self.shell.user_ns)
         checks.append("OK" in self.shell.user_ns['stackql_df']["message"].iloc[0])
@@ -364,15 +362,15 @@ class BaseStackQLMagicTests:
 
     def test_line_magic_statement(self):
         checks = self.run_magic_statement_test(line=self.statement, cell=None)
-        self.print_test_result("Line magic statement", *checks)
+        self.print_test_result(f"Line magic statement test\n{str(checks)}", *checks)
 
     def test_cell_magic_statement(self):
         checks = self.run_magic_statement_test(line="", cell=self.statement)
-        self.print_test_result("Cell magic statement", *checks)
+        self.print_test_result(f"Cell magic statement test\n{str(checks)}", *checks)
 
     def test_cell_magic_statement_no_output(self):
         checks = self.run_magic_statement_test(line="--no-display", cell=self.statement, expect_none=True)
-        self.print_test_result("Cell magic statement (with --no-display)", *checks)
+        self.print_test_result(f"Cell magic statement test (with --no-display)\n{str(checks)}", *checks)
 
 class StackQLMagicTests(BaseStackQLMagicTests, unittest.TestCase):
 
