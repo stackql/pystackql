@@ -393,7 +393,8 @@ class StackQL:
 	def executeStmt(self, query):
 		"""Executes a query using the StackQL instance and returns the output as a string.  
 			This is intended for operations which do not return a result set, for example a mutation 
-			operation such as an `INSERT` or a `DELETE` or life cycle method such as an `EXEC` operation.
+			operation such as an `INSERT` or a `DELETE` or life cycle method such as an `EXEC` operation
+			or a `REGISTRY PULL` operation.
 
 		This method determines the mode of operation (server_mode or local execution) based 
 		on the `server_mode` attribute of the instance. If `server_mode` is True, it runs the query 
@@ -404,7 +405,7 @@ class StackQL:
 
 		:return: The output result of the query in string format. If in `server_mode`, it 
 				returns a JSON string representation of the result. 
-		:rtype: str
+		:rtype: dict, Pandas DataFrame or str (for `csv` output)
 
 		Example:
 			>>> from pystackql import StackQL
