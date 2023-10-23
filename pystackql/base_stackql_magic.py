@@ -1,6 +1,7 @@
 from __future__ import print_function
 from IPython.core.magic import (Magics)
 from string import Template
+import pandas as pd
 
 class BaseStackqlMagic(Magics):
     """Base Jupyter magic extension enabling running StackQL queries.
@@ -37,4 +38,8 @@ class BaseStackqlMagic(Magics):
         :return: Query results, returned as a Pandas DataFrame.
         :rtype: pandas.DataFrame
         """
+        # Check if the query starts with "registry pull" (case insensitive)
+        if query.strip().lower().startswith("registry pull"):
+            return self.stackql_instance.executeStmt(query)
+        
         return self.stackql_instance.execute(query)

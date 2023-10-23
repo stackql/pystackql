@@ -1,10 +1,11 @@
 # Changelog
 
-## v3.2.3 (2023-10-20)
+## v3.2.4 (2023-10-24)
 
 ### Updates
 
  * implemented non `server_mode` magic extension
+ * updated dataframe output for statements
  * `pandas` type updates
  * updated class parameters
  * added additional tests
