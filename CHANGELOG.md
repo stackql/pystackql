@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.2.5 (2023-12-07)
+
+### Updates
+
+ * included `app_root` and `execution_concurrency_limit` options in `StackQL` constructor
+
 ## v3.2.4 (2023-10-24)
 
 ### Updates
