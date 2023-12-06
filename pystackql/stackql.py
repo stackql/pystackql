@@ -307,7 +307,7 @@ class StackQL:
 			# set execution_concurrency_limit
 			self.execution_concurrency_limit = execution_concurrency_limit
 			self.params.append("--execution.concurrency.limit")
-			self.params.append(execution_concurrency_limit)
+			self.params.append(str(execution_concurrency_limit))
 
 			# if custom_auth is set, use it
 			if custom_auth is not None:
