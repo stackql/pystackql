@@ -39,6 +39,12 @@ class StackQL:
 	:param download_dir: The download directory for the StackQL executable 
 		(defaults to `site.getuserbase()`, not supported in `server_mode`)
 	:type download_dir: str, optional
+	:param app_root: Application config and cache root path
+		(defaults to `{cwd}/.stackql`)
+	:type app_root: str, optional	
+	:param execution_concurrency_limit: Concurrency limit for query execution
+		(defaults to `1`, set to `-1` for unlimited)
+	:type execution_concurrency_limit: int, optional	
 	:param api_timeout: API timeout 
 		(defaults to `45`, not supported in `server_mode`)
 	:type api_timeout: int, optional
@@ -204,6 +210,8 @@ class StackQL:
 				 server_address='127.0.0.1', 
 				 server_port=5466, 
 				 download_dir=None, 
+				 app_root=None,
+				 execution_concurrency_limit=1,
 				 output='dict',
 				 custom_auth=None,
 				 sep=',', 
@@ -289,6 +297,17 @@ class StackQL:
 					# not installed, download
 					_setup(self.download_dir, this_os)
 					self.version, self.sha = _get_version(self.bin_path)
+
+			# if app_root is set, use it
+			if app_root is not None:
+				self.app_root = app_root
+				self.params.append("--approot")
+				self.params.append(app_root)
+
+			# set execution_concurrency_limit
+			self.execution_concurrency_limit = execution_concurrency_limit
+			self.params.append("--execution.concurrency.limit")
+			self.params.append(str(execution_concurrency_limit))
 
 			# if custom_auth is set, use it
 			if custom_auth is not None:
