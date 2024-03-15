@@ -256,20 +256,20 @@ class StackQL:
 				except OSError as e:
 					raise ValueError(f"Unable to create the log directory {log_dir}: {str(e)}")
 
-        if self.server_mode:
-            # server mode, connect to a server via the postgres wire protocol
+		if self.server_mode:
+			# server mode, connect to a server via the postgres wire protocol
 			# Attempt to import psycopg2 only if server_mode is True
-            global psycopg2, RealDictCursor
-            try:
-                import psycopg2
-                from psycopg2.extras import RealDictCursor
-            except ImportError:
-                raise ImportError("psycopg2 is required in server mode but is not installed. Please install psycopg2 and try again.")
+			global psycopg2, RealDictCursor
+			try:
+				import psycopg2
+				from psycopg2.extras import RealDictCursor
+			except ImportError:
+				raise ImportError("psycopg2 is required in server mode but is not installed. Please install psycopg2 and try again.")
 
-            self.server_address = server_address
+			self.server_address = server_address
 			self.server_port = server_port
 			# establish the connection
-            self._conn = self._connect_to_server()		
+			self._conn = self._connect_to_server()		
 		else:
 			# local mode, executes the binary locally
 			self.params = []
