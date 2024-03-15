@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.5.0 (2024-03-15)
+
+### Updates
+
+ * included `pandas` and `IPython` install requirements
+ * optional required import of `psycopg2` only if in `server_mode`
+
 ## v3.2.5 (2023-12-07)
 
 ### Updates

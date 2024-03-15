@@ -8,9 +8,8 @@ from ._util import (
     _get_version,
     _format_auth
 )
-import sys, subprocess, json, os, asyncio, functools, psycopg2
+import sys, subprocess, json, os, asyncio, functools
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
-from psycopg2.extras import RealDictCursor
 import pandas as pd
 
 from io import StringIO
@@ -257,12 +256,20 @@ class StackQL:
 				except OSError as e:
 					raise ValueError(f"Unable to create the log directory {log_dir}: {str(e)}")
 
-		if self.server_mode:
-			# server mode, connect to a server via the postgres wire protocol
-			self.server_address = server_address
+        if self.server_mode:
+            # server mode, connect to a server via the postgres wire protocol
+			# Attempt to import psycopg2 only if server_mode is True
+            global psycopg2, RealDictCursor
+            try:
+                import psycopg2
+                from psycopg2.extras import RealDictCursor
+            except ImportError:
+                raise ImportError("psycopg2 is required in server mode but is not installed. Please install psycopg2 and try again.")
+
+            self.server_address = server_address
 			self.server_port = server_port
-   			# establish the connection
-			self._conn = self._connect_to_server()
+			# establish the connection
+            self._conn = self._connect_to_server()		
 		else:
 			# local mode, executes the binary locally
 			self.params = []

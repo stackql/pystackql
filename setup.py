@@ -10,7 +10,7 @@ with open('LICENSE') as f:
 
 setup(
     name='pystackql',
-    version='3.2.5',
+    version='3.5.0',
     description='A Python interface for StackQL',
     long_description=readme,
     author='Jeffrey Aven',
@@ -21,6 +21,8 @@ setup(
     # include_package_data=True,
     install_requires=[
         'requests', 
+        'pandas',
+        'IPython',
         ],
     # entry_points={
     #     'console_scripts': [

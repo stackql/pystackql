@@ -193,4 +193,4 @@ To publish the package to PyPI, run the following command:
 
 ::
 
-    twine upload dist/pystackql-3.2.5.tar.gz
+    twine upload dist/pystackql-3.5.0.tar.gz
