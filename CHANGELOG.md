@@ -1,6 +1,12 @@
 # Changelog
 
-## v3.5.0 (2024-03-15)
+## v3.5.2 (2024-03-21)
+
+### Updates
+
+ * added `custom_registry` constructor arg for specifying a non-default registry
+
+## v3.5.1 (2024-03-15)
 
 ### Updates
 

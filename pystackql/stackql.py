@@ -71,9 +71,12 @@ class StackQL:
 	:param max_depth: Max depth for indirect queries: views and subqueries 
 		(defaults to `5`, not supported in `server_mode`)
 	:type max_depth: int, optional
+	:param custom_registry: Custom StackQL provider registry URL 
+		(e.g. https://registry-dev.stackql.app/providers) supplied using the class constructor 
+	:type custom_registry: str, optional	
 	:param custom_auth: Custom StackQL provider authentication object supplied using the class constructor 
 		(not supported in `server_mode`)
-	:type auth: dict, optional
+	:type custom_auth: dict, optional
 	:param debug: Enable debug logging 
 		(defaults to `False`)
 	:type debug: bool, optional
@@ -212,6 +215,7 @@ class StackQL:
 				 app_root=None,
 				 execution_concurrency_limit=1,
 				 output='dict',
+				 custom_registry=None,
 				 custom_auth=None,
 				 sep=',', 
 				 header=False, 
@@ -322,6 +326,14 @@ class StackQL:
 				self.auth = authobj
 				self.params.append("--auth")
 				self.params.append(authstr)
+
+			# if custom_registry is set, use it
+			if custom_registry is not None:
+				self.custom_registry = custom_registry
+				custom_reg_obj = { "url": custom_registry }
+				custom_reg_str = json.dumps(custom_reg_obj)
+				self.params.append("--registry")
+				self.params.append(custom_reg_str)
 
 			# csv output
 			if self.output == "csv":
