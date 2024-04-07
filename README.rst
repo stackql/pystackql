@@ -161,6 +161,7 @@ Before testing, ensure you have all the required packages installed:
 ::
 
     pip install -r requirements.txt
+    pip install psycopg2-binary
 
 Once the dependencies are installed, you can run the tests using the provided script:
 

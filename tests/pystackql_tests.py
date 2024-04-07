@@ -41,6 +41,9 @@ def setUpModule():
     print("downloading aws provider for tests...")
     res = PyStackQLTestsBase.stackql.executeStmt(registry_pull_aws_query)
     print(res)
+    print("downloading awscc provider for tests...")
+    res = PyStackQLTestsBase.stackql.executeStmt(registry_pull_awscc_query)
+    print(res)    
     print("downloading google provider for tests...")
     res = PyStackQLTestsBase.stackql.executeStmt(registry_pull_google_query)
     print(res)
@@ -201,8 +204,8 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         self.assertTrue(is_valid_dataframe, f"Result is not a valid DataFrame: {result}")
         # Check datatypes of the columns
         expected_dtypes = {
-            'instance_state': 'object',  # This should be 'object' for older Pandas versions
-            'num_instances': 'int64'
+            'year': 'int64',
+            'num_buckets': 'int64'
         }
         for col, expected_dtype in expected_dtypes.items():
             actual_dtype = result[col].dtype
@@ -280,8 +283,8 @@ class PyStackQLServerModeNonAsyncTests(PyStackQLTestsBase):
         self.assertTrue(is_valid_dataframe, f"Result is not a valid DataFrame: {result}")
         # Check datatypes of the columns
         expected_dtypes = {
-            'instance_state': 'object',  # This should be 'object' for older Pandas versions
-            'num_instances': 'int64'
+            'year': 'int64',
+            'num_buckets': 'int64'
         }
         for col, expected_dtype in expected_dtypes.items():
             actual_dtype = result[col].dtype
