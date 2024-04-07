@@ -26,6 +26,12 @@ class StackQL:
 	:param server_port: The port of the StackQL server 
 		(`server_mode` only, defaults to `5466`)
 	:type server_port: int, optional
+	:param backend_storage_mode: Specifies backend storage mode, options are 'memory' and 'file'
+		(defaults to `'memory'`, this option is ignored in `server_mode`)
+	:type backend_storage_mode: str, optional
+	:param backend_file_storage_location: Specifies location for database file, only applicable when `backend_storage_mode` is 'file'
+		(defaults to `'{cwd}/stackql.db'`, this option is ignored in `server_mode`)
+	:type backend_file_storage_location: str, optional
 	:param output: Determines the format of the output, options are 'dict', 'pandas', and 'csv' 
 		(defaults to `'dict'`, `'csv'` is not supported in `server_mode`)
 	:type output: str, optional
@@ -210,7 +216,9 @@ class StackQL:
 	def __init__(self, 
 				 server_mode=False, 
 				 server_address='127.0.0.1', 
-				 server_port=5466, 
+				 server_port=5466,
+				 backend_storage_mode='memory',
+				 backend_file_storage_location='stackql.db', 
 				 download_dir=None, 
 				 app_root=None,
 				 execution_concurrency_limit=1,
@@ -284,7 +292,12 @@ class StackQL:
 				self.params.append("csv")
 			else:
 				self.params.append("json")
-			
+
+			# backend storage settings
+			if backend_storage_mode == 'file':
+				self.params.append("--sqlBackend")
+				self.params.append(json.dumps({ "dsn": f"file:{backend_file_storage_location}" }))
+
 			# get or download the stackql binary
 			binary = _get_binary_name(this_os)
 
@@ -330,10 +343,8 @@ class StackQL:
 			# if custom_registry is set, use it
 			if custom_registry is not None:
 				self.custom_registry = custom_registry
-				custom_reg_obj = { "url": custom_registry }
-				custom_reg_str = json.dumps(custom_reg_obj)
 				self.params.append("--registry")
-				self.params.append(custom_reg_str)
+				self.params.append(json.dumps({ "url": custom_registry }))
 
 			# csv output
 			if self.output == "csv":
