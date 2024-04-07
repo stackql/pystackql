@@ -20,13 +20,13 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'pystackql'
-copyright = '2024, StackQL Studios'
+copyright = '2021-2024, StackQL Studios'
 author = 'StackQL Studios'
 
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '3.5.2'
+release = '3.5.3'
 
 
 # -- General configuration ---------------------------------------------------

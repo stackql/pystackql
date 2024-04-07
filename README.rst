@@ -161,6 +161,7 @@ Before testing, ensure you have all the required packages installed:
 ::
 
     pip install -r requirements.txt
+    pip install psycopg2-binary
 
 Once the dependencies are installed, you can run the tests using the provided script:
 
@@ -193,4 +194,4 @@ To publish the package to PyPI, run the following command:
 
 ::
 
-    twine upload dist/pystackql-3.5.2.tar.gz
+    twine upload dist/pystackql-3.5.3.tar.gz

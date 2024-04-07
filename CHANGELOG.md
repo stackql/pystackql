@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.5.3 (2024-04-08)
+
+### Updates
+
+ * added `backend_storage_mode` and `backend_file_storage_location` constructor args for specifying a file based backend (not applicable in `server_mode`)
+
 ## v3.5.2 (2024-03-21)
 
 ### Updates
