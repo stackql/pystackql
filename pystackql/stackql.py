@@ -187,31 +187,39 @@ class StackQL:
 		"""
 		local_params = self.params.copy()
 		local_params.insert(1, query)
+		output = {}
+
 		try:
 			with subprocess.Popen([self.bin_path] + local_params,
-								stdout=subprocess.PIPE, stderr=subprocess.PIPE) as iqlPopen:  # Capturing stderr separately
+					stdout=subprocess.PIPE, stderr=subprocess.PIPE) as iqlPopen:
 				stdout, stderr = iqlPopen.communicate()
+
 				if self.debug:
 					self._debug_log(f"Query: {query}")
 					self._debug_log(f"stdout: {stdout}")
 					self._debug_log(f"stderr: {stderr}")
+
+				# Check if stderr exists
 				if stderr:
-					# Prioritizing stderr since that’s where the expected messages seem to be
-					return stderr.decode('utf-8') if isinstance(stderr, bytes) else str(stderr)
-				else:
-					# Here, we may consider concatenating stdout and stderr, or handling them separately based on the use case
-					return stdout.decode('utf-8') if isinstance(stdout, bytes) else str(stdout)
+					output["error"] = stderr.decode('utf-8') if isinstance(stderr, bytes) else str(stderr)
+                
+				# Check if theres data
+				if stdout:
+					output["data"] = stdout.decode('utf-8') if isinstance(stdout, bytes) else str(stdout)
+
 		except FileNotFoundError:
-			return "ERROR %s not found" % self.bin_path
+			output["exception"] = f"ERROR: {self.bin_path} not found"
 		except Exception as e:
-			if 'stdout' in locals() and 'stderr' in locals():
-				return f"ERROR: {str(e)} {e.__doc__}, PARAMS: {local_params}, STDOUT: {stdout}, STDERR: {stderr}"
-			if 'stdout' in locals() and 'stderr' not in locals():
-				return f"ERROR: {str(e)} {e.__doc__}, PARAMS: {local_params},STDOUT: {stdout}"
-			elif 'stderr' in locals():
-				return f"ERROR: {str(e)} {e.__doc__}, PARAMS: {local_params},STDERR: {stderr}"
-			else:
-				return f"ERROR: {str(e)} {e.__doc__}, PARAMS: {local_params}"
+			error_details = {
+				"exception": str(e),
+				"doc": e.__doc__,
+				"params": local_params,
+				"stdout": stdout.decode('utf-8') if 'stdout' in locals() and isinstance(stdout, bytes) else "",
+				"stderr": stderr.decode('utf-8') if 'stderr' in locals() and isinstance(stderr, bytes) else ""
+			}
+			output["exception"] = f"ERROR: {json.dumps(error_details)}"
+
+		return output
 
 	def __init__(self, 
 				 server_mode=False, 
@@ -474,47 +482,50 @@ class StackQL:
 			else:
 				return result
 		else:
-			result_msg = self._run_query(query)
+			result = self._run_query(query)
+			if "exception" in result:
+				return {"error": result["exception"]}
+
+			# message on stderr
+			message = result["error"]
+
 			if self.output == 'pandas':
-				return pd.DataFrame({'message': [result_msg]})
+				return pd.DataFrame({'message': [message]}) if message else pd.DataFrame({'message': []})
 			elif self.output == 'csv':
-				return result_msg
+				return message
 			else:
-				return [{'message': result_msg}]			
+				return [{'message': message}]			
 	
-	def execute(self, query):
-		"""Executes a query using the StackQL instance and returns the output 
-		in the format specified by the `output` attribute.
+	def execute(self, query, suppress_errors=True):
+		"""
+		Executes a StackQL query and returns the output based on the specified output format.
 
-		Depending on the `server_mode` and `output` attribute of the instance, 
-		this method either runs the query against the StackQL server or executes 
-		it locally using a subprocess, returning the data in a dictionary, Pandas 
-		DataFrame, or CSV format.
+		This method supports execution both in server mode and locally using subprocess. In server mode,
+		the query is sent to a StackQL server, while in local mode, it runs the query using a local binary.
 
-		:param query: The StackQL query string to be executed.
-		:type query: str
+		Args:
+			query (str): The StackQL query string to be executed.
+			suppress_errors (bool, optional): If set to True, the method will return an empty list if an error occurs.
 
-		:return: The output result of the query. Depending on the `output` attribute, 
-				the result can be a dictionary, a Pandas DataFrame, or a raw CSV string.
-				CSV output is currently not supported in `server_mode`.
-		:rtype: dict, pd.DataFrame, or str
+		Returns:
+			dict, pd.DataFrame, or str: The output of the query, which can be a dictionary, a Pandas DataFrame,
+			or a raw CSV string, depending on the configured output format.
 
-		Example:
-			>>> from pystackql import StackQL
+		Raises:
+			ValueError: If an unsupported output format is specified.
+
+		Examples:
 			>>> stackql = StackQL()
-			>>> stackql_query = \"\"\"SELECT SPLIT_PART(machineType, '/', -1) as machine_type, 
-			... status, COUNT(*) as num_instances
-			... FROM google.compute.instances 
-			... WHERE project = 'stackql-demo' 
-			... AND zone = 'australia-southeast1-a'
-			... GROUP BY machine_type, status
-			... HAVING COUNT(*) > 2\"\"\"
-			>>> result = stackql.execute(stackql_query)
+			>>> query = '''
+				SELECT SPLIT_PART(machineType, '/', -1) as machine_type, status, COUNT(*) as num_instances
+				FROM google.compute.instances
+				WHERE project = 'stackql-demo' AND zone = 'australia-southeast1-a'
+				GROUP BY machine_type, status HAVING COUNT(*) > 2
+				'''
+			>>> result = stackql.execute(query)
 		"""
 		if self.server_mode:
-			# Use server mode
 			result = self._run_server_query(query)
-			
 			if self.output == 'pandas':
 				json_str = json.dumps(result)
 				return pd.read_json(StringIO(json_str))
@@ -522,22 +533,31 @@ class StackQL:
 				raise ValueError("CSV output is not supported in server_mode.")
 			else:  # Assume 'dict' output
 				return result
-			
 		else:
-			# Local mode handling (existing logic)
 			output = self._run_query(query)
-			if self.output == 'csv':
-				return output
-			elif self.output == 'pandas':
-				try:
-					return pd.read_json(StringIO(output))
-				except ValueError:
-					return pd.DataFrame([{"error": "Invalid JSON output: {}".format(output.strip())}])
-			else:  # Assume 'dict' output
-				try:
-					return json.loads(output)
-				except ValueError:
-					return [{"error": "Invalid JSON output: {}".format(output.strip())}]
+			if "exception" in output:
+				return {"error": output["exception"]}
+
+			if "data" in output:
+				# theres data, return it
+				if self.output == 'csv':
+					return output["data"]
+				elif self.output == 'pandas':
+					try:
+						return pd.read_json(StringIO(output["data"]))
+					except ValueError:
+						return pd.DataFrame([{"error": "Invalid JSON output"}])
+				else:  # Assume 'dict' output
+					try:
+						return json.loads(output["data"])
+					except ValueError:
+						return {"error": "Invalid JSON output"}            
+			else:
+				if "error" in output:
+					if suppress_errors:
+						return []
+					else:
+						return {"error": output["error"]}
 
 	#
 	# asnyc query support
@@ -586,7 +606,13 @@ class StackQL:
 			result = self._run_server_query(query)  # Assuming this is a method that exists
 		else:
 			# Convert the JSON string to a Python object (list of dicts).
-			result = json.loads(self._run_query(query))
+			query_results = self._run_query(query)
+			if "exception" in query_results:
+				result = [{"error": query_results["exception"]}]
+			if "error" in query_results:
+				result = [{"error": query_results["error"]}]
+			if "data" in query_results:
+				result = json.loads(query_results["data"]) 
 		# Convert the result to a DataFrame if necessary.
 		if self.output == 'pandas':
 			return pd.DataFrame(result)

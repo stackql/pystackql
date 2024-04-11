@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.5.4 (2024-04-11)
+
+### Updates
+
+ * added `suppress_errors` argument to the `execute` function
+
 ## v3.5.3 (2024-04-08)
 
 ### Updates
