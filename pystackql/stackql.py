@@ -563,7 +563,7 @@ class StackQL:
 					try:
 						return json.loads(output["data"])
 					except ValueError:
-						return {"error": "Invalid JSON output"}            
+						return {"error": f"Invalid JSON output : {output['data']}"}            
 			else:
 				if "error" in output:
 					if suppress_errors:
