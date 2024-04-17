@@ -193,9 +193,15 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
     @pystackql_test_setup()
     def test_11_execute_with_defaults(self):
         result = self.stackql.execute(google_query)
-        is_valid_dict = isinstance(result, list) and all(isinstance(item, dict) for item in result)
-        self.assertTrue(is_valid_dict, f"Result is not a valid dict: {result}")
-        print_test_result(f"Test execute with defaults\nRESULT: {result}", is_valid_dict)
+        is_valid_data_resp = isinstance(result, list) and all(isinstance(item, dict) for item in result)
+        self.assertTrue(is_valid_data_resp, f"Result is not valid: {result}")
+        print_test_result(f"Test execute with defaults\nRESULT: {result}", is_valid_data_resp)
+
+    def test_11a_execute_with_defaults_null_response(self):
+        result = self.stackql.execute("SELECT 1 WHERE 1=0")
+        is_valid_empty_resp = isinstance(result, list) and len(result) == 0
+        self.assertTrue(is_valid_empty_resp, f"Result is not a empty list: {result}")
+        print_test_result(f"Test execute with defaults (empty response)\nRESULT: {result}", is_valid_empty_resp)        
 
     @pystackql_test_setup(output='pandas')
     def test_12_execute_with_pandas_output(self):

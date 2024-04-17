@@ -580,7 +580,10 @@ class StackQL:
 						return pd.DataFrame([{"error": "Invalid JSON output"}])
 				else:  # Assume 'dict' output
 					try:
-						return json.loads(data)
+						retval = json.loads(data)
+						if retval is None:
+							return []
+						return retval
 					except ValueError:
 						return [{"error": f"Invalid JSON output : {data}"}]
 
