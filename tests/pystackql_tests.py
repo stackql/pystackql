@@ -159,11 +159,11 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
     @pystackql_test_setup()
     def test_10_executeStmt(self):
         okta_result_dict = self.stackql.executeStmt(registry_pull_okta_query)
-        okta_result = okta_result_dict[0]["message"]
+        okta_result = okta_result_dict["message"]
         expected_pattern = registry_pull_resp_pattern("okta")
         self.assertTrue(re.search(expected_pattern, okta_result), f"Expected pattern not found in result: {okta_result}")
         github_result_dict = self.stackql.executeStmt(registry_pull_github_query)
-        github_result = github_result_dict[0]["message"]
+        github_result = github_result_dict["message"]
         expected_pattern = registry_pull_resp_pattern("github")
         self.assertTrue(re.search(expected_pattern, github_result), f"Expected pattern not found in result: {github_result}")
         print_test_result(f"""Test executeStmt method\nRESULTS:\n{okta_result_dict}\n{github_result_dict}""", True)
