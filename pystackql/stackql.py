@@ -219,6 +219,11 @@ class StackQL:
 			}
 			output["exception"] = f"ERROR: {json.dumps(error_details)}"
 
+		# output = {'data': <stdout str>, 'error': <stderr str>, 'exception': <exception as a json string> }
+		# for a statement you would expect 'error' to exist
+		# for a query you would expect 'data' to exist
+		# 'exception' in output indicates an error occurred during the execution (statement or query)
+
 		return output
 
 	def __init__(self, 
@@ -482,6 +487,9 @@ class StackQL:
 			else:
 				return result
 		else:
+			# returns either...
+			# {'error': '<error message>'} if something went wrong; or
+			# {'message': '<message>'} if the statement was executed successfully
 			result = self._run_query(query)
 			if "exception" in result:
 				return {"error": result["exception"]}
@@ -494,7 +502,7 @@ class StackQL:
 			elif self.output == 'csv':
 				return message
 			else:
-				return [{'message': message}]			
+				return {'message': message}			
 	
 	def execute(self, query, suppress_errors=True):
 		"""
@@ -508,7 +516,7 @@ class StackQL:
 			suppress_errors (bool, optional): If set to True, the method will return an empty list if an error occurs.
 
 		Returns:
-			dict, pd.DataFrame, or str: The output of the query, which can be a dictionary, a Pandas DataFrame,
+			list(dict), pd.DataFrame, or str: The output of the query, which can be a list of dictionary objects, a Pandas DataFrame,
 			or a raw CSV string, depending on the configured output format.
 
 		Raises:
@@ -534,6 +542,10 @@ class StackQL:
 			else:  # Assume 'dict' output
 				return result
 		else:
+			# returns either...
+			# {'error': <error json str>} if something went wrong; or
+			# [{<data>}] if the statement was executed successfully, messages to stderr are ignored
+
 			output = self._run_query(query)
 			if "exception" in output:
 				return {"error": output["exception"]}

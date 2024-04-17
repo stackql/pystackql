@@ -1,6 +1,7 @@
 # Miscellaneous
 /.stackql
 /.stackql/*
+.pypirc
 
 /.vscode
 /.vscode/*

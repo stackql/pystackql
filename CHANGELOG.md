@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.5.5 (2024-04-17)
+
+### Updates
+
+ * modified dict response for `executeStmt`
+
 ## v3.5.4 (2024-04-11)
 
 ### Updates
