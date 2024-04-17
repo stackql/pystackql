@@ -176,8 +176,17 @@ class StackQL:
 		:type query: str
 
 		:return: The output result of the query, which can either be the actual query result or an error message.
-		:rtype: str
+		:rtype: dict
 
+		Example:
+			::
+
+				{
+					"data": "[{\"machine_type\": \"n1-standard-1\", \"status\": \"RUNNING\", \"num_instances\": 3}, ...]",
+					"error": "stderr message if present",
+					"exception": "ERROR: {\"exception\": \"<exception message>\", \"doc\": \"<exception doc>\", \"params\": \"<params>\", \"stdout\": \"<stdout>\", \"stderr\": \"<stderr>\"}
+				}
+		
 		Possible error messages include:
 		- Indications that the StackQL binary wasn't found.
 		- Generic error messages for other exceptions encountered during the query execution.
@@ -218,11 +227,6 @@ class StackQL:
 				"stderr": stderr.decode('utf-8') if 'stderr' in locals() and isinstance(stderr, bytes) else ""
 			}
 			output["exception"] = f"ERROR: {json.dumps(error_details)}"
-
-		# output = {'data': <stdout str>, 'error': <stderr str>, 'exception': <exception as a json string> }
-		# for a statement you would expect 'error' to exist
-		# for a query you would expect 'data' to exist
-		# 'exception' in output indicates an error occurred during the execution (statement or query)
 
 		return output
 
@@ -487,12 +491,20 @@ class StackQL:
 			else:
 				return result
 		else:
+
 			# returns either...
 			# {'error': '<error message>'} if something went wrong; or
 			# {'message': '<message>'} if the statement was executed successfully
+
 			result = self._run_query(query)
 			if "exception" in result:
-				return {"error": result["exception"]}
+				exception_msg = result["exception"]
+				if self.output == 'pandas':
+					return pd.DataFrame({'error': [exception_msg]}) if exception_msg else pd.DataFrame({'error': []})
+				elif self.output == 'csv':		
+					return exception_msg
+				else:		
+					return {"error": exception_msg}
 
 			# message on stderr
 			message = result["error"]
@@ -543,35 +555,57 @@ class StackQL:
 				return result
 		else:
 			# returns either...
-			# {'error': <error json str>} if something went wrong; or
-			# [{<data>}] if the statement was executed successfully, messages to stderr are ignored
+			# [{'error': <error json str>}] if something went wrong; or
+			# [{<row1>},...] if the statement was executed successfully, messages to stderr are ignored
 
 			output = self._run_query(query)
 			if "exception" in output:
-				return {"error": output["exception"]}
+				exception_msg = output["exception"]
+				if self.output == 'pandas':
+					return pd.DataFrame({'error': [exception_msg]}) if exception_msg else pd.DataFrame({'error': []})
+				elif self.output == 'csv':		
+					return exception_msg
+				else:		
+					return [{"error": exception_msg}]
 
 			if "data" in output:
+				data = output["data"]
 				# theres data, return it
 				if self.output == 'csv':
-					return output["data"]
+					return data
 				elif self.output == 'pandas':
 					try:
-						return pd.read_json(StringIO(output["data"]))
+						return pd.read_json(StringIO(data))
 					except ValueError:
 						return pd.DataFrame([{"error": "Invalid JSON output"}])
 				else:  # Assume 'dict' output
 					try:
-						return json.loads(output["data"])
+						return json.loads(data)
 					except ValueError:
-						return {"error": f"Invalid JSON output : {output['data']}"}            
-			else:
-				if "error" in output:
-					if suppress_errors:
-						return []
-					else:
-						return {"error": output["error"]}
+						return [{"error": f"Invalid JSON output : {data}"}]
 
-	#
+			if "error" in output:
+				# theres no data but there is stderr from the request, could be an expected error like a 404
+				if suppress_errors:
+					# we dont care about errors, return an empty list
+					csv_ret = ""
+					pd_ret = pd.DataFrame()
+					dict_ret = []
+				else:
+					# we care about errors, return the error
+					err_msg = output["error"]
+					csv_ret = err_msg
+					pd_ret = pd.DataFrame([{"error": err_msg}])
+					dict_ret = [{"error": err_msg}]
+					  				
+				if self.output == 'csv':
+					return csv_ret
+				elif self.output == 'pandas':
+					return pd_ret
+				else:  # Assume 'dict' output
+					return dict_ret
+				
+
 	# asnyc query support
 	#
 
