@@ -1,11 +1,11 @@
 # Changelog
 
-## v3.6.0 (2024-04-18)
+## v3.6.1 (2024-04-18)
 
 ### Updates
 
  * modified dict response for `executeStmt`
- * modified error response for `execute`
+ * modified error response for `execute`, should never return `None`
 
 ## v3.5.4 (2024-04-11)
 
