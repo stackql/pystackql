@@ -45,8 +45,7 @@ jobs:
       - name: Install psycopg2 for non-Windows OS
         if: matrix.os != 'windows-latest'
         run: |
-          # pip install psycopg2
-          pip install psycopg2
+          pip install psycopg2-binary
 
       # Windows specific
       # whl files downloaded from https://www.lfd.uci.edu/~gohlke/pythonlibs/#psycopg
