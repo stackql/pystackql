@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.6.2 (2024-05-06)
+
+### Updates
+
+ * added `rowsaffected` to dict response for `executeStmt`
+
 ## v3.6.1 (2024-04-18)
 
 ### Updates

@@ -514,7 +514,11 @@ class StackQL:
 			elif self.output == 'csv':
 				return message
 			else:
-				return {'message': message}			
+				# count number of rows in the message
+				try:
+					return {'message': message, 'rowsaffected': message.count('\n')}
+				except Exception as e:
+					return {'message': message, 'rowsaffected': 0}							
 	
 	def execute(self, query, suppress_errors=True):
 		"""
