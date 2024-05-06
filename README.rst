@@ -194,4 +194,4 @@ To publish the package to PyPI, run the following command:
 
 ::
 
-    twine upload --config-file .pypirc dist/pystackql-3.6.1.tar.gz
+    twine upload --config-file .pypirc dist/pystackql-3.6.2.tar.gz
