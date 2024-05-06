@@ -27,7 +27,6 @@ def get_custom_download_dir(platform_name):
 
 registry_pull_google_query = "REGISTRY PULL google"
 registry_pull_aws_query = "REGISTRY PULL aws"
-registry_pull_awscc_query = "REGISTRY PULL awscc"
 registry_pull_okta_query = "REGISTRY PULL okta"
 registry_pull_github_query = "REGISTRY PULL github"
 
@@ -44,7 +43,7 @@ GROUP BY status
 
 aws_query = f"""
 SELECT 
-SPLIT_PART(CreationDate, '-', 1) as year, count(*) as num_buckets FROM aws.s3.buckets
+SPLIT_PART(CreationDate, '-', 1) as year, count(*) as num_buckets FROM aws.s3_api.buckets
 WHERE region = 'us-east-1'
 GROUP BY year
 """
@@ -54,7 +53,7 @@ regions = os.environ.get('AWS_REGIONS').split(',')
 async_queries = [
     f"""
     SELECT region, COUNT(*) as num_functions
-    FROM awscc.lambda.functions
+    FROM aws.lambda.functions
     WHERE region = '{region}'
     """
     for region in regions
