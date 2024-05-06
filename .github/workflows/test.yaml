@@ -19,9 +19,12 @@ jobs:
           - "3.10"
           - "3.11"
           - "3.12"
+          # - "3.13"
         exclude:
-          - os: windows-latest
-            python-version: "3.12"
+          # - os: windows-latest
+          #   python-version: "3.13"
+          - os: macos-latest
+            python-version: "3.7"
     runs-on: ${{matrix.os}}
     name: 'Run Tests on ${{matrix.os}} with Python ${{matrix.python-version}}'
 
@@ -49,20 +52,21 @@ jobs:
       - name: Install psycopg2-binary for Windows using local wheel
         if: matrix.os == 'windows-latest'
         run: |
-          # Determine the wheel filename based on the Python version
-          $wheelFilename = switch ("${{ matrix.python-version }}") {
-            "3.7" { "psycopg2-2.9.3-cp37-cp37m-win_amd64.whl" }
-            "3.8" { "psycopg2-2.9.3-cp38-cp38-win_amd64.whl" }
-            "3.9" { "psycopg2-2.9.3-cp39-cp39-win_amd64.whl" }
-            "3.10" { "psycopg2-2.9.3-cp310-cp310-win_amd64.whl" }
-            "3.11" { "psycopg2-2.9.3-cp311-cp311-win_amd64.whl" }
-          }
+          # # Determine the wheel filename based on the Python version
+          # $wheelFilename = switch ("${{ matrix.python-version }}") {
+          #   "3.7" { "psycopg2-2.9.3-cp37-cp37m-win_amd64.whl" }
+          #   "3.8" { "psycopg2-2.9.3-cp38-cp38-win_amd64.whl" }
+          #   "3.9" { "psycopg2-2.9.3-cp39-cp39-win_amd64.whl" }
+          #   "3.10" { "psycopg2-2.9.3-cp310-cp310-win_amd64.whl" }
+          #   "3.11" { "psycopg2-2.9.3-cp311-cp311-win_amd64.whl" }
+          # }
 
-          # Print the wheel filename for debugging
-          Write-Host "Determined wheel filename: $wheelFilename"
+          # # Print the wheel filename for debugging
+          # Write-Host "Determined wheel filename: $wheelFilename"
 
-          # Install the wheel
-          pip install ./tests/whls/$wheelFilename
+          # # Install the wheel
+          # pip install ./tests/whls/$wheelFilename
+          pip install "psycopg[binary]"
         shell: powershell
       # End Windows specific
 
