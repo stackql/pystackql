@@ -48,8 +48,14 @@ class StackQL:
 		(defaults to `{cwd}/.stackql`)
 	:type app_root: str, optional	
 	:param execution_concurrency_limit: Concurrency limit for query execution
-		(defaults to `1`, set to `-1` for unlimited)
-	:type execution_concurrency_limit: int, optional	
+		(defaults to `-1` - unlimited)
+	:type execution_concurrency_limit: int, optional
+	:param dataflow_dependency_max: Max dataflow weakly connected components for a given query
+		(defaults to `50`)
+	:type dataflow_dependency_max: int, optional
+	:param dataflow_components_max: Max dataflow dependency depth for a given query
+		(defaults to `50`)
+	:type dataflow_components_max: int, optional
 	:param api_timeout: API timeout 
 		(defaults to `45`, not supported in `server_mode`)
 	:type api_timeout: int, optional
@@ -238,7 +244,9 @@ class StackQL:
 				 backend_file_storage_location='stackql.db', 
 				 download_dir=None, 
 				 app_root=None,
-				 execution_concurrency_limit=1,
+				 execution_concurrency_limit=-1,
+				 dataflow_dependency_max=50,
+				 dataflow_components_max=50,
 				 output='dict',
 				 custom_registry=None,
 				 custom_auth=None,
@@ -349,6 +357,15 @@ class StackQL:
 			self.execution_concurrency_limit = execution_concurrency_limit
 			self.params.append("--execution.concurrency.limit")
 			self.params.append(str(execution_concurrency_limit))
+
+			# set dataflow_dependency_max and dataflow_components_max
+			self.dataflow_dependency_max = dataflow_dependency_max
+			self.params.append("--dataflow.dependency.max")
+			self.params.append(str(dataflow_dependency_max))
+
+			self.dataflow_components_max = dataflow_components_max
+			self.params.append("--dataflow.components.max")
+			self.params.append(str(dataflow_components_max))
 
 			# if custom_auth is set, use it
 			if custom_auth is not None:

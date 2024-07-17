@@ -1,5 +1,17 @@
 # Changelog
 
+## v3.6.4 (2024-07-17)
+
+### Updates
+
+ * added dataflow dependency arguments
+
+## v3.6.3 (2024-06-22)
+
+### Updates
+
+ * build updates
+
 ## v3.6.2 (2024-05-06)
 
 ### Updates
