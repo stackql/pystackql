@@ -149,7 +149,8 @@ Then, from the root directory of the repository, run:
 
 ::
 
-    python3 setup.py sdist
+    rm -rf dist/*
+    python3 setup.py sdist bdist_wheel
 
 The package will be built in the ``dist`` directory.
 
@@ -194,4 +195,5 @@ To publish the package to PyPI, run the following command:
 
 ::
 
-    twine upload --config-file .pypirc dist/pystackql-3.6.2.tar.gz
+    twine upload --config-file .pypirc dist/*
+
