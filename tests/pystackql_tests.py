@@ -222,7 +222,8 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
 
     @pystackql_test_setup(output='csv')
     def test_13_execute_with_csv_output(self):
-        result = self.stackql.execute(aws_query)
+        # result = self.stackql.execute(aws_query)
+        result = self.stackql.execute(google_query)
         is_valid_csv = isinstance(result, str) and result.count("\n") >= 1 and result.count(",") >= 1
         self.assertTrue(is_valid_csv, f"Result is not a valid CSV: {result}")
         print_test_result(f"Test execute with csv output\nRESULT_COUNT: {len(result.splitlines())}", is_valid_csv)
