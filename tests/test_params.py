@@ -42,10 +42,12 @@ GROUP BY status
 """
 
 aws_query = f"""
-SELECT 
-SPLIT_PART(CreationDate, '-', 1) as year, count(*) as num_buckets FROM aws.s3_api.buckets
-WHERE region = 'us-east-1'
-GROUP BY year
+SELECT
+instance_type,
+count(*) as num_instances
+FROM aws.ec2.instances
+WHERE region = 'ap-southeast-2'
+GROUP BY instance_type
 """
 
 regions = os.environ.get('AWS_REGIONS').split(',')

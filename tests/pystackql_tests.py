@@ -207,8 +207,8 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         self.assertTrue(is_valid_dataframe, f"Result is not a valid DataFrame: {result}")
         # Check datatypes of the columns
         expected_dtypes = {
-            'year': 'int64',
-            'num_buckets': 'int64'
+            'instance_type': 'str',
+            'num_instances': 'int64'
         }
         for col, expected_dtype in expected_dtypes.items():
             actual_dtype = result[col].dtype
@@ -286,8 +286,8 @@ class PyStackQLServerModeNonAsyncTests(PyStackQLTestsBase):
         self.assertTrue(is_valid_dataframe, f"Result is not a valid DataFrame: {result}")
         # Check datatypes of the columns
         expected_dtypes = {
-            'year': 'int64',
-            'num_buckets': 'int64'
+            'instance_type': 'str',
+            'num_instances': 'int64'
         }
         for col, expected_dtype in expected_dtypes.items():
             actual_dtype = result[col].dtype
