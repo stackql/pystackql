@@ -202,12 +202,17 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
 
     @pystackql_test_setup(output='pandas')
     def test_12_execute_with_pandas_output(self):
-        result = self.stackql.execute(aws_query)
+        # result = self.stackql.execute(aws_query)
+        result = self.stackql.execute(google_query)
         is_valid_dataframe = isinstance(result, pd.DataFrame)
         self.assertTrue(is_valid_dataframe, f"Result is not a valid DataFrame: {result}")
         # Check datatypes of the columns
+        # expected_dtypes = {
+        #     'instance_type': 'object',
+        #     'num_instances': 'int64'
+        # }
         expected_dtypes = {
-            'instance_type': 'str',
+            'status': 'object',
             'num_instances': 'int64'
         }
         for col, expected_dtype in expected_dtypes.items():
@@ -281,14 +286,19 @@ class PyStackQLServerModeNonAsyncTests(PyStackQLTestsBase):
 
     @pystackql_test_setup(server_mode=True, output='pandas')
     def test_22_execute_server_mode_pandas_output(self):
-        result = self.stackql.execute(aws_query)
+        # result = self.stackql.execute(aws_query)
+        result = self.stackql.execute(google_query)
         is_valid_dataframe = isinstance(result, pd.DataFrame)
         self.assertTrue(is_valid_dataframe, f"Result is not a valid DataFrame: {result}")
         # Check datatypes of the columns
+        # expected_dtypes = {
+        #     'instance_type': 'object',
+        #     'num_instances': 'int64'
+        # }
         expected_dtypes = {
-            'instance_type': 'str',
+            'status': 'object',
             'num_instances': 'int64'
-        }
+        }        
         for col, expected_dtype in expected_dtypes.items():
             actual_dtype = result[col].dtype
             self.assertEqual(actual_dtype, expected_dtype, f"Column '{col}' has dtype '{actual_dtype}' but expected '{expected_dtype}'")
