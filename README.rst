@@ -15,6 +15,10 @@ PyStackQL - Python Wrapper for StackQL
    :target: https://pypi.org/project/pystackql/
    :alt: PyPI
 
+.. image:: https://img.shields.io/pypi/dm/pystackql?label=pypi%20downloads
+   :target: https://pypi.org/project/pystackql/
+   :alt: PyPI - Downloads
+
 StackQL is an open source developer tool which allows you to query and interact with cloud and SaaS provider APIs using SQL grammar.
 StackQL can be used for cloud inventory analysis, cloud cost optimization, cloud security and compliance, provisioning/IaC, assurance, XOps, and more.
 
