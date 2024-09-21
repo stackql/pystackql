@@ -80,25 +80,28 @@ def _download_file(url, path, showprogress=True):
 		exit(1)
 
 def _setup(download_dir, platform, showprogress=False):
-	print('installing stackql...')
-	try:
-		binary_name = _get_binary_name(platform)
-		url = _get_url()
-		print("downloading latest version of stackql from %s to %s" % (url, download_dir))
-		archive_file_name = os.path.join(download_dir, os.path.basename(url))
-		_download_file(url, archive_file_name, showprogress)
-		if platform == 'Darwin':
-			unpacked_file_name = os.path.join(download_dir, 'stackql')
-			command = 'pkgutil --expand-full {} {}'.format(archive_file_name, unpacked_file_name)
-			os.system(command)
-		else:
-			with zipfile.ZipFile(archive_file_name, 'r') as zip_ref:
-				zip_ref.extractall(download_dir) 
-
-		os.chmod(os.path.join(download_dir, binary_name), 0o755)
-	except Exception as e:
-		print("ERROR: [_setup] %s" % (str(e)))
-		exit(1)
+    try:
+        print('installing stackql...')
+        binary_name = _get_binary_name(platform)
+        url = _get_url()
+        print("downloading latest version of stackql from %s to %s" % (url, download_dir))
+        archive_file_name = os.path.join(download_dir, os.path.basename(url))
+        _download_file(url, archive_file_name, showprogress)
+        # if Platform is starting with Darwin, then it is a MacOS
+        if platform.startswith('Darwin'):
+            unpacked_file_name = os.path.join(download_dir, 'stackql')
+            command = 'pkgutil --expand-full {} {}'.format(archive_file_name, unpacked_file_name)
+            # if there are files in unpacked_file_name, then remove them
+            if os.path.exists(unpacked_file_name):
+                os.system('rm -rf {}'.format(unpacked_file_name))
+            os.system(command)
+        else:
+            with zipfile.ZipFile(archive_file_name, 'r') as zip_ref:
+                zip_ref.extractall(download_dir) 
+        os.chmod(os.path.join(download_dir, binary_name), 0o755)
+    except Exception as e:
+        print("ERROR: [_setup] %s" % (str(e)))
+        exit(1)
 
 def _get_version(bin_path):
     try:
