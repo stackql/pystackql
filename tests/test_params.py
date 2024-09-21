@@ -1,4 +1,4 @@
-import json, os, sys, platform, re, time, unittest, subprocess
+import json, sys, platform, re, time, unittest, subprocess
 import pandas as pd
 from termcolor import colored
 import unittest.mock as mock
@@ -33,11 +33,14 @@ registry_pull_github_query = "REGISTRY PULL github"
 def registry_pull_resp_pattern(provider):
     return r"%s provider, version 'v\d+\.\d+\.\d+' successfully installed\s*" % provider
 
+test_gcp_project_id = "test-gcp-project"
+test_gcp_zone = "australia-southeast2-a"
+
 google_query = f"""
 SELECT status, count(*) as num_instances
 FROM google.compute.instances
-WHERE project = '{os.environ['GCP_PROJECT']}' 
-AND zone = '{os.environ['GCP_ZONE']}'
+WHERE project = '{test_gcp_project_id}' 
+AND zone = '{test_gcp_zone}'
 GROUP BY status
 """
 
@@ -50,7 +53,7 @@ WHERE region = 'ap-southeast-2'
 GROUP BY instance_type
 """
 
-regions = os.environ.get('AWS_REGIONS').split(',')
+test_aws_regions = ["ap-southeast-2", "ap-southeast-4"]
 
 async_queries = [
     f"""
@@ -58,7 +61,7 @@ async_queries = [
     FROM aws.lambda.functions
     WHERE region = '{region}'
     """
-    for region in regions
+    for region in test_aws_regions
 ]
 
 def print_test_result(test_name, condition=True, server_mode=False, is_ipython=False):

@@ -1,18 +1,18 @@
 import sys, os, unittest, asyncio, re
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from pystackql import StackQL, magic, magics, StackqlMagic, StackqlServerMagic
 from .test_params import *
 
 def pystackql_test_setup(**kwargs):
     def decorator(func):
-        def wrapper(self):
+        def wrapper(self, *args):
             try:
                 del self.stackql
             except AttributeError:
                 pass
             self.stackql = StackQL(**kwargs)
-            func(self)
+            func(self, *args)
         return wrapper
     return decorator
 
@@ -201,8 +201,14 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         print_test_result(f"Test execute with defaults (empty response)\nRESULT: {result}", is_valid_empty_resp)        
 
     @pystackql_test_setup(output='pandas')
-    def test_12_execute_with_pandas_output(self):
-        # result = self.stackql.execute(aws_query)
+    @patch('pystackql.StackQL.execute')
+    def test_12_execute_with_pandas_output(self, mock_execute):
+        # mocking the response for pandas DataFrame
+        mock_execute.return_value = pd.DataFrame({
+            'status': ['RUNNING', 'TERMINATED'], 
+            'num_instances': [2, 1]
+        })
+
         result = self.stackql.execute(google_query)
         is_valid_dataframe = isinstance(result, pd.DataFrame)
         self.assertTrue(is_valid_dataframe, f"Result is not a valid DataFrame: {result}")
@@ -221,8 +227,10 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         print_test_result(f"Test execute with pandas output\nRESULT COUNT: {len(result)}", is_valid_dataframe)
 
     @pystackql_test_setup(output='csv')
-    def test_13_execute_with_csv_output(self):
-        # result = self.stackql.execute(aws_query)
+    @patch('pystackql.StackQL.execute')
+    def test_13_execute_with_csv_output(self, mock_execute):
+        # mocking the response for csv output
+        mock_execute.return_value = "status,num_instances\nRUNNING,2\nTERMINATED,1\n" 
         result = self.stackql.execute(google_query)
         is_valid_csv = isinstance(result, str) and result.count("\n") >= 1 and result.count(",") >= 1
         self.assertTrue(is_valid_csv, f"Result is not a valid CSV: {result}")
@@ -280,22 +288,34 @@ class PyStackQLServerModeNonAsyncTests(PyStackQLTestsBase):
         print_test_result(f"Test executeStmt in server mode with pandas output\n{result_df}", is_valid_response, True)
 
     @pystackql_test_setup(server_mode=True)
-    def test_21_execute_server_mode_default_output(self):
+    @patch('pystackql.stackql.StackQL._run_server_query')
+    def test_21_execute_server_mode_default_output(self, mock_run_server_query):
+        # Mocking the response as a list of dictionaries
+        mock_result = [
+            {'status': 'RUNNING', 'num_instances': 2},
+            {'status': 'TERMINATED', 'num_instances': 1}
+        ]
+        mock_run_server_query.return_value = mock_result
+
         result = self.stackql.execute(google_query)
         is_valid_dict_output = isinstance(result, list) and all(isinstance(row, dict) for row in result)
         print_test_result(f"""Test execute in server_mode with default output\nRESULT_COUNT: {len(result)}""", is_valid_dict_output, True)
+        # Check `_run_server_query` method
+        mock_run_server_query.assert_called_once_with(google_query)
 
     @pystackql_test_setup(server_mode=True, output='pandas')
-    def test_22_execute_server_mode_pandas_output(self):
-        # result = self.stackql.execute(aws_query)
+    @patch('pystackql.stackql.StackQL._run_server_query')
+    def test_22_execute_server_mode_pandas_output(self, mock_run_server_query):
+        # Mocking the response for pandas DataFrame
+        mock_df = pd.DataFrame({
+            'status': ['RUNNING', 'TERMINATED'],
+            'num_instances': [2, 1]
+        })
+        mock_run_server_query.return_value = mock_df.to_dict(orient='records')
         result = self.stackql.execute(google_query)
         is_valid_dataframe = isinstance(result, pd.DataFrame)
         self.assertTrue(is_valid_dataframe, f"Result is not a valid DataFrame: {result}")
         # Check datatypes of the columns
-        # expected_dtypes = {
-        #     'instance_type': 'object',
-        #     'num_instances': 'int64'
-        # }
         expected_dtypes = {
             'status': 'object',
             'num_instances': 'int64'
@@ -304,6 +324,8 @@ class PyStackQLServerModeNonAsyncTests(PyStackQLTestsBase):
             actual_dtype = result[col].dtype
             self.assertEqual(actual_dtype, expected_dtype, f"Column '{col}' has dtype '{actual_dtype}' but expected '{expected_dtype}'")
         print_test_result(f"Test execute in server_mode with pandas output\nRESULT COUNT: {len(result)}", is_valid_dataframe)
+        # Check `_run_server_query` method
+        mock_run_server_query.assert_called_once_with(google_query)
 
 class MockInteractiveShell:
     """A mock class for IPython's InteractiveShell."""
