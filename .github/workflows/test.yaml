@@ -79,7 +79,6 @@ jobs:
           pip install .
 
       - name: Run tests
-        shell: ${{ matrix.os == 'windows-latest' && 'pwsh' || 'bash' }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -94,3 +93,23 @@ jobs:
           GCP_ZONE: ${{ vars.GCP_ZONE }}
         run: |
           python3 -m tests.pystackql_tests
+        shell: bash
+        if: runner.os != 'Windows'
+
+      - name: Run tests on Windows
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          STACKQL_GITHUB_USERNAME: ${{ secrets.STACKQL_GITHUB_USERNAME }}
+          STACKQL_GITHUB_PASSWORD: ${{ secrets.STACKQL_GITHUB_PASSWORD }}
+          CUSTOM_STACKQL_GITHUB_USERNAME: ${{ secrets.CUSTOM_STACKQL_GITHUB_USERNAME }}
+          CUSTOM_STACKQL_GITHUB_PASSWORD: ${{ secrets.CUSTOM_STACKQL_GITHUB_PASSWORD }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          AWS_REGIONS: ${{ vars.AWS_REGIONS }}
+          GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+          GCP_ZONE: ${{ vars.GCP_ZONE }}
+        run: |
+          python3 -m tests.pystackql_tests
+        shell: pwsh
+        if: runner.os == 'Windows'
