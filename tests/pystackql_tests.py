@@ -70,7 +70,7 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         self.assertIsInstance(properties["server_mode"], bool, "server_mode should be of type bool")
         self.assertIsInstance(properties["output"], str, "output should be of type str")
         # If all the assertions pass, then the properties are considered valid.
-        print_test_result(f"""Test properties method\nPROPERTIES: {properties}""", True)
+        print_test_result(f"""Test 01 properties method\nPROPERTIES: {properties}""", True)
 
     @pystackql_test_setup()
     def test_02_version_attribute(self):
@@ -78,7 +78,7 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         self.assertIsNotNone(version)
         is_valid_semver = bool(re.match(expected_version_pattern, version))
         self.assertTrue(is_valid_semver)
-        print_test_result(f"""Test version attribute\nVERSION: {version}""", is_valid_semver)
+        print_test_result(f"""Test 02 version attribute\nVERSION: {version}""", is_valid_semver)
 
     @pystackql_test_setup()
     def test_03_package_version_attribute(self):
@@ -86,7 +86,7 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         self.assertIsNotNone(package_version)
         is_valid_semver = bool(re.match(expected_package_version_pattern, package_version))
         self.assertTrue(is_valid_semver)
-        print_test_result(f"""Test package_version attribute\nPACKAGE VERSION: {package_version}""", is_valid_semver)
+        print_test_result(f"""Test 03 package_version attribute\nPACKAGE VERSION: {package_version}""", is_valid_semver)
 
     @pystackql_test_setup()
     def test_04_platform_attribute(self):
@@ -94,12 +94,12 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         self.assertIsNotNone(platform_string)
         is_valid_platform = bool(re.match(expected_platform_pattern, platform_string))
         self.assertTrue(is_valid_platform)
-        print_test_result(f"""Test platform attribute\nPLATFORM: {platform_string}""", is_valid_platform)
+        print_test_result(f"""Test 04 platform attribute\nPLATFORM: {platform_string}""", is_valid_platform)
 
     @pystackql_test_setup()
     def test_05_bin_path_attribute(self):
         self.assertTrue(os.path.exists(self.stackql.bin_path))
-        print_test_result(f"""Test bin_path attribute with default download path\nBINARY PATH: {self.stackql.bin_path}""", os.path.exists(self.stackql.bin_path))
+        print_test_result(f"""Test 05 bin_path attribute with default download path\nBINARY PATH: {self.stackql.bin_path}""", os.path.exists(self.stackql.bin_path))
 
     @pystackql_test_setup(download_dir=get_custom_download_dir(platform.system().lower()))
     def test_06_set_custom_download_dir(self):
@@ -114,7 +114,7 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         expected_binary_path = os.path.join(expected_download_dir, binary_name)
         self.assertTrue(os.path.exists(expected_binary_path), f"No binary found at {expected_binary_path}")
         # Final test result print
-        print_test_result(f"""Test setting a custom download_dir\nCUSTOM_DOWNLOAD_DIR: {expected_download_dir}""", version is not None and os.path.exists(expected_binary_path))
+        print_test_result(f"""Test 06 setting a custom download_dir\nCUSTOM_DOWNLOAD_DIR: {expected_download_dir}""", version is not None and os.path.exists(expected_binary_path))
 
     @pystackql_test_setup(output="csv")
     def test_07_csv_output_with_defaults(self):
@@ -132,7 +132,7 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         self.assertIn(",", self.stackql.params)
         # Check if params list has --hideheaders (default header value is False)
         self.assertIn("--hideheaders", self.stackql.params)
-        print_test_result(f"""Test csv output with defaults (comma delimited without headers)\nPARAMS: {self.stackql.params}""", True)
+        print_test_result(f"""Test 07 csv output with defaults (comma delimited without headers)\nPARAMS: {self.stackql.params}""", True)
 
     @pystackql_test_setup(output="csv", sep="|")
     def test_08_csv_output_with_pipe_separator(self):
@@ -143,7 +143,7 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         self.assertIn("|", self.stackql.params)
         # Check if --hideheaders is in params list
         self.assertIn("--hideheaders", self.stackql.params)
-        print_test_result(f"""Test csv output with custom sep (pipe delimited without headers)\nPARAMS: {self.stackql.params}""", True)
+        print_test_result(f"""Test 08 csv output with custom sep (pipe delimited without headers)\nPARAMS: {self.stackql.params}""", True)
 
     @pystackql_test_setup(output="csv", header=True)
     def test_09_csv_output_with_header(self):
@@ -151,7 +151,7 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         self.assertTrue(self.stackql.header, "Header is not set to True")
         # Check if params list does not have --hideheaders
         self.assertNotIn("--hideheaders", self.stackql.params)
-        print_test_result(f"""Test csv output with headers (comma delimited with headers)\nPARAMS: {self.stackql.params}""", True)
+        print_test_result(f"""Test 09 csv output with headers (comma delimited with headers)\nPARAMS: {self.stackql.params}""", True)
 
     @pystackql_test_setup()
     def test_10_executeStmt(self):
@@ -163,20 +163,20 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         github_result = github_result_dict["message"]
         expected_pattern = registry_pull_resp_pattern("github")
         self.assertTrue(re.search(expected_pattern, github_result), f"Expected pattern not found in result: {github_result}")
-        print_test_result(f"""Test executeStmt method\nRESULTS:\n{okta_result_dict}\n{github_result_dict}""", True)
+        print_test_result(f"""Test 10 executeStmt method\nRESULTS:\n{okta_result_dict}\n{github_result_dict}""", True)
 
     @pystackql_test_setup(output="csv")
-    def test_10a_executeStmt_with_csv_output(self):
+    def test_11_executeStmt_with_csv_output(self):
         okta_result = self.stackql.executeStmt(registry_pull_okta_query)
         expected_pattern = registry_pull_resp_pattern("okta")
         self.assertTrue(re.search(expected_pattern, okta_result), f"Expected pattern not found in result: {okta_result}")
         github_result = self.stackql.executeStmt(registry_pull_github_query)
         expected_pattern = registry_pull_resp_pattern("github")
         self.assertTrue(re.search(expected_pattern, github_result), f"Expected pattern not found in result: {github_result}")
-        print_test_result(f"""Test executeStmt method with csv output\nRESULTS:\n{okta_result}\n{github_result}""", True)
+        print_test_result(f"""Test 11 executeStmt method with csv output\nRESULTS:\n{okta_result}\n{github_result}""", True)
 
     @pystackql_test_setup(output="pandas")
-    def test_10b_executeStmt_with_pandas_output(self):
+    def test_12_executeStmt_with_pandas_output(self):
         okta_result_df = self.stackql.executeStmt(registry_pull_okta_query)
         okta_result = okta_result_df['message'].iloc[0]
         expected_pattern = registry_pull_resp_pattern("okta")
@@ -185,24 +185,24 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         github_result = github_result_df['message'].iloc[0]
         expected_pattern = registry_pull_resp_pattern("github")
         self.assertTrue(re.search(expected_pattern, github_result), f"Expected pattern not found in result: {github_result}")
-        print_test_result(f"""Test executeStmt method with pandas output\nRESULTS:\n{okta_result_df}\n{github_result_df}""", True)
+        print_test_result(f"""Test 12 executeStmt method with pandas output\nRESULTS:\n{okta_result_df}\n{github_result_df}""", True)
 
     @pystackql_test_setup()
-    def test_11_execute_with_defaults(self):
+    def test_13_execute_with_defaults(self):
         result = self.stackql.execute(google_query)
         is_valid_data_resp = isinstance(result, list) and all(isinstance(item, dict) for item in result)
         self.assertTrue(is_valid_data_resp, f"Result is not valid: {result}")
-        print_test_result(f"Test execute with defaults\nRESULT: {result}", is_valid_data_resp)
+        print_test_result(f"Test 13 execute with defaults\nRESULT: {result}", is_valid_data_resp)
 
-    def test_11a_execute_with_defaults_null_response(self):
+    def test_14_execute_with_defaults_null_response(self):
         result = self.stackql.execute("SELECT 1 WHERE 1=0")
         is_valid_empty_resp = isinstance(result, list) and len(result) == 0
         self.assertTrue(is_valid_empty_resp, f"Result is not a empty list: {result}")
-        print_test_result(f"Test execute with defaults (empty response)\nRESULT: {result}", is_valid_empty_resp)        
+        print_test_result(f"Test 14 execute with defaults (empty response)\nRESULT: {result}", is_valid_empty_resp)        
 
     @pystackql_test_setup(output='pandas')
     @patch('pystackql.StackQL.execute')
-    def test_12_execute_with_pandas_output(self, mock_execute):
+    def test_15_execute_with_pandas_output(self, mock_execute):
         # mocking the response for pandas DataFrame
         mock_execute.return_value = pd.DataFrame({
             'status': ['RUNNING', 'TERMINATED'], 
@@ -213,10 +213,6 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         is_valid_dataframe = isinstance(result, pd.DataFrame)
         self.assertTrue(is_valid_dataframe, f"Result is not a valid DataFrame: {result}")
         # Check datatypes of the columns
-        # expected_dtypes = {
-        #     'instance_type': 'object',
-        #     'num_instances': 'int64'
-        # }
         expected_dtypes = {
             'status': 'object',
             'num_instances': 'int64'
@@ -224,36 +220,82 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         for col, expected_dtype in expected_dtypes.items():
             actual_dtype = result[col].dtype
             self.assertEqual(actual_dtype, expected_dtype, f"Column '{col}' has dtype '{actual_dtype}' but expected '{expected_dtype}'")
-        print_test_result(f"Test execute with pandas output\nRESULT COUNT: {len(result)}", is_valid_dataframe)
+        print_test_result(f"Test 15 execute with pandas output\nRESULT COUNT: {len(result)}", is_valid_dataframe)
 
     @pystackql_test_setup(output='csv')
     @patch('pystackql.StackQL.execute')
-    def test_13_execute_with_csv_output(self, mock_execute):
+    def test_16_execute_with_csv_output(self, mock_execute):
         # mocking the response for csv output
         mock_execute.return_value = "status,num_instances\nRUNNING,2\nTERMINATED,1\n" 
         result = self.stackql.execute(google_query)
         is_valid_csv = isinstance(result, str) and result.count("\n") >= 1 and result.count(",") >= 1
         self.assertTrue(is_valid_csv, f"Result is not a valid CSV: {result}")
-        print_test_result(f"Test execute with csv output\nRESULT_COUNT: {len(result.splitlines())}", is_valid_csv)
+        print_test_result(f"Test 16 execute with csv output\nRESULT_COUNT: {len(result.splitlines())}", is_valid_csv)
+
+    @pystackql_test_setup()
+    def test_17_execute_default_auth_dict_output(self):
+        query = "select login from github.users.users"
+        result = self.stackql.execute(query)
+        
+        # Expected result based on default auth
+        expected_result = [
+            {"login": "stackql-devops-1"}
+        ]
+        
+        self.assertTrue(isinstance(result, list), "Result should be a list")
+        self.assertEqual(result, expected_result, f"Expected result: {expected_result}, got: {result}")
+        print_test_result(f"Test 17 execute with default auth and dict output\nRESULT: {result}", result == expected_result)
+
+
+    @pystackql_test_setup()
+    def test_18_execute_custom_auth_env_vars(self):
+        query = "select login from github.users.users"
+        
+        # Set up custom environment variables for authentication
+        env_vars = {
+            'command_specific_username': os.getenv('CUSTOM_STACKQL_GITHUB_USERNAME'),
+            'command_specific_password': os.getenv('CUSTOM_STACKQL_GITHUB_PASSWORD')
+        }
+        
+        # Define custom authentication configuration
+        custom_auth = {
+            "github": {
+                "type": "basic",
+                "username_var": "command_specific_username",
+                "password_var": "command_specific_password"
+            }
+        }
+        
+        result = self.stackql.execute(query, custom_auth=custom_auth, env_vars=env_vars)
+        
+        # Expected result based on custom auth
+        expected_result = [
+            {"login": "stackql-devops-2"}
+        ]
+        
+        self.assertTrue(isinstance(result, list), "Result should be a list")
+        self.assertEqual(result, expected_result, f"Expected result: {expected_result}, got: {result}")
+        print_test_result(f"Test 18 execute with custom auth and command-specific environment variables\nRESULT: {result}", result == expected_result)
+
 
 class PyStackQLAsyncTests(PyStackQLTestsBase):
 
     @async_test_decorator
-    async def test_14_executeQueriesAsync(self):
+    async def test_01_async_executeQueriesAsync(self):
         stackql = StackQL()
         results = await stackql.executeQueriesAsync(async_queries)
         is_valid_results = all(isinstance(res, dict) for res in results)
-        print_test_result(f"[ASYNC] Test executeQueriesAsync with default (dict) output\nRESULT_COUNT: {len(results)}", is_valid_results)
+        print_test_result(f"Test 01 executeQueriesAsync with default (dict) output\nRESULT_COUNT: {len(results)}", is_valid_results, is_async=True)
 
     @async_test_decorator
-    async def test_15_executeQueriesAsync_with_pandas_output(self):
+    async def test_02_async_executeQueriesAsync_with_pandas_output(self):
         stackql = StackQL(output='pandas')
         result = await stackql.executeQueriesAsync(async_queries)
         is_valid_dataframe = isinstance(result, pd.DataFrame) and not result.empty
-        print_test_result(f"[ASYNC] Test executeQueriesAsync with pandas output\nRESULT_COUNT: {len(result)}", is_valid_dataframe)
+        print_test_result(f"Test 02 executeQueriesAsync with pandas output\nRESULT_COUNT: {len(result)}", is_valid_dataframe, is_async=True)
 
     @async_test_decorator
-    async def test_16_executeQueriesAsync_with_csv_output(self):
+    async def test_03_async_executeQueriesAsync_with_csv_output(self):
         stackql = StackQL(output='csv')
         exception_caught = False
         try:
@@ -263,33 +305,33 @@ class PyStackQLAsyncTests(PyStackQLTestsBase):
             exception_caught = str(ve) == "executeQueriesAsync supports only 'dict' or 'pandas' output modes."
         except Exception as e:
             pass
-        print_test_result(f"[ASYNC] Test executeQueriesAsync with unsupported csv output", exception_caught)
+        print_test_result(f"Test 03 executeQueriesAsync with unsupported csv output", exception_caught, is_async=True)
 
 class PyStackQLServerModeNonAsyncTests(PyStackQLTestsBase):
 
     @pystackql_test_setup(server_mode=True)
-    def test_19_server_mode_connectivity(self):
+    def test_01_server_mode_connectivity(self):
         self.assertTrue(self.stackql.server_mode, "StackQL should be in server mode")
         self.assertIsNotNone(self.stackql._conn, "Connection object should not be None")
-        print_test_result("Test server mode connectivity", True, True)
+        print_test_result("Test 01 server mode connectivity", True, True)
 
     @pystackql_test_setup(server_mode=True)
-    def test_20_executeStmt_server_mode(self):
+    def test_02_server_mode_executeStmt(self):
         result = self.stackql.executeStmt(registry_pull_google_query)
         # Checking if the result is a list containing a single dictionary with a key 'message' and value 'OK'
         is_valid_response = isinstance(result, list) and len(result) == 1 and result[0].get('message') == 'OK'
-        print_test_result(f"Test executeStmt in server mode\n{result}", is_valid_response, True)
+        print_test_result(f"Test 02 executeStmt in server mode\n{result}", is_valid_response, True)
 
     @pystackql_test_setup(server_mode=True, output='pandas')
-    def test_20a_executeStmt_server_mode_with_pandas_output(self):
+    def test_03_server_mode_executeStmt_with_pandas_output(self):
         result_df = self.stackql.executeStmt(registry_pull_google_query)
         # Verifying if the result is a dataframe with a column 'message' containing the value 'OK' in its first row
         is_valid_response = isinstance(result_df, pd.DataFrame) and 'message' in result_df.columns and result_df['message'].iloc[0] == 'OK'
-        print_test_result(f"Test executeStmt in server mode with pandas output\n{result_df}", is_valid_response, True)
+        print_test_result(f"Test 03 executeStmt in server mode with pandas output\n{result_df}", is_valid_response, True)
 
     @pystackql_test_setup(server_mode=True)
     @patch('pystackql.stackql.StackQL._run_server_query')
-    def test_21_execute_server_mode_default_output(self, mock_run_server_query):
+    def test_04_server_mode_execute_default_output(self, mock_run_server_query):
         # Mocking the response as a list of dictionaries
         mock_result = [
             {'status': 'RUNNING', 'num_instances': 2},
@@ -299,13 +341,13 @@ class PyStackQLServerModeNonAsyncTests(PyStackQLTestsBase):
 
         result = self.stackql.execute(google_query)
         is_valid_dict_output = isinstance(result, list) and all(isinstance(row, dict) for row in result)
-        print_test_result(f"""Test execute in server_mode with default output\nRESULT_COUNT: {len(result)}""", is_valid_dict_output, True)
+        print_test_result(f"""Test 04 execute in server_mode with default output\nRESULT_COUNT: {len(result)}""", is_valid_dict_output, True)
         # Check `_run_server_query` method
         mock_run_server_query.assert_called_once_with(google_query)
 
     @pystackql_test_setup(server_mode=True, output='pandas')
     @patch('pystackql.stackql.StackQL._run_server_query')
-    def test_22_execute_server_mode_pandas_output(self, mock_run_server_query):
+    def test_05_server_mode_execute_pandas_output(self, mock_run_server_query):
         # Mocking the response for pandas DataFrame
         mock_df = pd.DataFrame({
             'status': ['RUNNING', 'TERMINATED'],
@@ -323,7 +365,7 @@ class PyStackQLServerModeNonAsyncTests(PyStackQLTestsBase):
         for col, expected_dtype in expected_dtypes.items():
             actual_dtype = result[col].dtype
             self.assertEqual(actual_dtype, expected_dtype, f"Column '{col}' has dtype '{actual_dtype}' but expected '{expected_dtype}'")
-        print_test_result(f"Test execute in server_mode with pandas output\nRESULT COUNT: {len(result)}", is_valid_dataframe)
+        print_test_result(f"Test 05 execute in server_mode with pandas output\nRESULT COUNT: {len(result)}", is_valid_dataframe)
         # Check `_run_server_query` method
         mock_run_server_query.assert_called_once_with(google_query)
 
@@ -375,17 +417,17 @@ class BaseStackQLMagicTests:
         checks.append(self.shell.user_ns['stackql_df'].equals(self.expected_result))
         return checks
     
-    def test_line_magic_query(self):
+    def test_01_line_magic_query(self):
         checks = self.run_magic_test(line=self.query, cell=None)
-        self.print_test_result("Line magic query test", *checks)
+        self.print_test_result("Test 01 Line magic query test", *checks)
 
-    def test_cell_magic_query(self):
+    def test_02_cell_magic_query(self):
         checks = self.run_magic_test(line="", cell=self.query)
-        self.print_test_result("Cell magic query test", *checks)
+        self.print_test_result("Test 02 Cell magic query test", *checks)
 
-    def test_cell_magic_query_no_output(self):
+    def test_03_cell_magic_query_no_output(self):
         checks = self.run_magic_test(line="--no-display", cell=self.query, expect_none=True)
-        self.print_test_result("Cell magic query test (with --no-display)", *checks)
+        self.print_test_result("Test 03 Cell magic query test (with --no-display)", *checks)
 
     def run_magic_statement_test(self, line, cell, expect_none=False):
         # Execute the magic with our statement.
@@ -412,17 +454,17 @@ class BaseStackQLMagicTests:
             checks.append(bool(re.search(pattern, message)))
         return checks, result
 
-    def test_line_magic_statement(self):
+    def test_04_line_magic_statement(self):
         checks, result = self.run_magic_statement_test(line=self.statement, cell=None)
-        self.print_test_result(f"Line magic statement test\n{result}", *checks)
+        self.print_test_result(f"Test 04 Line magic statement test\n{result}", *checks)
 
-    def test_cell_magic_statement(self):
+    def test_05_cell_magic_statement(self):
         checks, result = self.run_magic_statement_test(line="", cell=self.statement)
-        self.print_test_result(f"Cell magic statement test\n{result}", *checks)
+        self.print_test_result(f"Test 05 Cell magic statement test\n{result}", *checks)
 
-    def test_cell_magic_statement_no_output(self):
+    def test_06_cell_magic_statement_no_output(self):
         checks, result = self.run_magic_statement_test(line="--no-display", cell=self.statement, expect_none=True)
-        self.print_test_result(f"Cell magic statement test (with --no-display)\n{result}", *checks)
+        self.print_test_result(f"Test 06 Cell magic statement test (with --no-display)\n{result}", *checks)
 
 class StackQLMagicTests(BaseStackQLMagicTests, unittest.TestCase):
 

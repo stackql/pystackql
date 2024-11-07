@@ -171,7 +171,7 @@ class StackQL:
 			else:
 				raise
 
-	def _run_query(self, query):
+	def _run_query(self, query, custom_auth=None, env_vars=None):
 		"""Internal method to execute a StackQL query using a subprocess.
 
 		The method spawns a subprocess to run the StackQL binary with the specified query and parameters.
@@ -180,6 +180,10 @@ class StackQL:
 
 		:param query: The StackQL query string to be executed.
 		:type query: str
+		:param custom_auth: Custom authentication dictionary.
+		:type custom_auth: dict, optional
+		:param env_vars: Command-specific environment variables for the subprocess.
+		:type env_vars: dict, optional
 
 		:return: The output result of the query, which can either be the actual query result or an error message.
 		:rtype: dict
@@ -201,24 +205,47 @@ class StackQL:
 		:raises Exception: For any other exceptions during the execution, providing a generic error message.
 		"""
 		local_params = self.params.copy()
-		local_params.insert(1, query)
+		local_params.insert(1, f'"{query}"')
+
+		# Handle custom authentication if provided
+		if custom_auth:
+			if '--auth' in local_params:
+				auth_index = local_params.index('--auth')
+				local_params.pop(auth_index)  # remove --auth
+				local_params.pop(auth_index)  # remove the auth string
+			authstr = json.dumps(custom_auth)
+			local_params.extend(["--auth", f"'{authstr}'"])
+
 		output = {}
+		env_command_prefix = ""
+
+		# Determine platform and set environment command prefix accordingly
+		if env_vars:
+			if self.platform.startswith("Windows"):
+				# For Windows, use PowerShell syntax
+				env_command_prefix = "& { " + " ".join([f'$env:{key} = "{value}";' for key, value in env_vars.items()]) + " "
+				full_command = f"{env_command_prefix}{self.bin_path} " + " ".join(local_params) + " }"
+			else:
+				# For Linux/Mac, use standard env variable syntax
+				env_command_prefix = "env " + " ".join([f'{key}="{value}"' for key, value in env_vars.items()]) + " "
+				full_command = env_command_prefix + " ".join([self.bin_path] + local_params)
+		else:
+			full_command = " ".join([self.bin_path] + local_params)
+
+		# print(full_command)  # For debugging
 
 		try:
-			with subprocess.Popen([self.bin_path] + local_params,
-					stdout=subprocess.PIPE, stderr=subprocess.PIPE) as iqlPopen:
+			with subprocess.Popen(full_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as iqlPopen:
 				stdout, stderr = iqlPopen.communicate()
 
 				if self.debug:
-					self._debug_log(f"Query: {query}")
+					self._debug_log(f"query: {query}")
 					self._debug_log(f"stdout: {stdout}")
 					self._debug_log(f"stderr: {stderr}")
 
-				# Check if stderr exists
+				# Process stdout and stderr
 				if stderr:
 					output["error"] = stderr.decode('utf-8') if isinstance(stderr, bytes) else str(stderr)
-                
-				# Check if theres data
 				if stdout:
 					output["data"] = stdout.decode('utf-8') if isinstance(stdout, bytes) else str(stdout)
 
@@ -473,7 +500,7 @@ class StackQL:
 		self.version, self.sha = _get_version(self.bin_path)
 		print("stackql upgraded to version %s" % (self.version))
 
-	def executeStmt(self, query):
+	def executeStmt(self, query, custom_auth=None, env_vars=None):
 		"""Executes a query using the StackQL instance and returns the output as a string.  
 			This is intended for operations which do not return a result set, for example a mutation 
 			operation such as an `INSERT` or a `DELETE` or life cycle method such as an `EXEC` operation
@@ -485,6 +512,10 @@ class StackQL:
 
 		:param query: The StackQL query string to be executed.
 		:type query: str, list of dict objects, or Pandas DataFrame
+		:param custom_auth: Custom authentication dictionary.
+		:type custom_auth: dict, optional
+		:param env_vars: Command-specific environment variables for this execution.
+		:type env_vars: dict, optional		
 
 		:return: The output result of the query in string format. If in `server_mode`, it 
 				returns a JSON string representation of the result. 
@@ -498,8 +529,7 @@ class StackQL:
 			>>> result
 		"""
 		if self.server_mode:
-			# Use server mode
-			result = self._run_server_query(query, True)
+			result = self._run_server_query(query, is_statement=True)
 			if self.output == 'pandas':
 				return pd.DataFrame(result)
 			elif self.output == 'csv':
@@ -513,18 +543,19 @@ class StackQL:
 			# {'error': '<error message>'} if something went wrong; or
 			# {'message': '<message>'} if the statement was executed successfully
 
-			result = self._run_query(query)
+			result = self._run_query(query, custom_auth=custom_auth, env_vars=env_vars)
+		
 			if "exception" in result:
 				exception_msg = result["exception"]
 				if self.output == 'pandas':
 					return pd.DataFrame({'error': [exception_msg]}) if exception_msg else pd.DataFrame({'error': []})
-				elif self.output == 'csv':		
+				elif self.output == 'csv':
 					return exception_msg
-				else:		
+				else:
 					return {"error": exception_msg}
 
 			# message on stderr
-			message = result["error"]
+			message = result.get("error", "")
 
 			if self.output == 'pandas':
 				return pd.DataFrame({'message': [message]}) if message else pd.DataFrame({'message': []})
@@ -535,34 +566,39 @@ class StackQL:
 				try:
 					return {'message': message, 'rowsaffected': message.count('\n')}
 				except Exception as e:
-					return {'message': message, 'rowsaffected': 0}							
+					return {'message': message, 'rowsaffected': 0}
 	
-	def execute(self, query, suppress_errors=True):
+	def execute(self, query, suppress_errors=True, custom_auth=None, env_vars=None):
 		"""
 		Executes a StackQL query and returns the output based on the specified output format.
 
-		This method supports execution both in server mode and locally using subprocess. In server mode,
+		This method supports execution both in server mode and locally using a subprocess. In server mode,
 		the query is sent to a StackQL server, while in local mode, it runs the query using a local binary.
 
-		Args:
-			query (str): The StackQL query string to be executed.
-			suppress_errors (bool, optional): If set to True, the method will return an empty list if an error occurs.
+		:param query: The StackQL query string to be executed.
+		:type query: str
+		:param suppress_errors: If set to True, the method will return an empty list if an error occurs.
+		:type suppress_errors: bool, optional
+		:param custom_auth: Custom authentication dictionary.
+		:type custom_auth: dict, optional		
+		:param env_vars: Command-specific environment variables for this execution.
+		:type env_vars: dict, optional
 
-		Returns:
-			list(dict), pd.DataFrame, or str: The output of the query, which can be a list of dictionary objects, a Pandas DataFrame,
-			or a raw CSV string, depending on the configured output format.
+		:return: The output of the query, which can be a list of dictionary objects, a Pandas DataFrame, 
+					or a raw CSV string, depending on the configured output format.
+		:rtype: list(dict) | pd.DataFrame | str
 
-		Raises:
-			ValueError: If an unsupported output format is specified.
+		:raises ValueError: If an unsupported output format is specified.
 
-		Examples:
+		:example:
+
 			>>> stackql = StackQL()
 			>>> query = '''
-				SELECT SPLIT_PART(machineType, '/', -1) as machine_type, status, COUNT(*) as num_instances
-				FROM google.compute.instances
-				WHERE project = 'stackql-demo' AND zone = 'australia-southeast1-a'
-				GROUP BY machine_type, status HAVING COUNT(*) > 2
-				'''
+			... SELECT SPLIT_PART(machineType, '/', -1) as machine_type, status, COUNT(*) as num_instances
+			... FROM google.compute.instances
+			... WHERE project = 'stackql-demo' AND zone = 'australia-southeast1-a'
+			... GROUP BY machine_type, status HAVING COUNT(*) > 2
+			... '''
 			>>> result = stackql.execute(query)
 		"""
 		if self.server_mode:
@@ -572,21 +608,23 @@ class StackQL:
 				return pd.read_json(StringIO(json_str))
 			elif self.output == 'csv':
 				raise ValueError("CSV output is not supported in server_mode.")
-			else:  # Assume 'dict' output
+			else: # Assume 'dict' output
 				return result
 		else:
+
 			# returns either...
 			# [{'error': <error json str>}] if something went wrong; or
-			# [{<row1>},...] if the statement was executed successfully, messages to stderr are ignored
+			# [{<row1>},...] if the statement was executed successfully, messages to stderr 
 
-			output = self._run_query(query)
+			output = self._run_query(query, custom_auth=custom_auth, env_vars=env_vars)
+			
 			if "exception" in output:
 				exception_msg = output["exception"]
 				if self.output == 'pandas':
-					return pd.DataFrame({'error': [exception_msg]}) if exception_msg else pd.DataFrame({'error': []})
-				elif self.output == 'csv':		
+					return pd.DataFrame({'error': [exception_msg]}) if exception_msg else pd.DataFrame({'error': []})					
+				elif self.output == 'csv':
 					return exception_msg
-				else:		
+				else:
 					return [{"error": exception_msg}]
 
 			if "data" in output:
@@ -599,36 +637,24 @@ class StackQL:
 						return pd.read_json(StringIO(data))
 					except ValueError:
 						return pd.DataFrame([{"error": "Invalid JSON output"}])
-				else:  # Assume 'dict' output
+				else: # Assume 'dict' output
 					try:
 						retval = json.loads(data)
-						if retval is None:
-							return []
-						return retval
+						return retval if retval else []
 					except ValueError:
 						return [{"error": f"Invalid JSON output : {data}"}]
 
-			if "error" in output:
+			if "error" in output and not suppress_errors:
 				# theres no data but there is stderr from the request, could be an expected error like a 404
-				if suppress_errors:
-					# we dont care about errors, return an empty list
-					csv_ret = ""
-					pd_ret = pd.DataFrame()
-					dict_ret = []
-				else:
-					# we care about errors, return the error
-					err_msg = output["error"]
-					csv_ret = err_msg
-					pd_ret = pd.DataFrame([{"error": err_msg}])
-					dict_ret = [{"error": err_msg}]
-					  				
+				err_msg = output["error"]
 				if self.output == 'csv':
-					return csv_ret
+					return err_msg
 				elif self.output == 'pandas':
-					return pd_ret
-				else:  # Assume 'dict' output
-					return dict_ret
-				
+					return pd.DataFrame([{"error": err_msg}])
+				else:
+					return [{"error": err_msg}]
+
+			return []
 
 	# asnyc query support
 	#

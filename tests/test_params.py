@@ -64,7 +64,7 @@ async_queries = [
     for region in test_aws_regions
 ]
 
-def print_test_result(test_name, condition=True, server_mode=False, is_ipython=False):
+def print_test_result(test_name, condition=True, server_mode=False, is_ipython=False, is_async=False):
     status_header = colored("[PASSED] ", 'green') if condition else colored("[FAILED] ", 'red')
     headers = [status_header]
     
@@ -72,6 +72,8 @@ def print_test_result(test_name, condition=True, server_mode=False, is_ipython=F
         headers.append(colored("[SERVER MODE]", 'yellow'))
     if is_ipython:
         headers.append(colored("[MAGIC EXT]", 'blue'))
+    if is_async:
+        headers.append(colored("[ASYNC]", 'magenta'))
     
     headers.append(test_name)
     message = " ".join(headers)
