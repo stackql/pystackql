@@ -232,7 +232,7 @@ class StackQL:
 		else:
 			full_command = " ".join([self.bin_path] + local_params)
 
-		# print(full_command)  # For debugging
+		print(full_command)  # For debugging
 
 		try:
 			with subprocess.Popen(full_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as iqlPopen:
