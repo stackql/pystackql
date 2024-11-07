@@ -71,6 +71,7 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           brew install postgresql
+          pip install psycopg2
       # End macOS
 
       - name: Install pystackql
