@@ -15,15 +15,15 @@ jobs:
         python-version:
           # - "3.7"
           # - "3.8"
-          - "3.9"
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          # - "3.13"
+          # - "3.9"
+          # - "3.10"
+          # - "3.11"
+          # - "3.12"
+          - "3.13"
           # - "3.14"          
-        exclude:
-          - os: macos-latest
-            python-version: "3.7"
+        # exclude:
+        #   - os: macos-latest
+        #     python-version: "3.7"
     runs-on: ${{matrix.os}}
     name: 'Run Tests on ${{matrix.os}} with Python ${{matrix.python-version}}'
 
