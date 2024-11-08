@@ -223,8 +223,10 @@ class StackQL:
 		if env_vars:
 			if self.platform.startswith("Windows"):
 				# For Windows, use PowerShell syntax
-				env_command_prefix = "& { " + " ".join([f'$env:{key} = "{value}";' for key, value in env_vars.items()]) + " "
-				full_command = f"{env_command_prefix}{self.bin_path} " + " ".join(local_params) + " }"
+				# env_command_prefix = "& { " + " ".join([f'$env:{key} = "{value}";' for key, value in env_vars.items()]) + " "
+				# full_command = f"{env_command_prefix}{self.bin_path} " + " ".join(local_params) + " }"
+				env_command_prefix = " ".join([f'$env:{key}="{value}";' for key, value in env_vars.items()])
+				full_command = f"{env_command_prefix} {self.bin_path} " + " ".join(local_params)
 			else:
 				# For Linux/Mac, use standard env variable syntax
 				env_command_prefix = "env " + " ".join([f'{key}="{value}"' for key, value in env_vars.items()]) + " "
