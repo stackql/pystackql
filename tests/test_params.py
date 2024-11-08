@@ -29,12 +29,15 @@ registry_pull_google_query = "REGISTRY PULL google"
 registry_pull_aws_query = "REGISTRY PULL aws"
 registry_pull_okta_query = "REGISTRY PULL okta"
 registry_pull_github_query = "REGISTRY PULL github"
+registry_pull_homebrew_query = "REGISTRY PULL homebrew"
 
 def registry_pull_resp_pattern(provider):
     return r"%s provider, version 'v\d+\.\d+\.\d+' successfully installed\s*" % provider
 
 test_gcp_project_id = "test-gcp-project"
 test_gcp_zone = "australia-southeast2-a"
+
+github_query = "select login from github.users.users"
 
 google_query = f"""
 SELECT status, count(*) as num_instances
@@ -43,6 +46,7 @@ WHERE project = '{test_gcp_project_id}'
 AND zone = '{test_gcp_zone}'
 GROUP BY status
 """
+google_show_services_query = "SHOW SERVICES IN google"
 
 aws_query = f"""
 SELECT

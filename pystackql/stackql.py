@@ -207,10 +207,12 @@ class StackQL:
 		"""
 		local_params = self.params.copy()
 		local_params.insert(1, f'"{query}"')
+		script_path = None
 
 		# Handle custom authentication if provided
 		if custom_auth:
 			if '--auth' in local_params:
+				# override auth set in the constructor with the command-specific auth
 				auth_index = local_params.index('--auth')
 				local_params.pop(auth_index)  # remove --auth
 				local_params.pop(auth_index)  # remove the auth string
@@ -220,49 +222,22 @@ class StackQL:
 		output = {}
 		env_command_prefix = ""
 
-		# # Determine platform and set environment command prefix accordingly
-		# if env_vars:
-		# 	if self.platform.startswith("Windows"):
-		# 		# For Windows, use PowerShell syntax
-		# 		env_command_prefix = "& { " + " ".join([f'$env:{key} = "{value}";' for key, value in env_vars.items()]) + " "
-		# 		full_command = f"{env_command_prefix}{self.bin_path} " + " ".join(local_params) + " }"
-		# 		is_github_actions = os.environ.get('GITHUB_ACTIONS') == 'true'
-		# 		# ok new approach, if we are in github actions, dump the command to a file and run it
-		# 		# GO!
-		# 	else:
-		# 		# For Linux/Mac, use standard env variable syntax
-		# 		env_command_prefix = "env " + " ".join([f'{key}="{value}"' for key, value in env_vars.items()]) + " "
-		# 		full_command = env_command_prefix + " ".join([self.bin_path] + local_params)
-		# else:
-		# 	full_command = " ".join([self.bin_path] + local_params)
-
-		# print(full_command)  # For debugging
-
 		# Determine platform and set environment command prefix accordingly
 		if env_vars:
 			if self.platform.startswith("Windows"):
-				# For Windows, use PowerShell syntax with GitHub Actions check
-				env_command_prefix = "& { " + " ".join([f'$env:{key} = "{value}";' for key, value in env_vars.items()]) + " "
-				full_command = f"{env_command_prefix}{self.bin_path} " + " ".join(local_params) + " }"
-				is_github_actions = os.environ.get('GITHUB_ACTIONS') == 'true'
-				
-				# If in GitHub Actions, write command to a PowerShell script file and execute it
-				if is_github_actions:
-					with tempfile.NamedTemporaryFile(delete=False, suffix=".ps1", mode="w") as script_file:
-						# Write environment variable setup and command to script file
-						for key, value in env_vars.items():
-							script_file.write(f'$env:{key} = "{value}";\n')
-						script_file.write(f"{self.bin_path} " + " ".join(local_params) + "\n")
-						script_path = script_file.name
-					full_command = f"powershell -File {script_path}"
+				with tempfile.NamedTemporaryFile(delete=False, suffix=".ps1", mode="w") as script_file:
+					# Write environment variable setup and command to script file
+					for key, value in env_vars.items():
+						script_file.write(f'$env:{key} = "{value}";\n')
+					script_file.write(f"{self.bin_path} " + " ".join(local_params) + "\n")
+					script_path = script_file.name
+				full_command = f"powershell -File {script_path}"
 			else:
 				# For Linux/Mac, use standard env variable syntax
 				env_command_prefix = "env " + " ".join([f'{key}="{value}"' for key, value in env_vars.items()]) + " "
 				full_command = env_command_prefix + " ".join([self.bin_path] + local_params)
 		else:
 			full_command = " ".join([self.bin_path] + local_params)
-
-		print(full_command)  # For debugging
 
 		try:
 			with subprocess.Popen(full_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as iqlPopen:
@@ -290,8 +265,11 @@ class StackQL:
 				"stderr": stderr.decode('utf-8') if 'stderr' in locals() and isinstance(stderr, bytes) else ""
 			}
 			output["exception"] = f"ERROR: {json.dumps(error_details)}"
-
-		return output
+		finally:
+			# Clean up the temporary script file
+			if script_path is not None:
+				os.remove(script_path) 
+			return output
 
 	def __init__(self, 
 				 server_mode=False, 

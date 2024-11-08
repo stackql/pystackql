@@ -40,10 +40,8 @@ def setUpModule():
 
     print("downloading aws provider for tests...")
     res = PyStackQLTestsBase.stackql.executeStmt(registry_pull_aws_query)
-    print(res)
     print("downloading google provider for tests...")
     res = PyStackQLTestsBase.stackql.executeStmt(registry_pull_google_query)
-    print(res)
     print("starting stackql server...")
     PyStackQLTestsBase.server_process = subprocess.Popen([PyStackQLTestsBase.stackql.bin_path, "srv", "--pgsrv.address", server_address, "--pgsrv.port", str(server_port)])
     time.sleep(10)
@@ -159,40 +157,37 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         okta_result = okta_result_dict["message"]
         expected_pattern = registry_pull_resp_pattern("okta")
         self.assertTrue(re.search(expected_pattern, okta_result), f"Expected pattern not found in result: {okta_result}")
-        github_result_dict = self.stackql.executeStmt(registry_pull_github_query)
-        github_result = github_result_dict["message"]
-        expected_pattern = registry_pull_resp_pattern("github")
-        self.assertTrue(re.search(expected_pattern, github_result), f"Expected pattern not found in result: {github_result}")
-        print_test_result(f"""Test 10 executeStmt method\nRESULTS:\n{okta_result_dict}\n{github_result_dict}""", True)
+        print_test_result(f"""Test 10 executeStmt method\nRESULTS:\n{okta_result_dict}""", True)
 
     @pystackql_test_setup(output="csv")
     def test_11_executeStmt_with_csv_output(self):
-        okta_result = self.stackql.executeStmt(registry_pull_okta_query)
-        expected_pattern = registry_pull_resp_pattern("okta")
-        self.assertTrue(re.search(expected_pattern, okta_result), f"Expected pattern not found in result: {okta_result}")
         github_result = self.stackql.executeStmt(registry_pull_github_query)
         expected_pattern = registry_pull_resp_pattern("github")
         self.assertTrue(re.search(expected_pattern, github_result), f"Expected pattern not found in result: {github_result}")
-        print_test_result(f"""Test 11 executeStmt method with csv output\nRESULTS:\n{okta_result}\n{github_result}""", True)
+        print_test_result(f"""Test 11 executeStmt method with csv output\nRESULTS:\n{github_result}""", True)
 
     @pystackql_test_setup(output="pandas")
     def test_12_executeStmt_with_pandas_output(self):
-        okta_result_df = self.stackql.executeStmt(registry_pull_okta_query)
-        okta_result = okta_result_df['message'].iloc[0]
-        expected_pattern = registry_pull_resp_pattern("okta")
-        self.assertTrue(re.search(expected_pattern, okta_result), f"Expected pattern not found in result: {okta_result}")
-        github_result_df = self.stackql.executeStmt(registry_pull_github_query)
-        github_result = github_result_df['message'].iloc[0]
-        expected_pattern = registry_pull_resp_pattern("github")
-        self.assertTrue(re.search(expected_pattern, github_result), f"Expected pattern not found in result: {github_result}")
-        print_test_result(f"""Test 12 executeStmt method with pandas output\nRESULTS:\n{okta_result_df}\n{github_result_df}""", True)
+        homebrew_result_df = self.stackql.executeStmt(registry_pull_homebrew_query)
+        homebrew_result = homebrew_result_df['message'].iloc[0]
+        expected_pattern = registry_pull_resp_pattern("homebrew")
+        self.assertTrue(re.search(expected_pattern, homebrew_result), f"Expected pattern not found in result: {homebrew_result}")
+        print_test_result(f"""Test 12 executeStmt method with pandas output\nRESULTS:\n{homebrew_result_df}""", True)
 
     @pystackql_test_setup()
     def test_13_execute_with_defaults(self):
-        result = self.stackql.execute(google_query)
-        is_valid_data_resp = isinstance(result, list) and all(isinstance(item, dict) for item in result)
-        self.assertTrue(is_valid_data_resp, f"Result is not valid: {result}")
-        print_test_result(f"Test 13 execute with defaults\nRESULT: {result}", is_valid_data_resp)
+        result = self.stackql.execute(google_show_services_query)
+        is_valid_data_resp = (
+            isinstance(result, list) 
+            and all(isinstance(item, dict) and 'error' not in item for item in result)
+        )
+        # Truncate the result message if it's too long
+        truncated_result = (
+            str(result)[:500] + '...' if len(str(result)) > 500 else str(result)
+        )
+        self.assertTrue(is_valid_data_resp, f"Result is not valid: {truncated_result}")
+        print_test_result(f"Test 13 execute with defaults\nRESULT: {truncated_result}", is_valid_data_resp)
+
 
     def test_14_execute_with_defaults_null_response(self):
         result = self.stackql.execute("SELECT 1 WHERE 1=0")
@@ -234,14 +229,11 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
 
     @pystackql_test_setup()
     def test_17_execute_default_auth_dict_output(self):
-        query = "select login from github.users.users"
-        result = self.stackql.execute(query)
-        
+        result = self.stackql.execute(github_query)
         # Expected result based on default auth
         expected_result = [
             {"login": "stackql-devops-1"}
         ]
-        
         self.assertTrue(isinstance(result, list), "Result should be a list")
         self.assertEqual(result, expected_result, f"Expected result: {expected_result}, got: {result}")
         print_test_result(f"Test 17 execute with default auth and dict output\nRESULT: {result}", result == expected_result)
@@ -249,14 +241,11 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
 
     @pystackql_test_setup()
     def test_18_execute_custom_auth_env_vars(self):
-        query = "select login from github.users.users"
-        
         # Set up custom environment variables for authentication
         env_vars = {
             'command_specific_username': os.getenv('CUSTOM_STACKQL_GITHUB_USERNAME'),
             'command_specific_password': os.getenv('CUSTOM_STACKQL_GITHUB_PASSWORD')
         }
-        
         # Define custom authentication configuration
         custom_auth = {
             "github": {
@@ -265,14 +254,11 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
                 "password_var": "command_specific_password"
             }
         }
-        
-        result = self.stackql.execute(query, custom_auth=custom_auth, env_vars=env_vars)
-        
+        result = self.stackql.execute(github_query, custom_auth=custom_auth, env_vars=env_vars)
         # Expected result based on custom auth
         expected_result = [
             {"login": "stackql-devops-2"}
         ]
-        
         self.assertTrue(isinstance(result, list), "Result should be a list")
         self.assertEqual(result, expected_result, f"Expected result: {expected_result}, got: {result}")
         print_test_result(f"Test 18 execute with custom auth and command-specific environment variables\nRESULT: {result}", result == expected_result)

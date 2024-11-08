@@ -9,20 +9,20 @@ jobs:
     strategy:
       matrix:
         os:
-          # - ubuntu-latest
+          - ubuntu-latest
           - windows-latest
-          # - macos-latest
+          - macos-latest
         python-version:
-          # - "3.7"
-          # - "3.8"
-          # - "3.9"
-          # - "3.10"
-          # - "3.11"
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "3.11"
           - "3.12"
           # - "3.13"
-        # exclude:
-        #   - os: macos-latest
-        #     python-version: "3.7"
+        exclude:
+          - os: macos-latest
+            python-version: "3.7"
     runs-on: ${{matrix.os}}
     name: 'Run Tests on ${{matrix.os}} with Python ${{matrix.python-version}}'
 
@@ -43,11 +43,6 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      # - name: Install psycopg2 for non-Windows OS
-      #   if: matrix.os != 'windows-latest'
-      #   run: |
-      #     pip install psycopg2
 
       # Windows
       - name: Install psycopg2-binary for Windows
@@ -99,26 +94,12 @@ jobs:
       - name: Debug Shell Information
         if: matrix.os == 'windows-latest'
         shell: pwsh
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          STACKQL_GITHUB_USERNAME: ${{ secrets.STACKQL_GITHUB_USERNAME }}
-          STACKQL_GITHUB_PASSWORD: ${{ secrets.STACKQL_GITHUB_PASSWORD }}
-          CUSTOM_STACKQL_GITHUB_USERNAME: ${{ secrets.CUSTOM_STACKQL_GITHUB_USERNAME }}
-          CUSTOM_STACKQL_GITHUB_PASSWORD: ${{ secrets.CUSTOM_STACKQL_GITHUB_PASSWORD }}
-          AWS_REGION: ${{ vars.AWS_REGION }}
-          AWS_REGIONS: ${{ vars.AWS_REGIONS }}
-          GCP_PROJECT: ${{ vars.GCP_PROJECT }}
-          GCP_ZONE: ${{ vars.GCP_ZONE }}
         run: |
           Write-Host "Checking PowerShell version and environment variables:"
           $PSVersionTable
           Write-Host "Environment variables:"
           Get-ChildItem Env:
           Write-Host "Current Shell: $SHELL"
-          Write-Host "Command-Specific Username: $Env:AWS_REGION"
-          Write-Host "Command-Specific Password: $Env:AWS_ACCESS_KEY_ID"
 
       - name: Run tests on Windows
         env:

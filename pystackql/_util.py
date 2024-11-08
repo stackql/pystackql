@@ -38,9 +38,9 @@ def _get_download_dir():
 	return site.getuserbase()
 
 def _get_binary_name(platform):
-	if platform == 'Windows':
+	if platform.startswith('Windows'):
 		return r'stackql.exe'
-	elif platform == 'Darwin':
+	elif platform.startswith('Darwin'):
 		return r'stackql/Payload/stackql'
 	else:
 		return r'stackql'
@@ -79,28 +79,71 @@ def _download_file(url, path, showprogress=True):
 		print("ERROR: [_download_file] %s" % (str(e)))
 		exit(1)
 
+# def _setup(download_dir, platform, showprogress=False):
+#     try:
+#         print('installing stackql...')
+#         binary_name = _get_binary_name(platform)
+#         url = _get_url()
+#         print("downloading latest version of stackql from %s to %s" % (url, download_dir))
+#         archive_file_name = os.path.join(download_dir, os.path.basename(url))
+#         _download_file(url, archive_file_name, showprogress)
+#         # if Platform is starting with Darwin, then it is a MacOS
+#         if platform.startswith('Darwin'):
+#             unpacked_file_name = os.path.join(download_dir, 'stackql')
+#             command = 'pkgutil --expand-full {} {}'.format(archive_file_name, unpacked_file_name)
+#             # if there are files in unpacked_file_name, then remove them
+#             if os.path.exists(unpacked_file_name):
+#                 os.system('rm -rf {}'.format(unpacked_file_name))
+#             os.system(command)
+#         else:
+#             with zipfile.ZipFile(archive_file_name, 'r') as zip_ref:
+#                 zip_ref.extractall(download_dir) 
+#         os.chmod(os.path.join(download_dir, binary_name), 0o755)
+#     except Exception as e:
+#         print("ERROR: [_setup] %s" % (str(e)))
+#         exit(1)
+
 def _setup(download_dir, platform, showprogress=False):
     try:
         print('installing stackql...')
-        binary_name = _get_binary_name(platform)
+        binary_name = _get_binary_name(platform)  # Should return 'stackql.exe' for Windows
         url = _get_url()
-        print("downloading latest version of stackql from %s to %s" % (url, download_dir))
+        print(f"Downloading latest version of stackql from {url} to {download_dir}")
+
+        # Paths
         archive_file_name = os.path.join(download_dir, os.path.basename(url))
+        binary_path = os.path.join(download_dir, binary_name)
+
+        # Download and extract
         _download_file(url, archive_file_name, showprogress)
-        # if Platform is starting with Darwin, then it is a MacOS
+
+        # Handle extraction
         if platform.startswith('Darwin'):
             unpacked_file_name = os.path.join(download_dir, 'stackql')
-            command = 'pkgutil --expand-full {} {}'.format(archive_file_name, unpacked_file_name)
-            # if there are files in unpacked_file_name, then remove them
+            command = f'pkgutil --expand-full {archive_file_name} {unpacked_file_name}'
             if os.path.exists(unpacked_file_name):
-                os.system('rm -rf {}'.format(unpacked_file_name))
+                os.system(f'rm -rf {unpacked_file_name}')
             os.system(command)
-        else:
+
+        else:  # Handle Windows and Linux
             with zipfile.ZipFile(archive_file_name, 'r') as zip_ref:
-                zip_ref.extractall(download_dir) 
-        os.chmod(os.path.join(download_dir, binary_name), 0o755)
+                zip_ref.extractall(download_dir)
+            
+            # Specific check for Windows to ensure `stackql.exe` is extracted
+            if platform.startswith("Windows"):
+                if not os.path.exists(binary_path) and os.path.exists(os.path.join(download_dir, "stackql")):
+                    os.rename(os.path.join(download_dir, "stackql"), binary_path)
+
+        # Confirm binary presence and set permissions
+        if os.path.exists(binary_path):
+            print(f"StackQL executable successfully located at: {binary_path}")
+            os.chmod(binary_path, 0o755)
+        else:
+            print(f"ERROR: Expected binary '{binary_path}' not found after extraction.")
+            exit(1)
+
     except Exception as e:
-        print("ERROR: [_setup] %s" % (str(e)))
+        print(f"ERROR: [_setup] {str(e)}")
         exit(1)
 
 def _get_version(bin_path):
