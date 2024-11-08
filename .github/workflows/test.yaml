@@ -9,8 +9,8 @@ jobs:
     strategy:
       matrix:
         os:
-          # - ubuntu-latest
-          # - windows-latest
+          - ubuntu-latest
+          - windows-latest
           - macos-latest
         python-version:
           - "3.7"
@@ -64,7 +64,7 @@ jobs:
       - name: Install PostgreSQL dev libraries on macOS
         if: matrix.os == 'macos-latest'
         run: |
-          brew install postgresql
+          brew install postgresql@14
           pip install psycopg
       # End macOS
 
