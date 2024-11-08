@@ -224,11 +224,12 @@ class StackQL:
 				local_params.pop(auth_index)  # remove the auth string
 			authstr = json.dumps(custom_auth)
 			
-			# For Windows PowerShell, use backticks around the JSON auth string
-			if self.platform.startswith("Windows"):
-				authstr = f"`'{authstr}`'"
-			else:
-				authstr = f"'{authstr}'"
+		# For Windows PowerShell, transpose quotes: wrap with " and use ' inside the JSON
+		if self.platform.startswith("Windows"):
+			authstr = authstr.replace('"', "'")  # Replace inner double quotes with single quotes
+			authstr = f'"{authstr}"'  # Wrap the entire string in double quotes
+		else:
+			authstr = f"'{authstr}'"  # Use single quotes on non-Windows platforms
 			
 			local_params.extend(["--auth", authstr])		
 
