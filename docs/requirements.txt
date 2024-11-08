@@ -1,5 +1,4 @@
 sphinx_rtd_theme
-psycopg2
 pandas
 requests
 IPython

@@ -13,16 +13,15 @@ jobs:
           - windows-latest
           - macos-latest
         python-version:
-          - "3.7"
           - "3.8"
           - "3.9"
           - "3.10"
           - "3.11"
           - "3.12"
-          # - "3.13"
+          - "3.13"
         exclude:
           - os: macos-latest
-            python-version: "3.7"
+            python-version: "3.8"
     runs-on: ${{matrix.os}}
     name: 'Run Tests on ${{matrix.os}} with Python ${{matrix.python-version}}'
 
@@ -34,28 +33,35 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Upgrade pip
-        if: matrix.os == 'macos-latest'
-        run: python${{ matrix.python-version }} -m pip install --upgrade pip
-
       - name: Install dependencies from requirements.txt
         shell: bash
         run: |
           python3 -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Install psycopg2 for non-Windows OS
-        if: matrix.os != 'windows-latest'
-        run: |
-          pip install psycopg2-binary
-
-      # Windows specific
-      - name: Install psycopg2-binary for Windows
+      # Windows
+      - name: Install psycopg
         if: matrix.os == 'windows-latest'
         run: |
-          pip install psycopg2-binary
+          pip install psycopg[binary]
         shell: powershell
-      # End Windows specific
+      # End Windows
+
+      # Linux
+      - name: Install PostgreSQL dev libraries on Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          pip install psycopg
+      # End Linux
+
+      # macOS
+      - name: Install PostgreSQL dev libraries on macOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install postgresql@14
+          pip install psycopg
+      # End macOS
 
       - name: Install pystackql
         run: |
@@ -66,9 +72,33 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          STACKQL_GITHUB_USERNAME: ${{ secrets.STACKQL_GITHUB_USERNAME }}
+          STACKQL_GITHUB_PASSWORD: ${{ secrets.STACKQL_GITHUB_PASSWORD }}
+          CUSTOM_STACKQL_GITHUB_USERNAME: ${{ secrets.CUSTOM_STACKQL_GITHUB_USERNAME }}
+          CUSTOM_STACKQL_GITHUB_PASSWORD: ${{ secrets.CUSTOM_STACKQL_GITHUB_PASSWORD }}
           AWS_REGION: ${{ vars.AWS_REGION }}
           AWS_REGIONS: ${{ vars.AWS_REGIONS }}
           GCP_PROJECT: ${{ vars.GCP_PROJECT }}
-          GCP_ZONE: ${{ vars.GCP_ZONE }}          
+          GCP_ZONE: ${{ vars.GCP_ZONE }}
         run: |
           python3 -m tests.pystackql_tests
+        shell: bash
+        if: matrix.os != 'windows-latest'
+
+      - name: Run tests on Windows
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          STACKQL_GITHUB_USERNAME: ${{ secrets.STACKQL_GITHUB_USERNAME }}
+          STACKQL_GITHUB_PASSWORD: ${{ secrets.STACKQL_GITHUB_PASSWORD }}
+          CUSTOM_STACKQL_GITHUB_USERNAME: ${{ secrets.CUSTOM_STACKQL_GITHUB_USERNAME }}
+          CUSTOM_STACKQL_GITHUB_PASSWORD: ${{ secrets.CUSTOM_STACKQL_GITHUB_PASSWORD }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          AWS_REGIONS: ${{ vars.AWS_REGIONS }}
+          GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+          GCP_ZONE: ${{ vars.GCP_ZONE }}
+        run: |
+          python3 -m tests.pystackql_tests
+        shell: pwsh
+        if: matrix.os == 'windows-latest'

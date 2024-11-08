@@ -11,6 +11,7 @@ from ._util import (
 import sys, subprocess, json, os, asyncio, functools
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import pandas as pd
+import tempfile
 
 from io import StringIO
 
@@ -125,53 +126,53 @@ class StackQL:
 
 		:return: Connection object if successful, or `None` if an error occurred.
 		:rtype: Connection or None
-		...
-		:raises `psycopg2.OperationalError`: Failed to connect to the server.
+		:raises `psycopg.OperationalError`: Failed to connect to the server.
 		"""
 		try:
-			conn = psycopg2.connect(
+			conn = psycopg.connect(
 				dbname='stackql',
 				user='stackql',
 				host=self.server_address,
-				port=self.server_port
+				port=self.server_port,
+				autocommit=True,
+				row_factory=dict_row  # Use dict_row to get rows as dictionaries
 			)
 			return conn
-		except psycopg2.OperationalError as oe:
+		except psycopg.OperationalError as oe:
 			print(f"OperationalError while connecting to the server: {oe}")
 		except Exception as e:
-			# Catching all other possible psycopg2 exceptions (and possibly other unexpected exceptions).
-			# You might want to log this or handle it differently in a real-world scenario.
 			print(f"Unexpected error while connecting to the server: {e}")
 		return None
 
 	def _run_server_query(self, query, is_statement=False):
-		"""Runs a query against the server using psycopg2.
-		
-		:param query: SQL query to be executed on the server.
-		:type query: str
-		:return: List of result rows if the query fetches results; empty list if there are no results.
-		:rtype: list of dict objects
-		:raises: psycopg2.ProgrammingError for issues related to the SQL query, 
-				unless the error is "no results to fetch", in which case an empty list is returned.
-		"""
-		try:
-			cur = self._conn.cursor(cursor_factory=RealDictCursor)
-			cur.execute(query)
-			if is_statement:
-				# If the query is a statement, there are no results to fetch.
-				result_msg = cur.statusmessage
-				cur.close()
-				return [{'message': result_msg}]
-			rows = cur.fetchall()
-			cur.close()
-			return rows
-		except psycopg2.ProgrammingError as e:
-			if str(e) == "no results to fetch":
-				return []
-			else:
-				raise
+		"""Run a query against the server using the existing connection in server mode."""
+		if not self._conn:
+			raise ConnectionError("No active connection found. Ensure _connect_to_server is called.")
 
-	def _run_query(self, query):
+		try:
+			with self._conn.cursor() as cur:
+				cur.execute(query)
+				if is_statement:
+					# Return status message for non-SELECT statements
+					result_msg = cur.statusmessage
+					return [{'message': result_msg}]
+				try:
+					# Fetch results for SELECT queries
+					rows = cur.fetchall()
+					return rows
+				except psycopg.ProgrammingError as e:
+					# Handle cases with no results
+					if "no results to fetch" in str(e):
+						return []
+					else:
+						raise
+		except psycopg.OperationalError as oe:
+			print(f"OperationalError during query execution: {oe}")
+		except Exception as e:
+			print(f"Unexpected error during query execution: {e}")
+
+
+	def _run_query(self, query, custom_auth=None, env_vars=None):
 		"""Internal method to execute a StackQL query using a subprocess.
 
 		The method spawns a subprocess to run the StackQL binary with the specified query and parameters.
@@ -180,6 +181,10 @@ class StackQL:
 
 		:param query: The StackQL query string to be executed.
 		:type query: str
+		:param custom_auth: Custom authentication dictionary.
+		:type custom_auth: dict, optional
+		:param env_vars: Command-specific environment variables for the subprocess.
+		:type env_vars: dict, optional
 
 		:return: The output result of the query, which can either be the actual query result or an error message.
 		:rtype: dict
@@ -201,24 +206,51 @@ class StackQL:
 		:raises Exception: For any other exceptions during the execution, providing a generic error message.
 		"""
 		local_params = self.params.copy()
-		local_params.insert(1, query)
+		local_params.insert(1, f'"{query}"')
+		script_path = None
+
+		# Handle custom authentication if provided
+		if custom_auth:
+			if '--auth' in local_params:
+				# override auth set in the constructor with the command-specific auth
+				auth_index = local_params.index('--auth')
+				local_params.pop(auth_index)  # remove --auth
+				local_params.pop(auth_index)  # remove the auth string
+			authstr = json.dumps(custom_auth)
+			local_params.extend(["--auth", f"'{authstr}'"])
+
 		output = {}
+		env_command_prefix = ""
+
+		# Determine platform and set environment command prefix accordingly
+		if env_vars:
+			if self.platform.startswith("Windows"):
+				with tempfile.NamedTemporaryFile(delete=False, suffix=".ps1", mode="w") as script_file:
+					# Write environment variable setup and command to script file
+					for key, value in env_vars.items():
+						script_file.write(f'$env:{key} = "{value}";\n')
+					script_file.write(f"{self.bin_path} " + " ".join(local_params) + "\n")
+					script_path = script_file.name
+				full_command = f"powershell -File {script_path}"
+			else:
+				# For Linux/Mac, use standard env variable syntax
+				env_command_prefix = "env " + " ".join([f'{key}="{value}"' for key, value in env_vars.items()]) + " "
+				full_command = env_command_prefix + " ".join([self.bin_path] + local_params)
+		else:
+			full_command = " ".join([self.bin_path] + local_params)
 
 		try:
-			with subprocess.Popen([self.bin_path] + local_params,
-					stdout=subprocess.PIPE, stderr=subprocess.PIPE) as iqlPopen:
+			with subprocess.Popen(full_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as iqlPopen:
 				stdout, stderr = iqlPopen.communicate()
 
 				if self.debug:
-					self._debug_log(f"Query: {query}")
+					self._debug_log(f"query: {query}")
 					self._debug_log(f"stdout: {stdout}")
 					self._debug_log(f"stderr: {stderr}")
 
-				# Check if stderr exists
+				# Process stdout and stderr
 				if stderr:
 					output["error"] = stderr.decode('utf-8') if isinstance(stderr, bytes) else str(stderr)
-                
-				# Check if theres data
 				if stdout:
 					output["data"] = stdout.decode('utf-8') if isinstance(stdout, bytes) else str(stdout)
 
@@ -233,8 +265,11 @@ class StackQL:
 				"stderr": stderr.decode('utf-8') if 'stderr' in locals() and isinstance(stderr, bytes) else ""
 			}
 			output["exception"] = f"ERROR: {json.dumps(error_details)}"
-
-		return output
+		finally:
+			# Clean up the temporary script file
+			if script_path is not None:
+				os.remove(script_path) 
+			return output
 
 	def __init__(self, 
 				 server_mode=False, 
@@ -295,13 +330,13 @@ class StackQL:
 
 		if self.server_mode:
 			# server mode, connect to a server via the postgres wire protocol
-			# Attempt to import psycopg2 only if server_mode is True
-			global psycopg2, RealDictCursor
+			# Attempt to import psycopg only if server_mode is True
+			global psycopg, dict_row
 			try:
-				import psycopg2
-				from psycopg2.extras import RealDictCursor
+				import psycopg
+				from psycopg.rows import dict_row  # For returning results as dictionaries
 			except ImportError:
-				raise ImportError("psycopg2 is required in server mode but is not installed. Please install psycopg2 and try again.")
+				raise ImportError("psycopg is required in server mode but is not installed. Please install psycopg and try again.")
 
 			self.server_address = server_address
 			self.server_port = server_port
@@ -473,7 +508,7 @@ class StackQL:
 		self.version, self.sha = _get_version(self.bin_path)
 		print("stackql upgraded to version %s" % (self.version))
 
-	def executeStmt(self, query):
+	def executeStmt(self, query, custom_auth=None, env_vars=None):
 		"""Executes a query using the StackQL instance and returns the output as a string.  
 			This is intended for operations which do not return a result set, for example a mutation 
 			operation such as an `INSERT` or a `DELETE` or life cycle method such as an `EXEC` operation
@@ -485,6 +520,10 @@ class StackQL:
 
 		:param query: The StackQL query string to be executed.
 		:type query: str, list of dict objects, or Pandas DataFrame
+		:param custom_auth: Custom authentication dictionary.
+		:type custom_auth: dict, optional
+		:param env_vars: Command-specific environment variables for this execution.
+		:type env_vars: dict, optional		
 
 		:return: The output result of the query in string format. If in `server_mode`, it 
 				returns a JSON string representation of the result. 
@@ -498,8 +537,7 @@ class StackQL:
 			>>> result
 		"""
 		if self.server_mode:
-			# Use server mode
-			result = self._run_server_query(query, True)
+			result = self._run_server_query(query, is_statement=True)
 			if self.output == 'pandas':
 				return pd.DataFrame(result)
 			elif self.output == 'csv':
@@ -513,18 +551,19 @@ class StackQL:
 			# {'error': '<error message>'} if something went wrong; or
 			# {'message': '<message>'} if the statement was executed successfully
 
-			result = self._run_query(query)
+			result = self._run_query(query, custom_auth=custom_auth, env_vars=env_vars)
+		
 			if "exception" in result:
 				exception_msg = result["exception"]
 				if self.output == 'pandas':
 					return pd.DataFrame({'error': [exception_msg]}) if exception_msg else pd.DataFrame({'error': []})
-				elif self.output == 'csv':		
+				elif self.output == 'csv':
 					return exception_msg
-				else:		
+				else:
 					return {"error": exception_msg}
 
 			# message on stderr
-			message = result["error"]
+			message = result.get("error", "")
 
 			if self.output == 'pandas':
 				return pd.DataFrame({'message': [message]}) if message else pd.DataFrame({'message': []})
@@ -535,34 +574,39 @@ class StackQL:
 				try:
 					return {'message': message, 'rowsaffected': message.count('\n')}
 				except Exception as e:
-					return {'message': message, 'rowsaffected': 0}							
+					return {'message': message, 'rowsaffected': 0}
 	
-	def execute(self, query, suppress_errors=True):
+	def execute(self, query, suppress_errors=True, custom_auth=None, env_vars=None):
 		"""
 		Executes a StackQL query and returns the output based on the specified output format.
 
-		This method supports execution both in server mode and locally using subprocess. In server mode,
+		This method supports execution both in server mode and locally using a subprocess. In server mode,
 		the query is sent to a StackQL server, while in local mode, it runs the query using a local binary.
 
-		Args:
-			query (str): The StackQL query string to be executed.
-			suppress_errors (bool, optional): If set to True, the method will return an empty list if an error occurs.
+		:param query: The StackQL query string to be executed.
+		:type query: str
+		:param suppress_errors: If set to True, the method will return an empty list if an error occurs.
+		:type suppress_errors: bool, optional
+		:param custom_auth: Custom authentication dictionary.
+		:type custom_auth: dict, optional		
+		:param env_vars: Command-specific environment variables for this execution.
+		:type env_vars: dict, optional
 
-		Returns:
-			list(dict), pd.DataFrame, or str: The output of the query, which can be a list of dictionary objects, a Pandas DataFrame,
-			or a raw CSV string, depending on the configured output format.
+		:return: The output of the query, which can be a list of dictionary objects, a Pandas DataFrame, 
+					or a raw CSV string, depending on the configured output format.
+		:rtype: list(dict) | pd.DataFrame | str
 
-		Raises:
-			ValueError: If an unsupported output format is specified.
+		:raises ValueError: If an unsupported output format is specified.
 
-		Examples:
+		:example:
+
 			>>> stackql = StackQL()
 			>>> query = '''
-				SELECT SPLIT_PART(machineType, '/', -1) as machine_type, status, COUNT(*) as num_instances
-				FROM google.compute.instances
-				WHERE project = 'stackql-demo' AND zone = 'australia-southeast1-a'
-				GROUP BY machine_type, status HAVING COUNT(*) > 2
-				'''
+			... SELECT SPLIT_PART(machineType, '/', -1) as machine_type, status, COUNT(*) as num_instances
+			... FROM google.compute.instances
+			... WHERE project = 'stackql-demo' AND zone = 'australia-southeast1-a'
+			... GROUP BY machine_type, status HAVING COUNT(*) > 2
+			... '''
 			>>> result = stackql.execute(query)
 		"""
 		if self.server_mode:
@@ -572,21 +616,23 @@ class StackQL:
 				return pd.read_json(StringIO(json_str))
 			elif self.output == 'csv':
 				raise ValueError("CSV output is not supported in server_mode.")
-			else:  # Assume 'dict' output
+			else: # Assume 'dict' output
 				return result
 		else:
+
 			# returns either...
 			# [{'error': <error json str>}] if something went wrong; or
-			# [{<row1>},...] if the statement was executed successfully, messages to stderr are ignored
+			# [{<row1>},...] if the statement was executed successfully, messages to stderr 
 
-			output = self._run_query(query)
+			output = self._run_query(query, custom_auth=custom_auth, env_vars=env_vars)
+			
 			if "exception" in output:
 				exception_msg = output["exception"]
 				if self.output == 'pandas':
-					return pd.DataFrame({'error': [exception_msg]}) if exception_msg else pd.DataFrame({'error': []})
-				elif self.output == 'csv':		
+					return pd.DataFrame({'error': [exception_msg]}) if exception_msg else pd.DataFrame({'error': []})					
+				elif self.output == 'csv':
 					return exception_msg
-				else:		
+				else:
 					return [{"error": exception_msg}]
 
 			if "data" in output:
@@ -599,36 +645,24 @@ class StackQL:
 						return pd.read_json(StringIO(data))
 					except ValueError:
 						return pd.DataFrame([{"error": "Invalid JSON output"}])
-				else:  # Assume 'dict' output
+				else: # Assume 'dict' output
 					try:
 						retval = json.loads(data)
-						if retval is None:
-							return []
-						return retval
+						return retval if retval else []
 					except ValueError:
 						return [{"error": f"Invalid JSON output : {data}"}]
 
-			if "error" in output:
+			if "error" in output and not suppress_errors:
 				# theres no data but there is stderr from the request, could be an expected error like a 404
-				if suppress_errors:
-					# we dont care about errors, return an empty list
-					csv_ret = ""
-					pd_ret = pd.DataFrame()
-					dict_ret = []
-				else:
-					# we care about errors, return the error
-					err_msg = output["error"]
-					csv_ret = err_msg
-					pd_ret = pd.DataFrame([{"error": err_msg}])
-					dict_ret = [{"error": err_msg}]
-					  				
+				err_msg = output["error"]
 				if self.output == 'csv':
-					return csv_ret
+					return err_msg
 				elif self.output == 'pandas':
-					return pd_ret
-				else:  # Assume 'dict' output
-					return dict_ret
-				
+					return pd.DataFrame([{"error": err_msg}])
+				else:
+					return [{"error": err_msg}]
+
+			return []
 
 	# asnyc query support
 	#
@@ -636,34 +670,30 @@ class StackQL:
 	def _run_server_query_with_new_connection(self, query):
 		"""Run a query against a StackQL postgres wire protocol server with a new connection.
 		"""
-		conn = None
 		try:
 			# Establish a new connection using credentials and configurations
-			conn = psycopg2.connect(
+			with psycopg.connect(
 				dbname='stackql',
 				user='stackql',
 				host=self.server_address,
-				port=self.server_port
-			)
-			# Create a new cursor and execute the query
-			with conn.cursor(cursor_factory=RealDictCursor) as cur:
-				cur.execute(query)
-				try:
-					rows = cur.fetchall()
-				except psycopg2.ProgrammingError as e:
-					if str(e) == "no results to fetch":
-						rows = []
-					else:
-						raise
-				return rows
-		except psycopg2.OperationalError as oe:
+				port=self.server_port,
+				row_factory=dict_row
+			) as conn:
+				# Execute the query with a new cursor
+				with conn.cursor() as cur:
+					cur.execute(query)
+					try:
+						rows = cur.fetchall()
+					except psycopg.ProgrammingError as e:
+						if str(e) == "no results to fetch":
+							rows = []
+						else:
+							raise
+					return rows
+		except psycopg.OperationalError as oe:
 			print(f"OperationalError while connecting to the server: {oe}")
 		except Exception as e:
 			print(f"Unexpected error while connecting to the server: {e}")
-		finally:
-			# Ensure the connection is always closed, even if an error occurs
-			if conn is not None:
-				conn.close()
 
 	def _sync_query(self, query, new_connection=False):
 		"""Synchronous function to perform the query.
