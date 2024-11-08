@@ -207,6 +207,15 @@ class StackQL:
 		local_params = self.params.copy()
 		local_params.insert(1, f'"{query}"')
 
+		# # Handle custom authentication if provided
+		# if custom_auth:
+		# 	if '--auth' in local_params:
+		# 		auth_index = local_params.index('--auth')
+		# 		local_params.pop(auth_index)  # remove --auth
+		# 		local_params.pop(auth_index)  # remove the auth string
+		# 	authstr = json.dumps(custom_auth)
+		# 	local_params.extend(["--auth", f"'{authstr}'"])
+
 		# Handle custom authentication if provided
 		if custom_auth:
 			if '--auth' in local_params:
@@ -214,7 +223,14 @@ class StackQL:
 				local_params.pop(auth_index)  # remove --auth
 				local_params.pop(auth_index)  # remove the auth string
 			authstr = json.dumps(custom_auth)
-			local_params.extend(["--auth", f"'{authstr}'"])
+			
+			# For Windows PowerShell, use backticks around the JSON auth string
+			if self.platform.startswith("Windows"):
+				authstr = f"`'{authstr}`'"
+			else:
+				authstr = f"'{authstr}'"
+			
+			local_params.extend(["--auth", authstr])		
 
 		output = {}
 		env_command_prefix = ""
@@ -223,10 +239,8 @@ class StackQL:
 		if env_vars:
 			if self.platform.startswith("Windows"):
 				# For Windows, use PowerShell syntax
-				# env_command_prefix = "& { " + " ".join([f'$env:{key} = "{value}";' for key, value in env_vars.items()]) + " "
-				# full_command = f"{env_command_prefix}{self.bin_path} " + " ".join(local_params) + " }"
-				env_command_prefix = " ".join([f'$env:{key}="{value}";' for key, value in env_vars.items()])
-				full_command = f"{env_command_prefix} {self.bin_path} " + " ".join(local_params)
+				env_command_prefix = "& { " + " ".join([f'$env:{key} = "{value}";' for key, value in env_vars.items()]) + " "
+				full_command = f"{env_command_prefix}{self.bin_path} " + " ".join(local_params) + " }"
 			else:
 				# For Linux/Mac, use standard env variable syntax
 				env_command_prefix = "env " + " ".join([f'{key}="{value}"' for key, value in env_vars.items()]) + " "
