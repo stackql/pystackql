@@ -278,6 +278,7 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         print_test_result(f"Test 18 execute with custom auth and command-specific environment variables\nRESULT: {result}", result == expected_result)
 
 
+@unittest.skipIf(platform.system() == "Windows", "Skipping async tests on Windows")
 class PyStackQLAsyncTests(PyStackQLTestsBase):
 
     @async_test_decorator
