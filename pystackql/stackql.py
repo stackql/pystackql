@@ -11,6 +11,7 @@ from ._util import (
 import sys, subprocess, json, os, asyncio, functools
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import pandas as pd
+import tempfile
 
 from io import StringIO
 
@@ -207,15 +208,6 @@ class StackQL:
 		local_params = self.params.copy()
 		local_params.insert(1, f'"{query}"')
 
-		# # Handle custom authentication if provided
-		# if custom_auth:
-		# 	if '--auth' in local_params:
-		# 		auth_index = local_params.index('--auth')
-		# 		local_params.pop(auth_index)  # remove --auth
-		# 		local_params.pop(auth_index)  # remove the auth string
-		# 	authstr = json.dumps(custom_auth)
-		# 	local_params.extend(["--auth", f"'{authstr}'"])
-
 		# Handle custom authentication if provided
 		if custom_auth:
 			if '--auth' in local_params:
@@ -223,25 +215,46 @@ class StackQL:
 				local_params.pop(auth_index)  # remove --auth
 				local_params.pop(auth_index)  # remove the auth string
 			authstr = json.dumps(custom_auth)
-			
-			# For Windows PowerShell, transpose quotes: wrap with " and use ' inside the JSON
-			if self.platform.startswith("Windows"):
-				authstr = authstr.replace('"', "'")  # Replace inner double quotes with single quotes
-				authstr = f'"{authstr}"'  # Wrap the entire string in double quotes
-			else:
-				authstr = f"'{authstr}'"  # Use single quotes on non-Windows platforms
-				
-			local_params.extend(["--auth", authstr])		
+			local_params.extend(["--auth", f"'{authstr}'"])
 
 		output = {}
 		env_command_prefix = ""
 
+		# # Determine platform and set environment command prefix accordingly
+		# if env_vars:
+		# 	if self.platform.startswith("Windows"):
+		# 		# For Windows, use PowerShell syntax
+		# 		env_command_prefix = "& { " + " ".join([f'$env:{key} = "{value}";' for key, value in env_vars.items()]) + " "
+		# 		full_command = f"{env_command_prefix}{self.bin_path} " + " ".join(local_params) + " }"
+		# 		is_github_actions = os.environ.get('GITHUB_ACTIONS') == 'true'
+		# 		# ok new approach, if we are in github actions, dump the command to a file and run it
+		# 		# GO!
+		# 	else:
+		# 		# For Linux/Mac, use standard env variable syntax
+		# 		env_command_prefix = "env " + " ".join([f'{key}="{value}"' for key, value in env_vars.items()]) + " "
+		# 		full_command = env_command_prefix + " ".join([self.bin_path] + local_params)
+		# else:
+		# 	full_command = " ".join([self.bin_path] + local_params)
+
+		# print(full_command)  # For debugging
+
 		# Determine platform and set environment command prefix accordingly
 		if env_vars:
 			if self.platform.startswith("Windows"):
-				# For Windows, use PowerShell syntax
+				# For Windows, use PowerShell syntax with GitHub Actions check
 				env_command_prefix = "& { " + " ".join([f'$env:{key} = "{value}";' for key, value in env_vars.items()]) + " "
 				full_command = f"{env_command_prefix}{self.bin_path} " + " ".join(local_params) + " }"
+				is_github_actions = os.environ.get('GITHUB_ACTIONS') == 'true'
+				
+				# If in GitHub Actions, write command to a PowerShell script file and execute it
+				if is_github_actions:
+					with tempfile.NamedTemporaryFile(delete=False, suffix=".ps1", mode="w") as script_file:
+						# Write environment variable setup and command to script file
+						for key, value in env_vars.items():
+							script_file.write(f'$env:{key} = "{value}";\n')
+						script_file.write(f"{self.bin_path} " + " ".join(local_params) + "\n")
+						script_path = script_file.name
+					full_command = f"powershell -File {script_path}"
 			else:
 				# For Linux/Mac, use standard env variable syntax
 				env_command_prefix = "env " + " ".join([f'{key}="{value}"' for key, value in env_vars.items()]) + " "
