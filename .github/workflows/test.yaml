@@ -20,7 +20,7 @@ jobs:
           # - "3.11"
           # - "3.12"
           # - "3.13"
-          - "3.14"          
+          - "3.14.0-alpha.1"          
         # exclude:
         #   - os: macos-latest
         #     python-version: "3.7"
@@ -89,16 +89,6 @@ jobs:
           python3 -m tests.pystackql_tests
         shell: bash
         if: matrix.os != 'windows-latest'
-
-      # - name: Debug Shell Information
-      #   if: matrix.os == 'windows-latest'
-      #   shell: pwsh
-      #   run: |
-      #     Write-Host "Checking PowerShell version and environment variables:"
-      #     $PSVersionTable
-      #     Write-Host "Environment variables:"
-      #     Get-ChildItem Env:
-      #     Write-Host "Current Shell: $SHELL"
 
       - name: Run tests on Windows
         env:
