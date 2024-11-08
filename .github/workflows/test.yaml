@@ -64,6 +64,7 @@ jobs:
       - name: Install PostgreSQL dev libraries on macOS
         if: matrix.os == 'macos-latest'
         run: |
+          brew install postgresql
           pip install psycopg
       # End macOS
 
