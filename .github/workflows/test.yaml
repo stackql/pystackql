@@ -36,7 +36,7 @@ jobs:
 
       - name: Upgrade pip
         if: matrix.os == 'macos-latest'
-        run: python${{ matrix.python-version }} -m pip install --upgrade pip
+        run: python -m pip install --upgrade pip
 
       - name: Install dependencies from requirements.txt
         shell: bash

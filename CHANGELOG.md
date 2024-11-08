@@ -1,10 +1,11 @@
 # Changelog
 
-## v3.6.6 (2024-11-08)
+## v3.7.0 (2024-11-08)
 
 ### Updates
 
 - Added support for setting command specific environment variables (`env_vars` and `custom_auth`) in `execute` and `executeStmt`.
+- Upgraded to use `psycopg`
 
 ## v3.6.5 (2024-09-19)
 
