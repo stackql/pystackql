@@ -1,6 +1,6 @@
 # install packages
 # pip.exe install -r requirements.txt --user
-# pip install psycopg2-binary --user
+# pip install psycopg[binary]
 
 # Load environment variables
 . .\tests\creds\env_vars\test.env.ps1
