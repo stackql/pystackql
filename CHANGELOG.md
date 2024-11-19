@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.7.1 (2024-11-19)
+
+### Updates
+
+- Added `http_debug` constructor argument to return HTTP log information
+
 ## v3.7.0 (2024-11-08)
 
 ### Updates
