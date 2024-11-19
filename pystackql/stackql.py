@@ -210,7 +210,7 @@ class StackQL:
 		# local_params.insert(1, shlex.quote(query))
 		script_path = None
 
-		if sys.platform == "Windows":
+		if sys.os.platform == "Windows":
 			# Escape double quotes and wrap in double quotes for Windows
 			escaped_query = query.replace('"', '\\"')  # Escape double quotes properly
 			safe_query = f'"{escaped_query}"'
