@@ -445,8 +445,10 @@ class StackQL:
 			self.params.append(str(api_timeout))
 
 			if http_debug:
-				self.http_debug = http_debug
+				self.http_debug = True
 				self.params.append("--http.log.enabled")
+			else:
+				self.http_debug = False
 
 			# proxy settings
 			if proxy_host is not None:
