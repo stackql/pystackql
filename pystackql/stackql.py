@@ -297,6 +297,7 @@ class StackQL:
 				 page_limit=20, 
 				 max_depth=5,
 				 debug=False,
+				 http_debug=False,
 				 debug_log_file=None):
 		"""Constructor method
 		"""
@@ -315,6 +316,7 @@ class StackQL:
 			raise ValueError("CSV output is not supported in server mode, use 'dict' or 'pandas' instead.")
 		
 		self.debug = debug
+		
 		if debug:
 			if debug_log_file is None:
 				self.debug_log_file = os.path.join(os.path.expanduser("~"), '.pystackql', 'debug.log')
@@ -441,6 +443,10 @@ class StackQL:
 			self.api_timeout = api_timeout
 			self.params.append("--apirequesttimeout")
 			self.params.append(str(api_timeout))
+
+			if http_debug:
+				self.http_debug = http_debug
+				self.params.append("--http.log.enabled")
 
 			# proxy settings
 			if proxy_host is not None:
@@ -623,6 +629,9 @@ class StackQL:
 			# returns either...
 			# [{'error': <error json str>}] if something went wrong; or
 			# [{<row1>},...] if the statement was executed successfully, messages to stderr 
+
+			if self.http_debug:
+				suppress_errors = False
 
 			output = self._run_query(query, custom_auth=custom_auth, env_vars=env_vars)
 			
