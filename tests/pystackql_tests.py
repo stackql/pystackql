@@ -263,6 +263,20 @@ class PyStackQLNonServerModeTests(PyStackQLTestsBase):
         self.assertEqual(result, expected_result, f"Expected result: {expected_result}, got: {result}")
         print_test_result(f"Test 18 execute with custom auth and command-specific environment variables\nRESULT: {result}", result == expected_result)
 
+    @pystackql_test_setup()
+    def test_19_json_extract_function(self):
+        query = """
+        SELECT
+        json_extract('{"Key":"StackName","Value":"aws-stack"}', '$.Key') as key,
+        json_extract('{"Key":"StackName","Value":"aws-stack"}', '$.Value') as value
+        """
+        expected_result = [
+            {'key': {'String': 'StackName', 'Valid': True}, 'value': {'String': 'aws-stack', 'Valid': True}}
+        ]
+        result = self.stackql.execute(query)
+        self.assertEqual(result, expected_result, f"Expected result: {expected_result}, got: {result}")
+        print_test_result(f"Test 19 complex object handling\nRESULT: {result}", result == expected_result)
+
 
 @unittest.skipIf(platform.system() == "Windows", "Skipping async tests on Windows")
 class PyStackQLAsyncTests(PyStackQLTestsBase):

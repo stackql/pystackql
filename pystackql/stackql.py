@@ -205,8 +205,20 @@ class StackQL:
 		:raises FileNotFoundError: If the StackQL binary isn't found.
 		:raises Exception: For any other exceptions during the execution, providing a generic error message.
 		"""
+
 		local_params = self.params.copy()
-		local_params.insert(1, f'"{query}"')
+		script_path = None
+
+		if self.platform.startswith("Windows"):
+			# Escape double quotes and wrap in double quotes for Windows
+			escaped_query = query.replace('"', '\\"')  # Escape double quotes properly
+			safe_query = f'"{escaped_query}"'
+		else:
+			# Use shlex.quote for Unix-like systems
+			import shlex
+			safe_query = shlex.quote(query)
+
+		local_params.insert(1, safe_query)		
 		script_path = None
 
 		# Handle custom authentication if provided
@@ -240,19 +252,32 @@ class StackQL:
 			full_command = " ".join([self.bin_path] + local_params)
 
 		try:
-			with subprocess.Popen(full_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as iqlPopen:
-				stdout, stderr = iqlPopen.communicate()
 
-				if self.debug:
-					self._debug_log(f"query: {query}")
-					self._debug_log(f"stdout: {stdout}")
-					self._debug_log(f"stderr: {stderr}")
+			full_command = full_command.replace("\n", " ")
 
-				# Process stdout and stderr
-				if stderr:
-					output["error"] = stderr.decode('utf-8') if isinstance(stderr, bytes) else str(stderr)
-				if stdout:
-					output["data"] = stdout.decode('utf-8') if isinstance(stdout, bytes) else str(stdout)
+			result = subprocess.run(
+				full_command,
+				shell=True,
+				text=True,
+				capture_output=True
+			)
+
+			stdout = result.stdout
+			stderr = result.stderr
+			returncode = result.returncode
+
+			if self.debug:
+				self._debug_log(f"fullcommand: {full_command}")
+				self._debug_log(f"returncode: {returncode}")
+				self._debug_log(f"stdout: {stdout}")
+				self._debug_log(f"stderr: {stderr}")
+
+			# Process stdout and stderr
+			if stderr:
+				output["error"] = stderr.decode('utf-8') if isinstance(stderr, bytes) else str(stderr)
+			if stdout:
+				output["data"] = stdout.decode('utf-8') if isinstance(stdout, bytes) else str(stdout)
+
 
 		except FileNotFoundError:
 			output["exception"] = f"ERROR: {self.bin_path} not found"
