@@ -207,7 +207,6 @@ class StackQL:
 		"""
 
 		local_params = self.params.copy()
-		# local_params.insert(1, shlex.quote(query))
 		script_path = None
 
 		if self.platform.startswith("Windows"):
