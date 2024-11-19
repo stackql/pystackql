@@ -11,7 +11,7 @@ from ._util import (
 import sys, subprocess, json, os, asyncio, functools
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import pandas as pd
-import tempfile, shlex
+import tempfile
 
 from io import StringIO
 
@@ -207,7 +207,19 @@ class StackQL:
 		"""
 
 		local_params = self.params.copy()
-		local_params.insert(1, shlex.quote(query))
+		# local_params.insert(1, shlex.quote(query))
+		script_path = None
+
+		if sys.platform == "Windows":
+			# Escape double quotes and wrap in double quotes for Windows
+			escaped_query = query.replace('"', '\\"')  # Escape double quotes properly
+			safe_query = f'"{escaped_query}"'
+		else:
+			# Use shlex.quote for Unix-like systems
+			import shlex
+			safe_query = shlex.quote(query)
+
+		local_params.insert(1, safe_query)		
 		script_path = None
 
 		# Handle custom authentication if provided
