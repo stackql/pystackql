@@ -10,7 +10,7 @@ with open('LICENSE') as f:
 
 setup(
     name='pystackql',
-    version='v3.7.2',
+    version='v3.8.0',
     description='A Python interface for StackQL',
     long_description=readme,
     author='Jeffrey Aven',
@@ -23,7 +23,11 @@ setup(
         'requests', 
         'pandas',
         'IPython',
-        ],
+        'psycopg[binary]>=3.1.0',  # Added psycopg with binary wheels for all platforms
+        'nest-asyncio>=1.5.5',      # For async support in Jupyter
+        'termcolor>=1.1.0',         # For colored output in test runner
+        'tqdm>=4.61.0',             # For progress bars in download method
+    ],
     # entry_points={
     #     'console_scripts': [
     #         'stackql = pystackql:setup'
