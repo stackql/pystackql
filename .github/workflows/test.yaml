@@ -52,7 +52,10 @@ jobs:
       - name: setup-stackql
         uses: stackql/setup-stackql@v2.2.3
         with:
-          platform: ${{ matrix.os == 'windows-latest' && 'windows' || (matrix.os == 'macos-latest' && 'darwin' || 'linux') }}
+          use_wrapper: true
+
+        # with:
+        #   platform: ${{ matrix.os == 'windows-latest' && 'windows' || (matrix.os == 'macos-latest' && 'darwin' || 'linux') }}
 
       - name: List dir
         run: |
