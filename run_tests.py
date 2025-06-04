@@ -46,12 +46,7 @@ def main():
             "tests/test_magic.py",
             "tests/test_async.py"
         ])
-        
-        # Skip server tests by default as they require a running server
-        # Uncomment to run server tests
-        # args.append("tests/test_server.py")
-        # args.append("tests/test_server_magic.py")
-    
+   
     # Run pytest with the arguments
     return pytest.main(args)
 

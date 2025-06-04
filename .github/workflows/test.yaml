@@ -49,17 +49,37 @@ jobs:
         run: |
           pip install pytest>=6.2.5 pytest-cov>=2.12.0 nose>=1.3.7
 
+      - name: setup-stackql
+        uses: stackql/setup-stackql@v2.2.3
+        with:
+          platform: ${{ matrix.os == 'windows-latest' && 'windows' || (matrix.os == 'macos-latest' && 'darwin' || 'linux') }}
+
+      - name: List dir
+        run: |
+          ls -la
+
+      - name: Move stackql binary to temp dir (Unix/macOS)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          mkdir -p /tmp || true
+          cp stackql /tmp/stackql
+          echo "StackQL binary moved to /tmp/stackql"
+          
+      - name: Move stackql binary to temp dir (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: cmd
+        run: |
+          mkdir "C:\Temp" 2>nul || echo "Temp directory already exists"
+          copy stackql.exe "C:\Temp\stackql.exe"
+          echo StackQL binary moved to C:\Temp\stackql.exe
+
       - name: Run non-server tests
         env:
           GITHUB_ACTIONS: 'true'
         run: |
           python3 run_tests.py
         shell: bash
-
-      - name: setup-stackql
-        uses: stackql/setup-stackql@v2.2.3
-        with:
-          platform: ${{ matrix.os == 'windows-latest' && 'windows' || (matrix.os == 'macos-latest' && 'darwin' || 'linux') }}
       
       - name: Start StackQL server
         run: |
