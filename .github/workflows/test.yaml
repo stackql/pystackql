@@ -56,7 +56,7 @@ jobs:
 
       - name: List dir
         run: |
-          ls -la
+          which stackql || echo "StackQL binary not found"
 
       - name: Move stackql binary to temp dir (Unix/macOS)
         if: matrix.os != 'windows-latest'
