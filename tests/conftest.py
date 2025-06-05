@@ -48,16 +48,34 @@ def setup_stackql():
     # Return the StackQL instance for use in tests
     return stackql
 
+# def stackql_process_running():
+#     try:
+#         if platform.system() == "Windows":
+#             # Use `tasklist` to look for stackql.exe with correct port in args (may not include args, so fallback is loose match)
+#             output = subprocess.check_output(['tasklist', '/FI', 'IMAGENAME eq stackql.exe'], text=True)
+#             return "stackql.exe" in output
+#         else:
+#             # Use `ps aux` to search for 'stackql' process with the correct port
+#             output = subprocess.check_output(['ps', 'aux'], text=True)
+#             return f"--pgsrv.port={SERVER_PORT}" in output and "stackql" in output
+#     except subprocess.CalledProcessError:
+#         return False
+
 def stackql_process_running():
     try:
         if platform.system() == "Windows":
-            # Use `tasklist` to look for stackql.exe with correct port in args (may not include args, so fallback is loose match)
-            output = subprocess.check_output(['tasklist', '/FI', 'IMAGENAME eq stackql.exe'], text=True)
+            output = subprocess.check_output(
+                ['tasklist', '/FI', 'IMAGENAME eq stackql.exe'], text=True
+            )
             return "stackql.exe" in output
         else:
-            # Use `ps aux` to search for 'stackql' process with the correct port
-            output = subprocess.check_output(['ps', 'aux'], text=True)
-            return f"--pgsrv.port={SERVER_PORT}" in output and "stackql" in output
+            # More reliable: use pgrep + full argument check
+            output = subprocess.check_output(
+                f"ps aux | grep '[s]tackql' | grep -- '--pgsrv.port={SERVER_PORT}'",
+                shell=True,
+                text=True
+            )
+            return bool(output.strip())
     except subprocess.CalledProcessError:
         return False
 
