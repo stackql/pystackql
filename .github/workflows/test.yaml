@@ -93,12 +93,11 @@ jobs:
 
       - name: Start StackQL server (Windows)
         if: matrix.os == 'windows-latest'
-        shell: cmd
+        shell: pwsh
         run: |
-            echo @echo off > start_server.bat
-            echo C:\Temp\stackql.exe -v --pgsrv.port=5444 srv ^> stackql-server.log 2^>^&1 >> start_server.bat
-            start /b "" cmd /c start_server.bat
-            timeout /t 5 /nobreak > NUL
+            $process = Start-Process -FilePath "C:\Temp\stackql.exe" -ArgumentList "-v", "--pgsrv.port=5444", "srv" -RedirectStandardOutput "stackql-server.log" -RedirectStandardError "stackql-server-error.log" -NoNewWindow -PassThru
+            Write-Host "StackQL server started with PID: $($process.Id)"
+            Start-Sleep -Seconds 5
 
       - name: Run server tests
         env:
