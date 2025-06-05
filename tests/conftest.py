@@ -6,6 +6,7 @@ Common test setup and fixtures for PyStackQL tests.
 
 import os
 import sys
+import platform
 import time
 import pytest
 import subprocess
@@ -47,74 +48,32 @@ def setup_stackql():
     # Return the StackQL instance for use in tests
     return stackql
 
+def stackql_process_running():
+    try:
+        if platform.system() == "Windows":
+            # Use `tasklist` to look for stackql.exe with correct port in args (may not include args, so fallback is loose match)
+            output = subprocess.check_output(['tasklist', '/FI', 'IMAGENAME eq stackql.exe'], text=True)
+            return "stackql.exe" in output
+        else:
+            # Use `ps aux` to search for 'stackql' process with the correct port
+            output = subprocess.check_output(['ps', 'aux'], text=True)
+            return f"--pgsrv.port={SERVER_PORT}" in output and "stackql" in output
+    except subprocess.CalledProcessError:
+        return False
+
 @pytest.fixture(scope="session")
-def stackql_server(setup_stackql):
+def stackql_server():
     """
-    Session-level fixture to start and stop a StackQL server.
-    This runs once for all tests that request it.
-    
-    This improved version:
-    1. Checks if a server is already running before starting one
-    2. Uses process groups for better cleanup
-    3. Handles errors more gracefully
+    Verifies that a StackQL server process is running with the expected port.
+    Does not attempt to start or stop the process.
     """
-    global server_process
-    
-    # Check if server is already running
-    print("\nChecking if server is running...")
-    ps_output = subprocess.run(
-        ["ps", "aux"], 
-        capture_output=True, 
-        text=True
-    ).stdout
-    
-    if "stackql" in ps_output and f"--pgsrv.port={SERVER_PORT}" in ps_output:
-        print("Server is already running")
-        # No need to start a server or set server_process
-    else:
-        # Start the server
-        print(f"Starting stackql server on {SERVER_ADDRESS}:{SERVER_PORT}...")
-        
-        # Get the registry setting from environment variable if available
-        registry = os.environ.get('REG', '')
-        registry_arg = f"--registry {registry}" if registry else ""
-        
-        # Build the command
-        cmd = f"{setup_stackql.bin_path} srv --pgsrv.address {SERVER_ADDRESS} --pgsrv.port {SERVER_PORT} {registry_arg}"
-        
-        # Start the server process with process group for better cleanup
-        server_process = subprocess.Popen(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            preexec_fn=os.setsid  # Use process group for cleaner termination
-        )
-        
-        # Wait for server to start
-        print("Waiting for server to initialize...")
-        time.sleep(5)
-        
-        # Check if server started successfully
-        if server_process.poll() is not None:
-            # Process has terminated
-            stdout, stderr = server_process.communicate()
-            pytest.fail(f"Server failed to start: {stderr.decode()}")
-    
-    # Yield to run tests
+    print(f"\n🔍 Checking for running StackQL server process (port {SERVER_PORT})...")
+
+    if not stackql_process_running():
+        pytest.exit(f"❌ No running StackQL server process found for port {SERVER_PORT}", returncode=1)
+
+    print("✅ StackQL server process is running.")
     yield
-    
-    # Clean up server at the end if we started it
-    if server_process and server_process.poll() is None:
-        print("\nShutting down stackql server...")
-        try:
-            # Kill the entire process group
-            os.killpg(os.getpgid(server_process.pid), signal.SIGTERM)
-            server_process.wait(timeout=5)
-            print("Server shutdown complete")
-        except subprocess.TimeoutExpired:
-            print("Server did not terminate gracefully, forcing shutdown...")
-            os.killpg(os.getpgid(server_process.pid), signal.SIGKILL)
 
 @pytest.fixture
 def mock_interactive_shell():
