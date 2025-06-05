@@ -24,7 +24,7 @@ class StackQL:
         (`server_mode` only, defaults to `'127.0.0.1'`)
     :type server_address: str, optional
     :param server_port: The port of the StackQL server 
-        (`server_mode` only, defaults to `5444`)
+        (`server_mode` only, defaults to `5466`)
     :type server_port: int, optional
     :param backend_storage_mode: Specifies backend storage mode, options are 'memory' and 'file'
         (defaults to `'memory'`, this option is ignored in `server_mode`)
@@ -119,7 +119,7 @@ class StackQL:
     def __init__(self, 
                  server_mode=False, 
                  server_address='127.0.0.1', 
-                 server_port=5444,
+                 server_port=5466,
                  output='dict',
                  sep=',',
                  header=False,
