@@ -91,7 +91,7 @@ jobs:
         shell: bash      
         run: |
             nohup /tmp/stackql -v --pgsrv.port=5444 srv &
-            sleep 5
+            sleep 10
 
       - name: Start StackQL server (Windows)
         if: matrix.os == 'windows-latest'
