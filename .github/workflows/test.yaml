@@ -64,7 +64,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: cmd
         run: |
-          stackql.exe --version
+          stackql-bin.exe --version
 
       - name: Move stackql binary to temp dir (Linux/macOS)
         if: matrix.os != 'windows-latest'
@@ -75,27 +75,16 @@ jobs:
           cp "$STACKQL_PATH" /tmp/stackql
           echo "StackQL binary moved from ${STACKQL_PATH} to /tmp/stackql"
           
-      # - name: Move stackql binary to temp dir (Windows)
-      #   if: matrix.os == 'windows-latest'
-      #   shell: cmd
-      #   run: |
-      #     where stackql > stackql_path.txt
-      #     set /p STACKQL_PATH=< stackql_path.txt
-      #     mkdir "C:\Temp" 2>nul || echo "Temp directory already exists"
-      #     copy "%STACKQL_PATH%" "C:\Temp\stackql.exe"
-      #     echo StackQL binary moved to C:\Temp\stackql.exe
-
       - name: Move stackql binary to temp dir (Windows)
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          $stackqlBin = "$env:USERPROFILE\AppData\Local\stackql\bin\stackql.exe"
-          if (-Not (Test-Path $stackqlBin)) {
-            throw "Expected stackql binary not found at $stackqlBin"
+          $bin = Join-Path $Env:STACKQL_CLI_PATH 'stackql-bin.exe'
+          if (-Not (Test-Path $bin)) {
+            throw "Binary not found at $bin"
           }
-          Copy-Item $stackqlBin -Destination "C:\Temp\stackql.exe" -Force
-          Write-Host "StackQL binary moved to C:\Temp\stackql.exe"
-
+          Copy-Item $bin -Destination "C:\Temp\stackql.exe" -Force
+          Write-Host "Moved real StackQL binary to C:\Temp\stackql.exe"
 
       # - name: Run non-server tests
       #   env:
@@ -115,9 +104,9 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          Start-Process -FilePath "C:\Temp\stackql.exe" -ArgumentList "-v", "--pgsrv.port=5444", "srv"
+          Start-Process -FilePath "C:\Temp\stackql.exe" `
+                        -ArgumentList "-v", "--pgsrv.port=5444", "srv"
           Start-Sleep -Seconds 5
-
 
       # - name: Run server tests
       #   env:
