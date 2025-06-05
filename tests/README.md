@@ -52,7 +52,7 @@ Server tests are skipped by default because they require a running StackQL serve
 
 1. Start a StackQL server:
    ```bash
-   stackql srv --pgsrv.address 127.0.0.1 --pgsrv.port 5466
+   stackql srv --pgsrv.address 127.0.0.1 --pgsrv.port 5444
    ```
 
 2. Run the server tests:
