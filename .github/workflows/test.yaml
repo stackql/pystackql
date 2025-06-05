@@ -54,14 +54,7 @@ jobs:
         with:
           use_wrapper: true
 
-        # with:
-        #   platform: ${{ matrix.os == 'windows-latest' && 'windows' || (matrix.os == 'macos-latest' && 'darwin' || 'linux') }}
-
-      - name: List dir
-        run: |
-          which stackql || echo "StackQL binary not found"
-
-      - name: Call stackql
+      - name: Show stackql version
         run: |
           stackql --version
 
@@ -69,16 +62,19 @@ jobs:
         if: matrix.os != 'windows-latest'
         shell: bash
         run: |
+          STACKQL_PATH=$(which stackql)
           mkdir -p /tmp || true
-          cp stackql /tmp/stackql
-          echo "StackQL binary moved to /tmp/stackql"
+          cp "$STACKQL_PATH" /tmp/stackql
+          echo "StackQL binary moved from ${STACKQL_PATH} to /tmp/stackql"
           
       - name: Move stackql binary to temp dir (Windows)
         if: matrix.os == 'windows-latest'
         shell: cmd
         run: |
+          where stackql > stackql_path.txt
+          set /p STACKQL_PATH=< stackql_path.txt
           mkdir "C:\Temp" 2>nul || echo "Temp directory already exists"
-          copy stackql.exe "C:\Temp\stackql.exe"
+          copy "%STACKQL_PATH%" "C:\Temp\stackql.exe"
           echo StackQL binary moved to C:\Temp\stackql.exe
 
       - name: Run non-server tests
