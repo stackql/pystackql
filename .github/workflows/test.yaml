@@ -64,7 +64,6 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: cmd
         run: |
-          where stackql.exe
           stackql.exe --version
 
       - name: Move stackql binary to temp dir (Linux/macOS)
