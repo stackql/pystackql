@@ -86,12 +86,15 @@ jobs:
         run: |
           python3 run_tests.py
 
-      - name: Start StackQL server (Linux/macOS)
+      - name: Start StackQL server and run tests (Linux/macOS)
         if: matrix.os != 'windows-latest'
         shell: bash      
+        env:
+          GITHUB_ACTIONS: 'true'
         run: |
             nohup /tmp/stackql -v --pgsrv.port=5444 srv &
-            sleep 10
+            sleep 5
+            python3 run_server_tests.py
 
       - name: Start StackQL server (Windows)
         if: matrix.os == 'windows-latest'
@@ -100,12 +103,6 @@ jobs:
           Start-Process -FilePath "C:\Temp\stackql.exe" `
                         -ArgumentList "-v", "--pgsrv.port=5444", "srv"
           Start-Sleep -Seconds 5
-
-      - name: Run server tests
-        env:
-          GITHUB_ACTIONS: 'true'
-        run: |
-          python3 run_server_tests.py
 
       - name: Stop StackQL server (Linux/macOS)
         if: matrix.os != 'windows-latest'
