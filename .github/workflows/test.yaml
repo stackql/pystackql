@@ -54,9 +54,18 @@ jobs:
         with:
           use_wrapper: true
 
-      - name: Show stackql version
+      - name: Show stackql version (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        shell: bash
         run: |
           stackql --version
+
+      - name: Show stackql version (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: cmd
+        run: |
+          where stackql.exe
+          stackql.exe --version
 
       - name: Move stackql binary to temp dir (Linux/macOS)
         if: matrix.os != 'windows-latest'
