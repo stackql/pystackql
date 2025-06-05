@@ -25,7 +25,7 @@ jobs:
           - os: macos-latest
             python-version: "3.13"            
     runs-on: ${{matrix.os}}
-    name: 'Run Tests on ${{matrix.os}} with Python ${{matrix.python-version}}'
+    name: '${{matrix.os}} Python ${{matrix.python-version}}'
 
     steps:
       - name: Checkout
@@ -105,7 +105,24 @@ jobs:
           python3 run_server_tests.py
         shell: bash
 
-      - name: Stop StackQL server
-        run: |
-          sh stop-stackql-server.sh
+      - name: Stop StackQL server (Linux/macOS)
+        if: matrix.os != 'windows-latest'
         shell: bash
+        run: |
+          echo "Stopping StackQL server on Unix/macOS..."
+          PID=$(pgrep -f "/tmp/stackql.*srv" || pgrep -f "stackql.*srv" || echo "")
+          if [ -z "$PID" ]; then
+              echo "No stackql server process found."
+          else
+              echo "stopping stackql server (PID: $PID)..."
+              kill -9 $PID
+              echo "stackql server stopped."
+          fi
+          
+      - name: Stop StackQL server (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: cmd
+        run: |
+          echo "Stopping StackQL server on Windows..."
+          taskkill /F /IM stackql.exe 2>nul || echo "No stackql.exe process found"
+          echo "StackQL server stopped (Windows)"
