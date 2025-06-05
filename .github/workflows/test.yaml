@@ -93,10 +93,12 @@ jobs:
 
       - name: Start StackQL server (Windows)
         if: matrix.os == 'windows-latest'
-        shell: cmd      
+        shell: cmd
         run: |
-            start /b C:\Temp\stackql.exe -v --pgsrv.port=5444 srv > stackql-server.log 2>&1
-            timeout /t 5 /nobreak
+            echo @echo off > start_server.bat
+            echo C:\Temp\stackql.exe -v --pgsrv.port=5444 srv ^> stackql-server.log 2^>^&1 >> start_server.bat
+            start /b "" cmd /c start_server.bat
+            timeout /t 5 /nobreak > NUL
 
       - name: Run server tests
         env:
