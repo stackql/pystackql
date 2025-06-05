@@ -58,7 +58,7 @@ jobs:
         run: |
           stackql --version
 
-      - name: Move stackql binary to temp dir (Unix/macOS)
+      - name: Move stackql binary to temp dir (Linux/macOS)
         if: matrix.os != 'windows-latest'
         shell: bash
         run: |
@@ -84,10 +84,19 @@ jobs:
           python3 run_tests.py
         shell: bash
       
-      - name: Start StackQL server
+      - name: Start StackQL server (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        shell: bash      
         run: |
-          sh start-stackql-server.sh
-        shell: bash
+            nohup /tmp/stackql -v --pgsrv.port=5444 srv &
+            sleep 5
+
+      - name: Start StackQL server (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: cmd      
+        run: |
+            start /b C:\Temp\stackql.exe -v --pgsrv.port=5444 srv > stackql-server.log 2>&1
+            timeout /t 5 /nobreak
 
       - name: Run server tests
         env:
