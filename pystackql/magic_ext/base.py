@@ -1,21 +1,29 @@
+# pystackql/magic_ext/base.py
+
+"""
+Base Jupyter magic extension for PyStackQL.
+
+This module provides the base class for PyStackQL Jupyter magic extensions.
+"""
+
 from __future__ import print_function
-from IPython.core.magic import (Magics)
+from IPython.core.magic import Magics
 from string import Template
-import pandas as pd
 
 class BaseStackqlMagic(Magics):
     """Base Jupyter magic extension enabling running StackQL queries.
 
     This extension allows users to conveniently run StackQL queries against cloud 
-    or SaaS reources directly from Jupyter notebooks, and visualize the results in a tabular 
+    or SaaS resources directly from Jupyter notebooks, and visualize the results in a tabular 
     format using Pandas DataFrames.
     """
     def __init__(self, shell, server_mode):
-        """Initialize the StackqlMagic class.
+        """Initialize the BaseStackqlMagic class.
 
         :param shell: The IPython shell instance.
+        :param server_mode: Whether to use server mode.
         """
-        from . import StackQL
+        from ..core import StackQL
         super(BaseStackqlMagic, self).__init__(shell)
         self.stackql_instance = StackQL(server_mode=server_mode, output='pandas')
           

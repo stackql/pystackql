@@ -1,6 +1,23 @@
-nose
-sphinx
-pandas
-termcolor
-requests
-IPython
+# Core dependencies
+pandas>=1.3.0
+requests>=2.25.0
+IPython>=7.0.0
+termcolor>=1.1.0
+
+# Documentation
+sphinx>=4.0.0
+sphinx-rtd-theme>=1.0.0
+
+# Testing
+pytest>=6.2.5
+pytest-cov>=2.12.0
+nose>=1.3.7  # For backward compatibility
+
+# Platform-independent psycopg installation
+psycopg[binary]>=3.1.0  # Uses binary wheels where available
+
+# Async support
+nest-asyncio>=1.5.5  # For running async code in Jupyter
+
+# Optional utilities
+tqdm>=4.61.0  # For progress bars

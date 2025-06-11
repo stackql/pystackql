@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.8.0 (2025-06-04)
+
+### Updates
+
+- Refactor
+- Enhanced test coverage
+
 ## v3.7.2 (2024-11-19)
 
 ### Updates

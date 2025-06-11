@@ -13,94 +13,115 @@ jobs:
           - windows-latest
           - macos-latest
         python-version:
-          - "3.8"
           - "3.9"
           - "3.10"
           - "3.11"
           - "3.12"
           - "3.13"
-        exclude:
-          - os: macos-latest
-            python-version: "3.8"
-          - os: macos-latest
-            python-version: "3.13"            
     runs-on: ${{matrix.os}}
-    name: 'Run Tests on ${{matrix.os}} with Python ${{matrix.python-version}}'
+    name: '${{matrix.os}} Python ${{matrix.python-version}}'
 
     steps:
-      - uses: actions/checkout@v4.1.1
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5.1.0
+        uses: actions/setup-python@v5.6.0
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies from requirements.txt
+      - name: Upgrade pip
         shell: bash
         run: |
           python3 -m pip install --upgrade pip
-          pip install -r requirements.txt
 
-      # Windows
-      - name: Install psycopg
-        if: matrix.os == 'windows-latest'
+      - name: Install pystackql with all dependencies
         run: |
-          pip install psycopg[binary]
-        shell: powershell
-      # End Windows
+          pip install -e .
 
-      # Linux
-      - name: Install PostgreSQL dev libraries on Ubuntu
-        if: matrix.os == 'ubuntu-latest'
+      - name: Install test dependencies
         run: |
-          sudo apt-get update
-          pip install psycopg
-      # End Linux
+          pip install pytest>=6.2.5 pytest-cov>=2.12.0 nose>=1.3.7
 
-      # macOS
-      - name: Install PostgreSQL dev libraries on macOS
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install postgresql@14
-          pip install psycopg
-      # End macOS
+      - name: setup-stackql
+        uses: stackql/setup-stackql@v2.2.3
+        with:
+          use_wrapper: true
 
-      - name: Install pystackql
-        run: |
-          pip install .
-
-      - name: Run tests
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          STACKQL_GITHUB_USERNAME: ${{ secrets.STACKQL_GITHUB_USERNAME }}
-          STACKQL_GITHUB_PASSWORD: ${{ secrets.STACKQL_GITHUB_PASSWORD }}
-          CUSTOM_STACKQL_GITHUB_USERNAME: ${{ secrets.CUSTOM_STACKQL_GITHUB_USERNAME }}
-          CUSTOM_STACKQL_GITHUB_PASSWORD: ${{ secrets.CUSTOM_STACKQL_GITHUB_PASSWORD }}
-          AWS_REGION: ${{ vars.AWS_REGION }}
-          AWS_REGIONS: ${{ vars.AWS_REGIONS }}
-          GCP_PROJECT: ${{ vars.GCP_PROJECT }}
-          GCP_ZONE: ${{ vars.GCP_ZONE }}
-        run: |
-          python3 -m tests.pystackql_tests
-        shell: bash
+      - name: Show stackql version (Linux/macOS)
         if: matrix.os != 'windows-latest'
-
-      - name: Run tests on Windows
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          STACKQL_GITHUB_USERNAME: ${{ secrets.STACKQL_GITHUB_USERNAME }}
-          STACKQL_GITHUB_PASSWORD: ${{ secrets.STACKQL_GITHUB_PASSWORD }}
-          CUSTOM_STACKQL_GITHUB_USERNAME: ${{ secrets.CUSTOM_STACKQL_GITHUB_USERNAME }}
-          CUSTOM_STACKQL_GITHUB_PASSWORD: ${{ secrets.CUSTOM_STACKQL_GITHUB_PASSWORD }}
-          AWS_REGION: ${{ vars.AWS_REGION }}
-          AWS_REGIONS: ${{ vars.AWS_REGIONS }}
-          GCP_PROJECT: ${{ vars.GCP_PROJECT }}
-          GCP_ZONE: ${{ vars.GCP_ZONE }}
+        shell: bash
         run: |
-          python3 -m tests.pystackql_tests
-        shell: pwsh
+          stackql --version
+
+      - name: Show stackql version (Windows)
         if: matrix.os == 'windows-latest'
+        shell: cmd
+        run: |
+          stackql-bin.exe --version
+
+      - name: Move stackql binary to temp dir (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          STACKQL_PATH=$(which stackql)
+          mkdir -p /tmp || true
+          cp "$STACKQL_PATH" /tmp/stackql
+          echo "StackQL binary moved from ${STACKQL_PATH} to /tmp/stackql"
+          
+      - name: Move stackql binary to temp dir (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $bin = Join-Path $Env:STACKQL_CLI_PATH 'stackql-bin.exe'
+          if (-Not (Test-Path $bin)) {
+            throw "Binary not found at $bin"
+          }
+          Copy-Item $bin -Destination "C:\Temp\stackql.exe" -Force
+          Write-Host "Moved real StackQL binary to C:\Temp\stackql.exe"
+
+      - name: Run non-server tests
+        env:
+          GITHUB_ACTIONS: 'true'
+        run: |
+          python3 run_tests.py
+
+      - name: Start StackQL server and run tests (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        shell: bash      
+        env:
+          GITHUB_ACTIONS: 'true'
+        run: |
+            nohup /tmp/stackql -v --pgsrv.port=5466 srv &
+            sleep 5
+            python3 run_server_tests.py
+
+      - name: Start StackQL server (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Start-Process -FilePath "C:\Temp\stackql.exe" `
+                        -ArgumentList "-v", "--pgsrv.port=5466", "srv"
+          Start-Sleep -Seconds 5
+
+      - name: Stop StackQL server (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          echo "Stopping StackQL server on Unix/macOS..."
+          PID=$(pgrep -f "/tmp/stackql.*srv" || pgrep -f "stackql.*srv" || echo "")
+          if [ -z "$PID" ]; then
+              echo "No stackql server process found."
+          else
+              echo "stopping stackql server (PID: $PID)..."
+              kill -9 $PID
+              echo "stackql server stopped."
+          fi
+          
+      - name: Stop StackQL server (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: cmd
+        run: |
+          echo "Stopping StackQL server on Windows..."
+          taskkill /F /IM stackql.exe 2>nul || echo "No stackql.exe process found"
+          echo "StackQL server stopped (Windows)"
