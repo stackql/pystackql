@@ -7,6 +7,7 @@ This module tests the server mode functionality of the StackQL class.
 """
 
 import re
+import os
 import pytest
 import pandas as pd
 from unittest.mock import patch
@@ -20,29 +21,80 @@ from test_constants import (
     pystackql_test_setup
 )
 
-@pytest.mark.usefixtures("stackql_server")
+# @pytest.mark.usefixtures("stackql_server")
 class TestServerMode:
     """Tests for PyStackQL server mode functionality."""
     
     StackQL = StackQL  # For use with pystackql_test_setup decorator
-    
+    server_available = False  # Class-level flag to track server availability    
+
+    # @pystackql_test_setup(server_mode=True)
+    # def test_server_mode_connectivity(self):
+    #     """Test that server mode connects successfully."""
+    #     # Check server_mode flag is set correctly
+    #     assert self.stackql.server_mode, "StackQL should be in server mode"
+        
+    #     # Check server connection object exists
+    #     assert hasattr(self.stackql, 'server_connection'), "StackQL should have a server_connection attribute"
+    #     assert self.stackql.server_connection is not None, "Server connection object should not be None"
+        
+    #     # IMPORTANT: Actually test the connection works
+    #     connection_working = self.stackql.test_connection()
+        
+    #     # Print detailed results for debugging
+    #     if not connection_working:
+    #         print("⚠️ Server connection test failed: unable to execute a simple query")
+    #         print(f"Server address: {self.stackql.server_address}")
+    #         print(f"Server port: {self.stackql.server_port}")
+    #         print("\n❌ SERVER CONNECTION FAILED - SKIPPING REMAINING SERVER TESTS")
+    #     else:
+    #         # Set flag indicating server is available
+    #         TestServerMode.server_available = True
+        
+    #     print_test_result("Server mode connectivity test", 
+    #                     self.stackql.server_mode and 
+    #                     hasattr(self.stackql, 'server_connection') and 
+    #                     self.stackql.server_connection is not None and
+    #                     connection_working,  # Include connection check in the pass criteria
+    #                     True)
+        
+    #     # Add additional output about the actual connection status
+    #     print(f"  - Connection status: {'✅ WORKING' if connection_working else '❌ NOT WORKING'}")
+    #     print(f"  - Expected status: ✅ WORKING")  # Always expected to be working
+        
+    #     # Always assert that the connection is working
+    #     assert connection_working, "Server connection should be working"
+
     @pystackql_test_setup(server_mode=True)
     def test_server_mode_connectivity(self):
         """Test that server mode connects successfully."""
-        assert self.stackql.server_mode, "StackQL should be in server mode"
-        # Updated assertion to check server_connection attribute instead of _conn
-        assert hasattr(self.stackql, 'server_connection'), "StackQL should have a server_connection attribute"
-        assert self.stackql.server_connection is not None, "Server connection object should not be None"
+        # Initialize class variable 
+        TestServerMode.server_available = False
         
-        print_test_result("Server mode connectivity test", 
-                          self.stackql.server_mode and 
-                          hasattr(self.stackql, 'server_connection') and 
-                          self.stackql.server_connection is not None, 
-                          True)
-    
+        # Perform basic server connection test
+        connection_working = self.stackql.test_connection()
+        
+        if not connection_working:
+            # Log minimal diagnostic info
+            print("\n⚠️ Server connection failed")
+            print(f"Address: {self.stackql.server_address}:{self.stackql.server_port}")
+            print("❌ Skipping remaining server tests")
+            
+            # Fail with a concise message - this will be what shows in the error summary
+            pytest.fail("Server connection failed - please start stackql server")
+        
+        # Connection succeeded
+        TestServerMode.server_available = True
+        print("✅ Server connection successful")
+
     @pystackql_test_setup(server_mode=True)
     def test_server_mode_execute_stmt(self):
         """Test executeStmt in server mode."""
+
+        # Skip if server is not available
+        if not TestServerMode.server_available:
+            pytest.skip("Server is not available, skipping test")
+
         result = self.stackql.executeStmt(REGISTRY_PULL_HOMEBREW_QUERY)
         
         # Check result structure
@@ -60,6 +112,11 @@ class TestServerMode:
     @pystackql_test_setup(server_mode=True, output='pandas')
     def test_server_mode_execute_stmt_pandas(self):
         """Test executeStmt in server mode with pandas output."""
+
+        # Skip if server is not available
+        if not TestServerMode.server_available:
+            pytest.skip("Server is not available, skipping test")
+
         result = self.stackql.executeStmt(REGISTRY_PULL_HOMEBREW_QUERY)
         
         # Check result structure
@@ -77,6 +134,11 @@ class TestServerMode:
     @pystackql_test_setup(server_mode=True)
     def test_server_mode_execute(self):
         """Test execute in server mode."""
+
+        # Skip if server is not available
+        if not TestServerMode.server_available:
+            pytest.skip("Server is not available, skipping test")
+
         result = self.stackql.execute(LITERAL_INT_QUERY)
         
         # Check result structure
@@ -98,6 +160,11 @@ class TestServerMode:
     @pystackql_test_setup(server_mode=True, output='pandas')
     def test_server_mode_execute_pandas(self):
         """Test execute in server mode with pandas output."""
+
+        # Skip if server is not available
+        if not TestServerMode.server_available:
+            pytest.skip("Server is not available, skipping test")
+
         result = self.stackql.execute(LITERAL_STRING_QUERY)
         
         # Check result structure
@@ -115,6 +182,11 @@ class TestServerMode:
     @pystackql_test_setup(server_mode=True)
     def test_server_mode_provider_query(self):
         """Test querying a provider in server mode."""
+
+        # Skip if server is not available
+        if not TestServerMode.server_available:
+            pytest.skip("Server is not available, skipping test")
+
         result = self.stackql.execute(HOMEBREW_FORMULA_QUERY)
         
         # Check result structure
@@ -135,6 +207,11 @@ class TestServerMode:
     @patch('pystackql.core.server.ServerConnection.execute_query')
     def test_server_mode_execute_mocked(self, mock_execute_query):
         """Test execute in server mode with mocked server response."""
+
+        # Skip if server is not available
+        if not TestServerMode.server_available:
+            pytest.skip("Server is not available, skipping test")
+
         # Create a StackQL instance in server mode
         stackql = StackQL(server_mode=True)
         
@@ -158,6 +235,11 @@ class TestServerMode:
     @patch('pystackql.core.server.ServerConnection.execute_query')
     def test_server_mode_execute_pandas_mocked(self, mock_execute_query):
         """Test execute in server mode with pandas output and mocked server response."""
+
+        # Skip if server is not available
+        if not TestServerMode.server_available:
+            pytest.skip("Server is not available, skipping test")
+
         # Create a StackQL instance in server mode with pandas output
         stackql = StackQL(server_mode=True, output='pandas')
         
@@ -186,6 +268,11 @@ class TestServerMode:
     @patch('pystackql.core.server.ServerConnection.execute_query')
     def test_server_mode_execute_stmt_mocked(self, mock_execute_query):
         """Test executeStmt in server mode with mocked server response."""
+
+        # Skip if server is not available
+        if not TestServerMode.server_available:
+            pytest.skip("Server is not available, skipping test")
+
         # Create a StackQL instance in server mode
         stackql = StackQL(server_mode=True)
         
@@ -208,6 +295,11 @@ class TestServerMode:
     
     def test_server_mode_csv_output_error(self):
         """Test that server mode with csv output raises an error."""
+
+        # Skip if server is not available
+        if not TestServerMode.server_available:
+            pytest.skip("Server is not available, skipping test")
+
         with pytest.raises(ValueError) as exc_info:
             StackQL(server_mode=True, output='csv')
         

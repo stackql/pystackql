@@ -433,3 +433,28 @@ class StackQL:
             )
 
         return await self.async_executor.execute_queries(queries)
+    
+    def test_connection(self):
+        """Tests if the server connection is working by executing a simple query.
+        
+        This method is only valid when server_mode=True.
+        
+        Returns:
+            bool: True if the connection is working, False otherwise.
+            
+        Raises:
+            ValueError: If called when not in server mode.
+        """
+        if not self.server_mode:
+            raise ValueError("The test_connectivity method is only available in server mode.")
+        
+        try:
+            result = self.server_connection.execute_query("SELECT 'test' as test_value")
+            return (isinstance(result, list) and 
+                    len(result) == 1 and 
+                    'test_value' in result[0] and 
+                    result[0]['test_value'] == 'test')
+        except Exception as e:
+            if self.debug:
+                print(f"Connection test failed: {str(e)}")
+            return False

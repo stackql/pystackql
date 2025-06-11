@@ -14,7 +14,7 @@ from termcolor import colored
 import pandas as pd
 
 # Server connection settings
-SERVER_PORT = 5444
+SERVER_PORT = 5466
 SERVER_ADDRESS = "127.0.0.1"
 
 # Expected properties and patterns for validation
