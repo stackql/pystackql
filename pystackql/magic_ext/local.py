@@ -62,44 +62,48 @@ class StackqlMagic(BaseStackqlMagic):
         elif not is_cell_magic:
             return results
 
-    def _display_with_csv_download(self, df):
-        """Display DataFrame with CSV download link.
+def _display_with_csv_download(self, df):
+    """Display DataFrame with CSV download link.
+    
+    :param df: The DataFrame to display and make downloadable.
+    """
+    import IPython.display
+    
+    try:
+        # Generate CSV data
+        import io
+        import base64
+        csv_buffer = io.StringIO()
+        df.to_csv(csv_buffer, index=False)
+        csv_data = csv_buffer.getvalue()
         
-        :param df: The DataFrame to display and make downloadable.
-        """
-        try:
-            # Generate CSV data
-            csv_buffer = io.StringIO()
-            df.to_csv(csv_buffer, index=False)
-            csv_data = csv_buffer.getvalue()
-            
-            # Encode to base64 for data URI
-            csv_base64 = base64.b64encode(csv_data.encode()).decode()
-            
-            # Create download link
-            download_link = f'data:text/csv;base64,{csv_base64}'
-            
-            # Display the DataFrame first
-            display(df)
-            
-            # Create and display the download button
-            download_html = f'''
-            <div style="margin-top: 10px;">
-                <a href="{download_link}" download="stackql_results.csv" 
-                   style="display: inline-block; padding: 8px 16px; background-color: #007cba; 
-                          color: white; text-decoration: none; border-radius: 4px; 
-                          font-family: Arial, sans-serif; font-size: 14px; border: none; cursor: pointer;">
-                    📥 Download CSV
-                </a>
-            </div>
-            '''
-            display(HTML(download_html))
-            
-        except Exception as e:
-            # If CSV generation fails, just display the DataFrame normally
-            display(df)
-            print(f"Error generating CSV download: {e}")
-
+        # Encode to base64 for data URI
+        csv_base64 = base64.b64encode(csv_data.encode()).decode()
+        
+        # Create download link
+        download_link = f'data:text/csv;base64,{csv_base64}'
+        
+        # Display the DataFrame first
+        IPython.display.display(df)
+        
+        # Create and display the download button
+        download_html = f'''
+        <div style="margin-top: 10px;">
+            <a href="{download_link}" download="stackql_results.csv" 
+               style="display: inline-block; padding: 8px 16px; background-color: #007cba; 
+                      color: white; text-decoration: none; border-radius: 4px; 
+                      font-family: Arial, sans-serif; font-size: 14px; border: none; cursor: pointer;">
+                📥 Download CSV
+            </a>
+        </div>
+        '''
+        IPython.display.display(IPython.display.HTML(download_html))
+        
+    except Exception as e:
+        # If CSV generation fails, just display the DataFrame normally
+        IPython.display.display(df)
+        print(f"Error generating CSV download: {e}")
+        
 def load_ipython_extension(ipython):
     """Load the non-server magic in IPython.
     
