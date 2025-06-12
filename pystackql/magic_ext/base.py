@@ -7,8 +7,9 @@ This module provides the base class for PyStackQL Jupyter magic extensions.
 """
 
 from __future__ import print_function
-from IPython.core.magic import Magics
+from IPython.core.magic import Magics, line_cell_magic
 from string import Template
+import argparse
 
 class BaseStackqlMagic(Magics):
     """Base Jupyter magic extension enabling running StackQL queries.
@@ -26,6 +27,7 @@ class BaseStackqlMagic(Magics):
         from ..core import StackQL
         super(BaseStackqlMagic, self).__init__(shell)
         self.stackql_instance = StackQL(server_mode=server_mode, output='pandas')
+        self.server_mode = server_mode
           
     def get_rendered_query(self, data):
         """Substitute placeholders in a query template with variables from the current namespace.
@@ -52,10 +54,53 @@ class BaseStackqlMagic(Magics):
         
         return self.stackql_instance.execute(query)
     
-    def _display_with_csv_download(self, df):
-        """Display DataFrame with CSV download link.
+    @line_cell_magic
+    def stackql(self, line, cell=None):
+        """A Jupyter magic command to run StackQL queries.
         
-        :param df: The DataFrame to display and make downloadable.
+        Can be used as both line and cell magic:
+        - As a line magic: `%stackql QUERY`
+        - As a cell magic: `%%stackql [OPTIONS]` followed by the QUERY in the next line.
+        
+        :param line: The arguments and/or StackQL query when used as line magic.
+        :param cell: The StackQL query when used as cell magic.
+        :return: StackQL query results as a named Pandas DataFrame (`stackql_df`).
+        """
+        is_cell_magic = cell is not None
+
+        if is_cell_magic:
+            parser = argparse.ArgumentParser()
+            parser.add_argument("--no-display", action="store_true", help="Suppress result display.")
+            parser.add_argument("--csv-download", action="store_true", help="Add CSV download link to output.")
+            args = parser.parse_args(line.split())
+            query_to_run = self.get_rendered_query(cell)
+        else:
+            args = None
+            query_to_run = self.get_rendered_query(line)
+
+        results = self.run_query(query_to_run)
+        self.shell.user_ns['stackql_df'] = results
+
+        if is_cell_magic and args and args.no_display:
+            return None
+        elif is_cell_magic and args and args.csv_download and not args.no_display:
+            # First display the DataFrame 
+            import IPython.display
+            IPython.display.display(results)
+            # Then add the download button without displaying the DataFrame again
+            self._display_with_csv_download(results)
+            return results
+        elif is_cell_magic and args and not args.no_display:
+            return results
+        elif not is_cell_magic:
+            return results
+        else:
+            return results
+    
+    def _display_with_csv_download(self, df):
+        """Display a CSV download link for the DataFrame without displaying the DataFrame again.
+        
+        :param df: The DataFrame to make downloadable.
         """
         import IPython.display
         
@@ -73,22 +118,7 @@ class BaseStackqlMagic(Magics):
             # Create download link
             download_link = f'data:text/csv;base64,{csv_base64}'
             
-            # Display the DataFrame first
-            IPython.display.display(df)
-            
-            # # Create and display the download button
-            # download_html = f'''
-            # <div style="margin-top: 10px;">
-            #     <a href="{download_link}" download="stackql_results.csv" 
-            #        style="display: inline-block; padding: 8px 16px; background-color: #007cba; 
-            #               color: white; text-decoration: none; border-radius: 4px; 
-            #               font-family: Arial, sans-serif; font-size: 14px; border: none; cursor: pointer;">
-            #         📥 Download CSV
-            #     </a>
-            # </div>
-            # '''
-
-            # Create and display the download button
+            # Only display the download button, not the DataFrame
             download_html = f'''
             <div style="margin-top: 15px; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;">
                 <a href="{download_link}" download="stackql_results.csv" 
@@ -104,11 +134,9 @@ class BaseStackqlMagic(Magics):
                     Download CSV
                 </a>
             </div>
-            '''   
-                     
+            '''
             IPython.display.display(IPython.display.HTML(download_html))
             
         except Exception as e:
-            # If CSV generation fails, just display the DataFrame normally
-            IPython.display.display(df)
+            # If CSV generation fails, just print an error message without displaying anything
             print(f"Error generating CSV download: {e}")
