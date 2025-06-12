@@ -151,24 +151,21 @@ class QueryExecutor:
                 os.remove(script_path) 
             return output
 
-
 class AsyncQueryExecutor:
-    """Executes StackQL queries asynchronously.
+    """Executes StackQL queries asynchronously in local mode.
     
     This class provides methods for executing multiple StackQL queries
-    concurrently using asyncio.
+    concurrently using asyncio. Server mode is not supported for async queries.
     """
     
-    def __init__(self, sync_query_func, server_mode=False, output_format='dict'):
+    def __init__(self, sync_query_func, output_format='dict'):
         """Initialize the AsyncQueryExecutor.
         
         Args:
             sync_query_func (callable): Function to execute a single query synchronously
-            server_mode (bool, optional): Whether to use server mode. Defaults to False.
             output_format (str, optional): Output format (dict or pandas). Defaults to 'dict'.
         """
         self.sync_query_func = sync_query_func
-        self.server_mode = server_mode
         self.output_format = output_format
     
     async def execute_queries(self, queries):
@@ -188,15 +185,12 @@ class AsyncQueryExecutor:
         
         async def main():
             with ThreadPoolExecutor() as executor:
-                # New connection is created for each query in server_mode, reused otherwise
-                new_connection = self.server_mode
-                
                 # Create tasks for each query
                 loop = asyncio.get_event_loop()
                 futures = [
                     loop.run_in_executor(
                         executor, 
-                        lambda q=query: self.sync_query_func(q, new_connection),
+                        lambda q=query: self.sync_query_func(q),
                         # Pass query as a default argument to avoid late binding issues
                     ) 
                     for query in queries
@@ -213,6 +207,7 @@ class AsyncQueryExecutor:
         # Process results based on output format
         if self.output_format == 'pandas':
             import pandas as pd
+            # Concatenate the DataFrames
             return pd.concat(results, ignore_index=True)
         else:
             # Flatten the list of results

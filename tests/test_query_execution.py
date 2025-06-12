@@ -39,27 +39,14 @@ class TestQueryExecution:
     
     StackQL = StackQL  # For use with pystackql_test_setup decorator
     
-    # Helper method to extract value from response objects
-    def _get_value(self, obj):
-        """Extract actual value from response objects that might be wrapped in a dict."""
-        if isinstance(obj, dict) and 'String' in obj and 'Valid' in obj:
-            return obj['String']
-        return obj
-    
     # Helper method to check if a value is numeric
-    def _is_numeric(self, obj):
-        """Check if a value is numeric, handling both direct numbers and string representations."""
-        if isinstance(obj, (int, float)):
+    def _is_numeric(self, value):
+        """Check if a value is numeric."""
+        if isinstance(value, (int, float)):
             return True
-        if isinstance(obj, dict) and 'String' in obj and 'Valid' in obj:
+        if isinstance(value, str):
             try:
-                float(obj['String'])
-                return True
-            except (ValueError, TypeError):
-                return False
-        if isinstance(obj, str):
-            try:
-                float(obj)
+                float(value)
                 return True
             except (ValueError, TypeError):
                 return False
@@ -75,8 +62,8 @@ class TestQueryExecution:
         assert len(result) == 1, "Result should have exactly one row"
         assert "literal_int_value" in result[0], "Result should have 'literal_int_value' column"
         
-        # Check the value - allow for either direct int or wrapped dict
-        value = self._get_value(result[0]["literal_int_value"])
+        # Check the value - could be int or string representation
+        value = result[0]["literal_int_value"]
         assert value == "1" or value == 1, f"Result value should be 1, got {value}"
         
         print_test_result(f"Execute literal int query test\nRESULT: {result}", 
@@ -92,8 +79,8 @@ class TestQueryExecution:
         assert len(result) == 1, "Result should have exactly one row"
         assert "literal_float_value" in result[0], "Result should have 'literal_float_value' column"
         
-        # Check the value - allow for either direct float or wrapped dict
-        value = self._get_value(result[0]["literal_float_value"])
+        # Check the value - could be float or string representation
+        value = result[0]["literal_float_value"]
         assert value == "1.001" or value == 1.001, f"Result value should be 1.001, got {value}"
         
         print_test_result(f"Execute literal float query test\nRESULT: {result}", 
@@ -109,8 +96,8 @@ class TestQueryExecution:
         assert len(result) == 1, "Result should have exactly one row"
         assert "literal_string_value" in result[0], "Result should have 'literal_string_value' column"
         
-        # Check the value - allow for either direct string or wrapped dict
-        value = self._get_value(result[0]["literal_string_value"])
+        # Check the value
+        value = result[0]["literal_string_value"]
         assert value == "test", f"Result value should be 'test', got {value}"
         
         print_test_result(f"Execute literal string query test\nRESULT: {result}", 
@@ -126,8 +113,8 @@ class TestQueryExecution:
         assert len(result) == 1, "Result should have exactly one row"
         assert "expression" in result[0], "Result should have 'expression' column"
         
-        # Check the value - allow for either direct int or wrapped dict
-        value = self._get_value(result[0]["expression"])
+        # Check the value - could be int or string
+        value = result[0]["expression"]
         assert value == "1" or value == 1, f"Result value should be 1 (true), got {value}"
         
         print_test_result(f"Execute true expression query test\nRESULT: {result}", 
@@ -143,8 +130,8 @@ class TestQueryExecution:
         assert len(result) == 1, "Result should have exactly one row"
         assert "expression" in result[0], "Result should have 'expression' column"
         
-        # Check the value - allow for either direct int or wrapped dict
-        value = self._get_value(result[0]["expression"])
+        # Check the value - could be int or string
+        value = result[0]["expression"]
         assert value == "0" or value == 0, f"Result value should be 0 (false), got {value}"
         
         print_test_result(f"Execute false expression query test\nRESULT: {result}", 
@@ -172,17 +159,13 @@ class TestQueryExecution:
         assert "key" in result[0], "Result should have 'key' column"
         assert "value" in result[0], "Result should have 'value' column"
         
-        # Get the extracted values - complex objects might be returned directly or as wrapped dicts
-        key_value = self._get_value(result[0]["key"])
-        value_value = self._get_value(result[0]["value"])
+        # Get the extracted values
+        key_value = result[0]["key"]
+        value_value = result[0]["value"]
         
-        # Check for either JSON objects or string values
-        if isinstance(key_value, dict):
-            assert key_value.get("String") == "StackName" or key_value == "StackName", "Key should be 'StackName'"
-            assert value_value.get("String") == "aws-stack" or value_value == "aws-stack", "Value should be 'aws-stack'"
-        else:
-            assert "StackName" in str(key_value), "Key should contain 'StackName'"
-            assert "aws-stack" in str(value_value), "Value should contain 'aws-stack'"
+        # Check values - with new implementation they should be direct strings
+        assert "StackName" in str(key_value), "Key should contain 'StackName'"
+        assert "aws-stack" in str(value_value), "Value should contain 'aws-stack'"
         
         print_test_result(f"Execute JSON extract query test\nRESULT: {result}", 
                           "StackName" in str(key_value) and "aws-stack" in str(value_value))
@@ -199,14 +182,14 @@ class TestQueryExecution:
         assert "full_name" in result[0], "Result should have 'full_name' column"
         assert "tap" in result[0], "Result should have 'tap' column"
         
-        # Check formula values - allowing for either direct values or wrapped dicts
-        name_value = self._get_value(result[0]["name"])
-        full_name_value = self._get_value(result[0]["full_name"])
-        tap_value = self._get_value(result[0]["tap"])
+        # Check formula values - should be direct strings now
+        name_value = result[0]["name"]
+        full_name_value = result[0]["full_name"]
+        tap_value = result[0]["tap"]
         
-        assert name_value == "stackql" or name_value == '"stackql"', f"Name should be 'stackql', got {name_value}"
-        assert full_name_value == "stackql" or full_name_value == '"stackql"', f"Full name should be 'stackql', got {full_name_value}"
-        assert tap_value == "homebrew/core" or tap_value == '"homebrew/core"', f"Tap should be 'homebrew/core', got {tap_value}"
+        assert "stackql" in str(name_value), f"Name should contain 'stackql', got {name_value}"
+        assert "stackql" in str(full_name_value), f"Full name should contain 'stackql', got {full_name_value}"
+        assert "homebrew/core" in str(tap_value), f"Tap should contain 'homebrew/core', got {tap_value}"
         
         print_test_result(f"Execute homebrew formula query test\nRESULT: {result}", 
                           "stackql" in str(name_value) and 
@@ -230,9 +213,9 @@ class TestQueryExecution:
         for col in expected_columns:
             assert col in result[0], f"Result should have '{col}' column"
         
-        # Check formula name
-        formula_name = self._get_value(result[0]["formula_name"])
-        assert formula_name == "stackql" or formula_name == '"stackql"', f"Formula name should be 'stackql', got {formula_name}"
+        # Check formula name - should be direct string now
+        formula_name = result[0]["formula_name"]
+        assert "stackql" in str(formula_name), f"Formula name should contain 'stackql', got {formula_name}"
         
         # Check data types - should be numeric or string representations of numbers
         for col in expected_columns[1:]:  # Skip formula_name

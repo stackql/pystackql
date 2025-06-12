@@ -152,7 +152,7 @@ class StackQL:
             self.debug_log_file = None
         
         # Setup output formatter
-        self.output_formatter = OutputFormatter(output)
+        self.local_output_formatter = OutputFormatter(output)
         self.output = output.lower()
 
         # Server mode setup
@@ -179,62 +179,38 @@ class StackQL:
             self.params = setup_local_mode(self, **local_params)
 
             # Initialize query executor
-            self.query_executor = QueryExecutor(
+            self.local_query_executor = QueryExecutor(
                 self.bin_path, 
                 self.params, 
                 self.debug, 
                 self.debug_log_file
             )
         
-        # Initialize async query executor
-        self.async_executor = AsyncQueryExecutor(
-            self._sync_query_wrapper, 
-            self.server_mode,
-            self.output
-        )
+        # Initialize async query executor (only for local mode)
+        if not self.server_mode:
+            self.async_executor = AsyncQueryExecutor(
+                self._sync_query_wrapper,
+                output_format=self.output
+            )        
     
-    def _sync_query_wrapper(self, query, new_connection=False):
-        """Wrapper for synchronous query execution.
+    def _sync_query_wrapper(self, query):
+        """Wrapper for synchronous query execution used by AsyncQueryExecutor.
+        
+        This method is exclusively used for local mode async queries.
+        Server mode is not supported for async queries.
         
         Args:
             query (str): The query to execute
-            new_connection (bool, optional): Whether to use a new connection. Defaults to False.
-            
+                
         Returns:
-            The query result
+            The formatted query result
         """
-        if self.server_mode:
-            if new_connection:
-                result = self.server_connection.execute_query_with_new_connection(query)
-            else:
-                result = self.server_connection.execute_query(query)
-            
-            # Format server result if needed
-            if self.output == 'pandas':
-                import pandas as pd
-                return pd.DataFrame(result)
-            return result
-        else:
-            # Execute query and format result
-            query_result = self.query_executor.execute(query)
-            
-            if "exception" in query_result:
-                result = [{"error": query_result["exception"]}]
-            elif "error" in query_result:
-                result = [{"error": query_result["error"]}]
-            elif "data" in query_result:
-                try:
-                    result = json.loads(query_result["data"])
-                except Exception:
-                    result = [{"error": f"Invalid JSON output: {query_result['data']}"}]
-            else:
-                result = []
-            
-            # Format local result if needed
-            if self.output == 'pandas':
-                import pandas as pd
-                return pd.DataFrame(result)
-            return result
+        # Execute query
+        query_result = self.local_query_executor.execute(query)
+        
+        # Format the result using the OutputFormatter
+        # This will handle SQL type objects through the _format_data method
+        return self.local_output_formatter.format_query_result(query_result)
     
     def properties(self):
         """Retrieves the properties of the StackQL instance.
@@ -257,7 +233,7 @@ class StackQL:
         props = {}
         for var in vars(self):
             # Skip internal objects
-            if var.startswith('_') or var in ['output_formatter', 'query_executor', 'async_executor', 'binary_manager', 'server_connection']:
+            if var.startswith('_') or var in ['local_output_formatter', 'local_query_executor', 'async_executor', 'binary_manager', 'server_connection']:
                 continue
             props[var] = getattr(self, var)
         return props
@@ -329,10 +305,10 @@ class StackQL:
                 return result
         else:
             # Execute the query
-            result = self.query_executor.execute(query, custom_auth=custom_auth, env_vars=env_vars)
+            result = self.local_query_executor.execute(query, custom_auth=custom_auth, env_vars=env_vars)
             
             # Format the result
-            return self.output_formatter.format_statement_result(result)
+            return self.local_output_formatter.format_statement_result(result)
     
     def execute(self, query, suppress_errors=True, custom_auth=None, env_vars=None):
         """
@@ -387,11 +363,53 @@ class StackQL:
                 suppress_errors = False
             
             # Execute the query
-            output = self.query_executor.execute(query, custom_auth=custom_auth, env_vars=env_vars)
+            output = self.local_query_executor.execute(query, custom_auth=custom_auth, env_vars=env_vars)
             
             # Format the result
-            return self.output_formatter.format_query_result(output, suppress_errors)
+            return self.local_output_formatter.format_query_result(output, suppress_errors)
 
+    # async def executeQueriesAsync(self, queries):
+    #     """Executes multiple StackQL queries asynchronously using the current StackQL instance.
+
+    #     This method utilizes an asyncio event loop to concurrently run a list of provided 
+    #     StackQL queries. Each query is executed independently, and the combined results of 
+    #     all the queries are returned as a list of JSON objects if 'dict' output mode is selected,
+    #     or as a concatenated DataFrame if 'pandas' output mode is selected.
+
+    #     The order of the results in the returned list or DataFrame may not necessarily 
+    #     correspond to the order of the queries in the input list due to the asynchronous nature 
+    #     of execution.
+
+    #     :param queries: A list of StackQL query strings to be executed concurrently.
+    #     :type queries: list[str], required
+    #     :return: A list of results corresponding to each query. Each result is a JSON object or a DataFrame.
+    #     :rtype: list[dict] or pd.DataFrame
+    #     :raises ValueError: If method is used in `server_mode` on an unsupported OS (anything other than Linux).
+    #     :raises ValueError: If an unsupported output mode is selected (anything other than 'dict' or 'pandas').
+
+    #     Example:
+    #         >>> from pystackql import StackQL
+    #         >>> stackql = StackQL()        
+    #         >>> queries = [
+    #         >>> \"\"\"SELECT '%s' as region, instanceType, COUNT(*) as num_instances 
+    #         ... FROM aws.ec2.instances 
+    #         ... WHERE region = '%s' 
+    #         ... GROUP BY instanceType\"\"\" % (region, region)
+    #         >>> for region in regions ]
+    #         >>> result = stackql.executeQueriesAsync(queries)
+
+    #     Note:
+    #         - When operating in `server_mode`, this method is not supported.
+    #     """
+    #     if self.server_mode:
+    #         raise ValueError(
+    #             "The executeQueriesAsync method is not supported in server mode. "
+    #             "Please use the standard execute method with individual queries instead, "
+    #             "or switch to local mode if you need to run multiple queries concurrently."
+    #         )
+
+    #     return await self.async_executor.execute_queries(queries)
+    
     async def executeQueriesAsync(self, queries):
         """Executes multiple StackQL queries asynchronously using the current StackQL instance.
 
@@ -408,7 +426,7 @@ class StackQL:
         :type queries: list[str], required
         :return: A list of results corresponding to each query. Each result is a JSON object or a DataFrame.
         :rtype: list[dict] or pd.DataFrame
-        :raises ValueError: If method is used in `server_mode` on an unsupported OS (anything other than Linux).
+        :raises ValueError: If server_mode is True (async is only supported in local mode).
         :raises ValueError: If an unsupported output mode is selected (anything other than 'dict' or 'pandas').
 
         Example:
@@ -423,7 +441,7 @@ class StackQL:
             >>> result = stackql.executeQueriesAsync(queries)
 
         Note:
-            - When operating in `server_mode`, this method is not supported.
+            - This method is only supported in local mode.
         """
         if self.server_mode:
             raise ValueError(
@@ -432,8 +450,12 @@ class StackQL:
                 "or switch to local mode if you need to run multiple queries concurrently."
             )
 
+        # Verify that async_executor is available (should only be initialized in local mode)
+        if not hasattr(self, 'async_executor'):
+            raise RuntimeError("Async executor not initialized. This should not happen.")
+
         return await self.async_executor.execute_queries(queries)
-    
+
     def test_connection(self):
         """Tests if the server connection is working by executing a simple query.
         
