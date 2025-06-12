@@ -52,10 +52,59 @@ class BaseStackqlMagic(Magics):
         
         return self.stackql_instance.execute(query)
     
-    def _display_with_csv_download(self, df):
-        """Display DataFrame with CSV download link.
+    # def _display_with_csv_download(self, df):
+    #     """Display DataFrame with CSV download link.
         
-        :param df: The DataFrame to display and make downloadable.
+    #     :param df: The DataFrame to display and make downloadable.
+    #     """
+    #     import IPython.display
+        
+    #     try:
+    #         # Generate CSV data
+    #         import io
+    #         import base64
+    #         csv_buffer = io.StringIO()
+    #         df.to_csv(csv_buffer, index=False)
+    #         csv_data = csv_buffer.getvalue()
+            
+    #         # Encode to base64 for data URI
+    #         csv_base64 = base64.b64encode(csv_data.encode()).decode()
+            
+    #         # Create download link
+    #         download_link = f'data:text/csv;base64,{csv_base64}'
+            
+    #         # # Display the DataFrame first
+    #         # IPython.display.display(df)
+            
+    #         # Create and display the download button
+    #         download_html = f'''
+    #         <div style="margin-top: 15px; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;">
+    #             <a href="{download_link}" download="stackql_results.csv" 
+    #             style="display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; 
+    #                     background-color: #2196F3; color: white; text-decoration: none; 
+    #                     border-radius: 4px; font-size: 14px; font-weight: 500; 
+    #                     box-shadow: 0 2px 4px rgba(0,0,0,0.08); transition: all 0.2s ease;">
+    #                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    #                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+    #                     <polyline points="7 10 12 15 17 10"></polyline>
+    #                     <line x1="12" y1="15" x2="12" y2="3"></line>
+    #                 </svg>
+    #                 Download CSV
+    #             </a>
+    #         </div>
+    #         '''   
+
+    #         IPython.display.display(IPython.display.HTML(download_html))
+            
+    #     except Exception as e:
+    #         # If CSV generation fails, just display the DataFrame normally
+    #         IPython.display.display(df)
+    #         print(f"Error generating CSV download: {e}")
+
+    def _display_with_csv_download(self, df):
+        """Display a CSV download link for the DataFrame without displaying the DataFrame again.
+        
+        :param df: The DataFrame to make downloadable.
         """
         import IPython.display
         
@@ -73,10 +122,7 @@ class BaseStackqlMagic(Magics):
             # Create download link
             download_link = f'data:text/csv;base64,{csv_base64}'
             
-            # # Display the DataFrame first
-            # IPython.display.display(df)
-            
-            # Create and display the download button
+            # Only display the download button, not the DataFrame
             download_html = f'''
             <div style="margin-top: 15px; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;">
                 <a href="{download_link}" download="stackql_results.csv" 
@@ -92,11 +138,9 @@ class BaseStackqlMagic(Magics):
                     Download CSV
                 </a>
             </div>
-            '''   
-
+            '''
             IPython.display.display(IPython.display.HTML(download_html))
             
         except Exception as e:
-            # If CSV generation fails, just display the DataFrame normally
-            IPython.display.display(df)
+            # If CSV generation fails, just print an error message without displaying anything
             print(f"Error generating CSV download: {e}")
