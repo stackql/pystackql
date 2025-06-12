@@ -73,21 +73,9 @@ class BaseStackqlMagic(Magics):
             # Create download link
             download_link = f'data:text/csv;base64,{csv_base64}'
             
-            # Display the DataFrame first
-            IPython.display.display(df)
+            # # Display the DataFrame first
+            # IPython.display.display(df)
             
-            # # Create and display the download button
-            # download_html = f'''
-            # <div style="margin-top: 10px;">
-            #     <a href="{download_link}" download="stackql_results.csv" 
-            #        style="display: inline-block; padding: 8px 16px; background-color: #007cba; 
-            #               color: white; text-decoration: none; border-radius: 4px; 
-            #               font-family: Arial, sans-serif; font-size: 14px; border: none; cursor: pointer;">
-            #         📥 Download CSV
-            #     </a>
-            # </div>
-            # '''
-
             # Create and display the download button
             download_html = f'''
             <div style="margin-top: 15px; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;">
@@ -105,7 +93,7 @@ class BaseStackqlMagic(Magics):
                 </a>
             </div>
             '''   
-                     
+
             IPython.display.display(IPython.display.HTML(download_html))
             
         except Exception as e:
