@@ -32,13 +32,6 @@ class TestOutputFormats:
     
     StackQL = StackQL  # For use with pystackql_test_setup decorator
     
-    # Helper method to extract value from response objects
-    def _get_value(self, obj):
-        """Extract actual value from response objects that might be wrapped in a dict."""
-        if isinstance(obj, dict) and 'String' in obj and 'Valid' in obj:
-            return obj['String']
-        return obj
-    
     @pystackql_test_setup()
     def test_dict_output_format(self):
         """Test that dict output format returns a list of dictionaries."""
@@ -61,10 +54,8 @@ class TestOutputFormats:
         assert not result.empty, "DataFrame should not be empty"
         assert "literal_string_value" in result.columns, "DataFrame should have 'literal_string_value' column"
         
-        # Extract the value, handling possible dictionary format
+        # Extract the value
         value = result["literal_string_value"].iloc[0]
-        if isinstance(value, dict) and 'String' in value and 'Valid' in value:
-            value = value['String']
         
         assert value == "test" or value == '"test"', f"Value should be 'test', got {value}"
         
@@ -89,9 +80,6 @@ class TestOutputFormats:
         
         # Validate formula name
         formula_name = result["formula_name"].iloc[0]
-        if isinstance(formula_name, dict) and 'String' in formula_name:
-            formula_name = formula_name['String']
-        
         assert "stackql" in str(formula_name), f"Formula name should contain 'stackql', got {formula_name}"
         
         # Verify numeric columns exist
@@ -100,12 +88,7 @@ class TestOutputFormats:
             
             # Try to convert to numeric if possible
             try:
-                if isinstance(result[col].iloc[0], dict) and 'String' in result[col].iloc[0]:
-                    # If it's a dictionary with a String key, try to convert that string to numeric
-                    pd.to_numeric(result[col].iloc[0]['String'])
-                else:
-                    # Otherwise try to convert the column directly
-                    pd.to_numeric(result[col])
+                pd.to_numeric(result[col])
                 numeric_conversion_success = True
             except (ValueError, TypeError):
                 numeric_conversion_success = False

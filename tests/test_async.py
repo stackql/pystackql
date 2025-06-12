@@ -34,13 +34,6 @@ pytestmark = pytest.mark.skipif(
 class TestAsyncFunctionality:
     """Tests for PyStackQL async functionality in non-server mode."""
     
-    # Helper method to extract value from response objects
-    def _get_value(self, obj):
-        """Extract actual value from response objects that might be wrapped in a dict."""
-        if isinstance(obj, dict) and 'String' in obj and 'Valid' in obj:
-            return obj['String']
-        return obj
-    
     @async_test_decorator
     async def test_execute_queries_async_dict_output(self):
         """Test executeQueriesAsync with dict output format."""
@@ -55,12 +48,8 @@ class TestAsyncFunctionality:
         assert len(results) > 0, "Results should not be empty"
         assert all("formula_name" in item for item in results), "Each item should have 'formula_name' column"
         
-        # Extract formula names, handling possible dictionary format
-        formula_names = []
-        for item in results:
-            if "formula_name" in item:
-                formula_name = self._get_value(item["formula_name"])
-                formula_names.append(formula_name)
+        # Extract formula names
+        formula_names = [item["formula_name"] for item in results if "formula_name" in item]
         
         # Check that we have the expected formula names
         assert any("stackql" in str(name) for name in formula_names), "Results should include 'stackql'"
@@ -81,14 +70,9 @@ class TestAsyncFunctionality:
         assert not result.empty, "DataFrame should not be empty"
         assert "formula_name" in result.columns, "DataFrame should have 'formula_name' column"
         
-        # Extract formula names, handling possible dictionary format
-        formula_values = []
-        for i in range(len(result)):
-            formula_name = result["formula_name"].iloc[i]
-            if isinstance(formula_name, dict) and 'String' in formula_name:
-                formula_name = formula_name['String']
-            formula_values.append(formula_name)
-            
+        # Extract formula names
+        formula_values = result["formula_name"].tolist()
+        
         # Check that we have the expected formula names
         assert any("stackql" in str(name) for name in formula_values), "Results should include 'stackql'"
         assert any("terraform" in str(name) for name in formula_values), "Results should include 'terraform'"
@@ -103,12 +87,7 @@ class TestAsyncFunctionality:
             
             # Check that the column can be converted to numeric
             try:
-                if isinstance(result[col].iloc[0], dict) and 'String' in result[col].iloc[0]:
-                    # If it's a dictionary with a String key, try to convert that string to numeric
-                    pd.to_numeric(result[col].iloc[0]['String'])
-                else:
-                    # Otherwise try to convert the column directly
-                    pd.to_numeric(result[col])
+                pd.to_numeric(result[col])
                 numeric_conversion_success = True
             except (ValueError, TypeError):
                 numeric_conversion_success = False
