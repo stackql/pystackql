@@ -190,36 +190,6 @@ class BaseStackQLMagicTest:
                           mock_display.call_count == 1 and mock_html.called,
                           self.is_server_mode, True)
 
-    # def test_display_with_csv_download_error_handling(self):
-    #     """Test error handling in _display_with_csv_download method."""
-        
-    #     # Create a mock DataFrame that will raise an exception during to_csv()
-    #     mock_df = MagicMock()
-    #     mock_df.to_csv.side_effect = Exception("Test CSV error")
-        
-    #     # Mock IPython display functionality
-    #     with patch('IPython.display.display') as mock_display, \
-    #          patch('IPython.display.HTML') as mock_html, \
-    #          patch('builtins.print') as mock_print:
-            
-    #         # Call the method with the problematic DataFrame
-    #         self.stackql_magic._display_with_csv_download(mock_df)
-            
-    #         # Verify display was not called (we now only print an error message)
-    #         mock_display.assert_not_called()
-            
-    #         # Verify HTML was not called due to error
-    #         mock_html.assert_not_called()
-            
-    #         # Verify error message was printed
-    #         mock_print.assert_called_once()
-    #         error_message = mock_print.call_args[0][0]
-    #         assert "Error generating CSV download:" in error_message
-            
-    #     print_test_result(f"_display_with_csv_download error handling test{' (server mode)' if self.is_server_mode else ''}", 
-    #                       not mock_display.called and not mock_html.called and mock_print.called,
-    #                       self.is_server_mode, True)
-
     def test_display_with_csv_download_error_handling(self):
         """Test error handling in _display_with_csv_download method."""
         
