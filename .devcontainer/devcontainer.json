@@ -1,0 +1,25 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "containerEnv": {
+  },  
+  "hostRequirements": {
+    "cpus": 2
+  },
+  "waitFor": "onCreateCommand",
+  "updateContentCommand": "pip install -e ",
+  "postCreateCommand": "",
+  "postStartCommand": "git reset --hard && git clean -fd",
+  "customizations": {
+    "codespaces": {
+      "openFiles": [
+        "notebooks/demo.ipynb"
+      ]
+    },
+    "vscode": {
+      "extensions": [
+        "ms-toolsai.jupyter",
+        "ms-python.python"
+      ]
+    }
+  }
+}
