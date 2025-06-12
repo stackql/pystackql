@@ -69,8 +69,12 @@ class StackqlServerMagic(BaseStackqlMagic):
         
         :param df: The DataFrame to display and make downloadable.
         """
+        import IPython.display
+        
         try:
             # Generate CSV data
+            import io
+            import base64
             csv_buffer = io.StringIO()
             df.to_csv(csv_buffer, index=False)
             csv_data = csv_buffer.getvalue()
@@ -82,7 +86,7 @@ class StackqlServerMagic(BaseStackqlMagic):
             download_link = f'data:text/csv;base64,{csv_base64}'
             
             # Display the DataFrame first
-            display(df)
+            IPython.display.display(df)
             
             # Create and display the download button
             download_html = f'''
@@ -95,13 +99,13 @@ class StackqlServerMagic(BaseStackqlMagic):
                 </a>
             </div>
             '''
-            display(HTML(download_html))
+            IPython.display.display(IPython.display.HTML(download_html))
             
         except Exception as e:
             # If CSV generation fails, just display the DataFrame normally
-            display(df)
+            IPython.display.display(df)
             print(f"Error generating CSV download: {e}")
-
+        
 def load_ipython_extension(ipython):
     """Load the server magic in IPython."""
     # Create an instance of the magic class and register it
