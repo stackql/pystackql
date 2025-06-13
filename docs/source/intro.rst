@@ -71,19 +71,17 @@ The following example demonstrates how to run a query and return the results as 
 .. code-block:: python
 
     from pystackql import StackQL
-    import pandas as pd
     region = "ap-southeast-2"
-    stackql = StackQL()
+    stackql = StackQL(output='pandas')
     
     query = """
-    SELECT instanceType, COUNT(*) as num_instances
+    SELECT instance_type, COUNT(*) as num_instances
     FROM aws.ec2.instances
     WHERE region = '%s'
-    GROUP BY instanceType
+    GROUP BY instance_type
     """ % (region)   
     
-    res = stackql.execute(query)
-    df = pd.read_json(res)
+    df = stackql.execute(query)
     print(df)
 
 Using ``UNION`` and ``JOIN`` operators
@@ -96,26 +94,25 @@ StackQL is a fully functional SQL programming environment, enabling the full set
     ...
     regions = ["ap-southeast-2", "us-east-1"]
     query = """
-    SELECT '%s' as region, instanceType, COUNT(*) as num_instances
+    SELECT '%s' as region, instance_type, COUNT(*) as num_instances
     FROM aws.ec2.instances
     WHERE region = '%s'
-    GROUP BY instanceType
+    GROUP BY instance_type
     UNION
-    SELECT  '%s' as region, instanceType, COUNT(*) as num_instances
+    SELECT  '%s' as region, instance_type, COUNT(*) as num_instances
     FROM aws.ec2.instances
     WHERE region = '%s'
-    GROUP BY instanceType
+    GROUP BY instance_type
     """ % (regions[0], regions[0], regions[1], regions[1])
     
-    res = stackql.execute(query)
-    df = pd.read_json(res)
+    df = stackql.execute(query)
     print(df)
 
 The preceding example will print a ``pandas.DataFrame`` which would look like this:
 
 .. code-block:: sh
 
-      instanceType  num_instances          region
+     instance_type  num_instances          region
     0    t2.medium              2  ap-southeast-2
     1     t2.micro              7  ap-southeast-2
     2     t2.small              4  ap-southeast-2
@@ -133,17 +130,15 @@ In addition to ``UNION`` DML operators, you can also run a batch (list) of queri
 
     queries = [
         f"""
-        SELECT '{region}' as region, instanceType, COUNT(*) as num_instances
+        SELECT '{region}' as region, instance_type, COUNT(*) as num_instances
         FROM aws.ec2.instances
         WHERE region = '{region}'
-        GROUP BY instanceType
+        GROUP BY instance_type
         """
         for region in regions
     ]
 
-    res = stackql.executeQueriesAsync(queries)
-    df = pd.read_json(json.dumps(res))
-
+    df = stackql.executeQueriesAsync(queries)
     print(df)
 
 
@@ -156,10 +151,9 @@ Here is an example of using the ``json_extract`` function to extract a field fro
 .. code-block:: python
 
     from pystackql import StackQL
-    import pandas as pd
     subscriptionId = "273769f6-545f-45b2-8ab8-2f14ec5768dc"
     resourceGroupName = "stackql-ops-cicd-dev-01"
-    stackql = StackQL()
+    stackql = StackQL() # output format defaults to 'dict'
 
     query = """
     SELECT name,  
@@ -172,8 +166,7 @@ Here is an example of using the ``json_extract`` function to extract a field fro
     """ % (resourceGroupName, subscriptionId)
     
     res = stackql.execute(query)
-    df = pd.read_json(res)
-    print(df)
+    print(res)
 
 Using the Jupyter Magic Extension
 =================================
@@ -184,7 +177,7 @@ To get started with the magic extension, first load it into your Jupyter environ
 
 .. code-block:: ipython
 
-    %load_ext pystackql
+    %load_ext pystackql.magic
 
 After loading the magic extension, you can use the `%%stackql` magic to execute StackQL commands in a dedicated Jupyter cell. The output will be displayed directly below the cell, just like any other Jupyter command output.
 
@@ -196,3 +189,9 @@ Example:
     SHOW SERVICES in aws
 
 This Jupyter magic extension provides a seamless integration of `pystackql` into your Jupyter workflows, allowing you to explore cloud and SaaS provider data interactively within your notebooks.
+
+To use the magic extension to run queries against a StackQL server, you can use the following command:
+
+.. code-block:: ipython
+
+    %load_ext pystackql.magics

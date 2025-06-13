@@ -22,7 +22,7 @@ PyStackQL - Python Wrapper for StackQL
 StackQL is an open source developer tool which allows you to query and interact with cloud and SaaS provider APIs using SQL grammar.
 StackQL can be used for cloud inventory analysis, cloud cost optimization, cloud security and compliance, provisioning/IaC, assurance, XOps, and more.
 
-PyStackQL is a Python wrapper for StackQL which allows you to use StackQL within Python applications and to use the power of Python to extend StackQL.
+`PyStackQL <https://pypi.org/project/pystackql/>`_ is a Python wrapper for StackQL which allows you to use StackQL within Python applications and to use the power of Python to extend StackQL.  
 PyStackQL can be used with ``pandas``, ``matplotlib``, ``plotly``, ``jupyter`` and other Python libraries to create powerful data analysis and visualization applications.
 
 For detailed documentation, including the API reference, see `Read the Docs <https://pystackql.readthedocs.io>`_.
@@ -52,19 +52,17 @@ The following example demonstrates how to run a query and return the results as 
 ::
 
     from pystackql import StackQL
-    import pandas as pd
     region = "ap-southeast-2"
-    stackql = StackQL()
+    stackql = StackQL(output='pandas')
     
     query = """
-    SELECT instanceType, COUNT(*) as num_instances
+    SELECT instance_type, COUNT(*) as num_instances
     FROM aws.ec2.instances
     WHERE region = '%s'
-    GROUP BY instanceType
+    GROUP BY instance_type
     """ % (region)   
     
-    res = stackql.execute(query)
-    df = pd.read_json(res)
+    df = stackql.execute(query)
     print(df)
 
 Using PyStackQL with Jupyter Notebook
@@ -76,7 +74,7 @@ To use the integrated Jupyter magic commands provided by PyStackQL:
 
 .. code-block:: python
 
-    %load_ext pystackql
+    %load_ext pystackql.magic
 
 2. **Execute a Query Using Line Magic**:
 
@@ -111,12 +109,11 @@ Supported Python Versions
 
 PyStackQL has been tested on:
 
-- Python 3.7
-- Python 3.8
 - Python 3.9
 - Python 3.10
 - Python 3.11
-- Python 3.12 (MacOS and Linux only)
+- Python 3.12
+- Python 3.13
 
 Licensing
 ~~~~~~~~~

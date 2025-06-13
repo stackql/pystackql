@@ -49,10 +49,10 @@ StackQL can be used to collect, analyze, summarize, and report on cloud resource
     regions = ["ap-southeast-2", "us-east-1"]
     queries = [
         f"""
-        SELECT '{region}' as region, instanceType, COUNT(*) as num_instances
+        SELECT '{region}' as region, instance_type, COUNT(*) as num_instances
         FROM aws.ec2.instances
         WHERE region = '{region}'
-        GROUP BY instanceType
+        GROUP BY instance_type
         """
         for region in regions
     ]

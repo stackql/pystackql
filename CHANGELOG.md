@@ -1,9 +1,10 @@
 # Changelog
 
-## v3.8.0 (2025-06-04)
+## v3.8.0 (2025-06-13)
 
 ### Updates
 
+- Added `--csv-download` argument for stackql magic commands
 - Refactor
 - Enhanced test coverage
 
