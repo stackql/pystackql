@@ -368,48 +368,6 @@ class StackQL:
             # Format the result
             return self.local_output_formatter.format_query_result(output, suppress_errors)
 
-    # async def executeQueriesAsync(self, queries):
-    #     """Executes multiple StackQL queries asynchronously using the current StackQL instance.
-
-    #     This method utilizes an asyncio event loop to concurrently run a list of provided 
-    #     StackQL queries. Each query is executed independently, and the combined results of 
-    #     all the queries are returned as a list of JSON objects if 'dict' output mode is selected,
-    #     or as a concatenated DataFrame if 'pandas' output mode is selected.
-
-    #     The order of the results in the returned list or DataFrame may not necessarily 
-    #     correspond to the order of the queries in the input list due to the asynchronous nature 
-    #     of execution.
-
-    #     :param queries: A list of StackQL query strings to be executed concurrently.
-    #     :type queries: list[str], required
-    #     :return: A list of results corresponding to each query. Each result is a JSON object or a DataFrame.
-    #     :rtype: list[dict] or pd.DataFrame
-    #     :raises ValueError: If method is used in `server_mode` on an unsupported OS (anything other than Linux).
-    #     :raises ValueError: If an unsupported output mode is selected (anything other than 'dict' or 'pandas').
-
-    #     Example:
-    #         >>> from pystackql import StackQL
-    #         >>> stackql = StackQL()        
-    #         >>> queries = [
-    #         >>> \"\"\"SELECT '%s' as region, instanceType, COUNT(*) as num_instances 
-    #         ... FROM aws.ec2.instances 
-    #         ... WHERE region = '%s' 
-    #         ... GROUP BY instanceType\"\"\" % (region, region)
-    #         >>> for region in regions ]
-    #         >>> result = stackql.executeQueriesAsync(queries)
-
-    #     Note:
-    #         - When operating in `server_mode`, this method is not supported.
-    #     """
-    #     if self.server_mode:
-    #         raise ValueError(
-    #             "The executeQueriesAsync method is not supported in server mode. "
-    #             "Please use the standard execute method with individual queries instead, "
-    #             "or switch to local mode if you need to run multiple queries concurrently."
-    #         )
-
-    #     return await self.async_executor.execute_queries(queries)
-    
     async def executeQueriesAsync(self, queries):
         """Executes multiple StackQL queries asynchronously using the current StackQL instance.
 
@@ -433,10 +391,10 @@ class StackQL:
             >>> from pystackql import StackQL
             >>> stackql = StackQL()        
             >>> queries = [
-            >>> \"\"\"SELECT '%s' as region, instanceType, COUNT(*) as num_instances 
+            >>> \"\"\"SELECT '%s' as region, instance_type, COUNT(*) as num_instances 
             ... FROM aws.ec2.instances 
             ... WHERE region = '%s' 
-            ... GROUP BY instanceType\"\"\" % (region, region)
+            ... GROUP BY instance_type\"\"\" % (region, region)
             >>> for region in regions ]
             >>> result = stackql.executeQueriesAsync(queries)
 
