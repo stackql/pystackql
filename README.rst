@@ -144,14 +144,14 @@ To build the package, you will need to install the following packages:
 
 ::
 
-    pip install setuptools wheel twine
+    pip install build
 
 Then, from the root directory of the repository, run:
 
 ::
 
     rm -rf dist/*
-    python3 setup.py sdist bdist_wheel
+    python3 -m build    
 
 The package will be built in the ``dist`` directory.
 
