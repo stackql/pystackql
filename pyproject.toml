@@ -33,8 +33,11 @@ dependencies = [
     "tqdm>=4.61.0",
 ]
 
+[tool.setuptools.packages.find]
+include = ["pystackql", "pystackql.*"]
+
 [tool.setuptools]
-find-packages = {namespaces = false}
+include-package-data = true
 
 [project.urls]
 Homepage = "https://github.com/stackql/pystackql"
