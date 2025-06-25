@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pystackql"
-version = "3.8.0"
+version = "3.8.1"
 description = "A Python interface for StackQL"
 readme = "README.rst"
 authors = [
@@ -34,7 +34,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["pystackql"]
+find-packages = {namespaces = false}
 
 [project.urls]
 Homepage = "https://github.com/stackql/pystackql"
