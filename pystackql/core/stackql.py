@@ -263,7 +263,7 @@ class StackQL:
         
         return message
 
-    def executeStmt(self, query, custom_auth=None, env_vars=None):
+    def executeStmt(self, query, custom_auth=None, env_vars=None, **kwargs):
         """Executes a query using the StackQL instance and returns the output as a string.  
             This is intended for operations which do not return a result set, for example a mutation 
             operation such as an `INSERT` or a `DELETE` or life cycle method such as an `EXEC` operation
@@ -279,6 +279,12 @@ class StackQL:
         :type custom_auth: dict, optional
         :param env_vars: Command-specific environment variables for this execution.
         :type env_vars: dict, optional        
+        :param kwargs: Additional keyword arguments that override constructor parameters for this execution.
+            Supported overrides: output, sep, header, auth, custom_registry, max_results, page_limit, 
+            max_depth, api_timeout, http_debug, proxy_host, proxy_port, proxy_user, proxy_password, 
+            proxy_scheme, backend_storage_mode, backend_file_storage_location, app_root,
+            execution_concurrency_limit, dataflow_dependency_max, dataflow_components_max
+        :type kwargs: optional
 
         :return: The output result of the query in string format. If in `server_mode`, it 
                 returns a JSON string representation of the result. 
@@ -292,25 +298,47 @@ class StackQL:
             >>> result
         """
         if self.server_mode:
+            # Server mode: handle output override
+            output_format = kwargs.get('output', self.output)
+            
             result = self.server_connection.execute_query(query, is_statement=True)
             
             # Format result based on output type
-            if self.output == 'pandas':
+            if output_format == 'pandas':
                 import pandas as pd
                 return pd.DataFrame(result)
-            elif self.output == 'csv':
+            elif output_format == 'csv':
                 # Return the string representation of the result
                 return result[0]['message']
             else:
                 return result
         else:
-            # Execute the query
-            result = self.local_query_executor.execute(query, custom_auth=custom_auth, env_vars=env_vars)
+            # Local mode: handle parameter overrides
+            override_params = None
+            output_format = kwargs.get('output', self.output)
             
-            # Format the result
-            return self.local_output_formatter.format_statement_result(result)
+            # If custom_auth is provided as kwarg, use it
+            if 'auth' in kwargs:
+                custom_auth = kwargs['auth']
+            
+            # Generate override params if kwargs provided
+            if kwargs:
+                from ..utils import generate_params_for_execution
+                override_params = generate_params_for_execution(self._base_kwargs, kwargs)
+            
+            # Execute the query
+            result = self.local_query_executor.execute(query, custom_auth=custom_auth, env_vars=env_vars, override_params=override_params)
+            
+            # Format the result with appropriate output formatter
+            if output_format != self.output:
+                # Create a temporary formatter for this execution
+                from .output import OutputFormatter
+                temp_formatter = OutputFormatter(output_format)
+                return temp_formatter.format_statement_result(result)
+            else:
+                return self.local_output_formatter.format_statement_result(result)
     
-    def execute(self, query, suppress_errors=True, custom_auth=None, env_vars=None):
+    def execute(self, query, suppress_errors=True, custom_auth=None, env_vars=None, **kwargs):
         """
         Executes a StackQL query and returns the output based on the specified output format.
 
@@ -325,6 +353,12 @@ class StackQL:
         :type custom_auth: dict, optional        
         :param env_vars: Command-specific environment variables for this execution.
         :type env_vars: dict, optional
+        :param kwargs: Additional keyword arguments that override constructor parameters for this execution.
+            Supported overrides: output, sep, header, auth, custom_registry, max_results, page_limit, 
+            max_depth, api_timeout, http_debug, proxy_host, proxy_port, proxy_user, proxy_password, 
+            proxy_scheme, backend_storage_mode, backend_file_storage_location, app_root,
+            execution_concurrency_limit, dataflow_dependency_max, dataflow_components_max
+        :type kwargs: optional
 
         :return: The output of the query, which can be a list of dictionary objects, a Pandas DataFrame, 
                     or a raw CSV string, depending on the configured output format.
@@ -344,29 +378,52 @@ class StackQL:
             >>> result = stackql.execute(query)
         """
         if self.server_mode:
+            # Server mode: handle output override
+            output_format = kwargs.get('output', self.output)
+            
             result = self.server_connection.execute_query(query)
             
             # Format result based on output type
-            if self.output == 'pandas':
+            if output_format == 'pandas':
                 import pandas as pd
                 import json
                 from io import StringIO
                 json_str = json.dumps(result)
                 return pd.read_json(StringIO(json_str))
-            elif self.output == 'csv':
+            elif output_format == 'csv':
                 raise ValueError("CSV output is not supported in server_mode.")
             else:  # Assume 'dict' output
                 return result
         else:
+            # Local mode: handle parameter overrides
+            override_params = None
+            output_format = kwargs.get('output', self.output)
+            http_debug = kwargs.get('http_debug', self.http_debug)
+            
+            # If custom_auth is provided as kwarg, use it
+            if 'auth' in kwargs:
+                custom_auth = kwargs['auth']
+            
+            # Generate override params if kwargs provided
+            if kwargs:
+                from ..utils import generate_params_for_execution
+                override_params = generate_params_for_execution(self._base_kwargs, kwargs)
+            
             # Apply HTTP debug setting
-            if self.http_debug:
+            if http_debug:
                 suppress_errors = False
             
             # Execute the query
-            output = self.local_query_executor.execute(query, custom_auth=custom_auth, env_vars=env_vars)
+            output = self.local_query_executor.execute(query, custom_auth=custom_auth, env_vars=env_vars, override_params=override_params)
             
-            # Format the result
-            return self.local_output_formatter.format_query_result(output, suppress_errors)
+            # Format the result with appropriate output formatter
+            if output_format != self.output:
+                # Create a temporary formatter for this execution
+                from .output import OutputFormatter
+                temp_formatter = OutputFormatter(output_format)
+                return temp_formatter.format_query_result(output, suppress_errors)
+            else:
+                return self.local_output_formatter.format_query_result(output, suppress_errors)
 
     async def executeQueriesAsync(self, queries):
         """Executes multiple StackQL queries asynchronously using the current StackQL instance.

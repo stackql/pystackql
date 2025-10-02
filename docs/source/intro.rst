@@ -168,6 +168,92 @@ Here is an example of using the ``json_extract`` function to extract a field fro
     res = stackql.execute(query)
     print(res)
 
+Overriding Parameters per Query
+================================
+
+The :meth:`pystackql.StackQL.execute` and :meth:`pystackql.StackQL.executeStmt` methods support keyword arguments that can override parameters set in the constructor for individual query executions. This is useful when you need to:
+
+- Change the output format for specific queries
+- Adjust CSV formatting (separator, headers) for specific exports
+- Override authentication for specific providers
+- Change other execution parameters on a per-query basis
+
+**Example: Overriding Output Format**
+
+You can create a StackQL instance with a default output format, then override it for specific queries:
+
+.. code-block:: python
+
+    from pystackql import StackQL
+    
+    # Create instance with CSV output by default
+    provider_auth =  {
+        "github": {
+            "credentialsenvvar": "GITHUBCREDS",
+            "type": "basic"
+        }
+    }
+    stackql = StackQL(auth=provider_auth, output="csv")
+    
+    # This returns CSV format (default)
+    csv_result = stackql.execute("select id, name from github.repos.repos where org = 'stackql'")
+    print(csv_result)
+    # Output:
+    # id,name
+    # 443987542,stackql
+    # 441087132,stackql-provider-registry
+    # ...
+    
+    # This overrides to JSON/dict format for this query only
+    json_result = stackql.execute("select id, name from github.repos.repos where org = 'stackql'", output="json")
+    print(json_result)
+    # Output:
+    # [{"id":"443987542","name":"stackql"},{"id":"441087132","name":"stackql-provider-registry"},...]
+    
+    # Subsequent calls without override use the original CSV format
+    csv_result2 = stackql.execute("select id, name from github.repos.repos where org = 'stackql' limit 1")
+
+**Example: Overriding CSV Formatting**
+
+You can also override CSV-specific parameters like separator and headers:
+
+.. code-block:: python
+
+    from pystackql import StackQL
+    
+    # Create instance with default CSV settings
+    stackql = StackQL(output="csv", sep=",", header=False)
+    
+    # Override to use pipe separator and include headers for this query
+    result = stackql.execute(
+        "select id, name from github.repos.repos where org = 'stackql' limit 3",
+        sep="|",
+        header=True
+    )
+
+**Supported Override Parameters**
+
+The following parameters can be overridden in :meth:`pystackql.StackQL.execute` and :meth:`pystackql.StackQL.executeStmt`:
+
+- ``output``: Output format ('dict', 'pandas', or 'csv')
+- ``sep``: CSV delimiter/separator (when output='csv')
+- ``header``: Include headers in CSV output (when output='csv')
+- ``auth``: Custom authentication for providers
+- ``custom_registry``: Custom StackQL provider registry URL
+- ``max_results``: Maximum results per HTTP request
+- ``page_limit``: Maximum pages per resource
+- ``max_depth``: Maximum depth for indirect queries
+- ``api_timeout``: API request timeout
+- ``http_debug``: Enable HTTP debug logging
+- Proxy settings: ``proxy_host``, ``proxy_port``, ``proxy_user``, ``proxy_password``, ``proxy_scheme``
+- Backend settings: ``backend_storage_mode``, ``backend_file_storage_location``, ``app_root``
+- Execution settings: ``execution_concurrency_limit``, ``dataflow_dependency_max``, ``dataflow_components_max``
+
+.. note::
+
+   Parameter overrides only affect the specific query execution and do not modify the StackQL instance's configuration. Subsequent queries will use the original constructor parameters unless overridden again.
+
+
 Using the Jupyter Magic Extension
 =================================
 
