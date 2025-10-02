@@ -204,9 +204,9 @@ You can create a StackQL instance with a default output format, then override it
     # 441087132,stackql-provider-registry
     # ...
     
-    # This overrides to JSON/dict format for this query only
-    json_result = stackql.execute("select id, name from github.repos.repos where org = 'stackql'", output="json")
-    print(json_result)
+    # This overrides to dict format for this query only
+    dict_result = stackql.execute("select id, name from github.repos.repos where org = 'stackql'", output="dict")
+    print(dict_result)
     # Output:
     # [{"id":"443987542","name":"stackql"},{"id":"441087132","name":"stackql-provider-registry"},...]
     
