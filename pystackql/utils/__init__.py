@@ -23,7 +23,7 @@ from .download import (
 )
 
 from .auth import format_auth
-from .params import setup_local_mode
+from .params import setup_local_mode, generate_params_for_execution
 
 __all__ = [
     # Platform utilities
@@ -45,5 +45,6 @@ __all__ = [
     'format_auth',
     
     # Parameter utilities
-    'setup_local_mode'
+    'setup_local_mode',
+    'generate_params_for_execution'
 ]

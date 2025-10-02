@@ -50,18 +50,19 @@ class QueryExecutor:
             with open(self.debug_log_file, "a") as log_file:
                 log_file.write(message + "\n")
     
-    def execute(self, query, custom_auth=None, env_vars=None):
+    def execute(self, query, custom_auth=None, env_vars=None, override_params=None):
         """Execute a StackQL query.
         
         Args:
             query (str): The query to execute
             custom_auth (dict, optional): Custom authentication dictionary. Defaults to None.
             env_vars (dict, optional): Environment variables for the subprocess. Defaults to None.
+            override_params (list, optional): Override parameters for this execution. Defaults to None.
             
         Returns:
             dict: The query results
         """
-        local_params = self.params.copy()
+        local_params = (override_params if override_params is not None else self.params).copy()
         script_path = None
 
         # Format query for platform
