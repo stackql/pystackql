@@ -7,6 +7,7 @@
 # Pattern Types:
 # - fuzzy_matches: Substring matching (case-insensitive)
 # - exact_matches: Exact string matching (case-sensitive)
+# - regex_matches: Regular expression matching (for complex patterns with variable parts)
 
 errors:
   # Fuzzy matches - will match if the pattern appears anywhere in the message
@@ -30,3 +31,22 @@ errors:
     - "Error:"
     - "FAILED"
     - "FAILURE"
+
+  # Regex matches - regular expressions for complex error patterns
+  # Use standard Python regex syntax (case-insensitive by default)
+  regex_matches:
+    # Network/DNS errors
+    - 'dial tcp:.*no such host'
+    - 'Get ".*".*dial tcp.*lookup.*no such host'
+
+    # Connection errors
+    - 'dial tcp.*connection refused'
+    - 'unable to connect to.*connection refused'
+
+    # Timeout errors
+    - 'context deadline exceeded'
+    - 'timeout.*waiting for'
+
+    # Generic network errors
+    - 'dial tcp.*i/o timeout'
+    - 'net/http.*timeout'

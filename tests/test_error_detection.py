@@ -125,6 +125,70 @@ class TestErrorDetector:
         assert not self.detector.is_error([])
         assert not self.detector.is_error({})
 
+    def test_regex_pattern_loading(self):
+        """Test that regex patterns are loaded and compiled."""
+        assert len(self.detector.regex_patterns) > 0
+        # Check that patterns are tuples of (pattern_str, compiled_regex)
+        for item in self.detector.regex_patterns:
+            assert isinstance(item, tuple)
+            assert len(item) == 2
+            pattern_str, compiled = item
+            assert isinstance(pattern_str, str)
+            # Check it's a compiled regex
+            assert hasattr(compiled, 'search')
+
+    def test_regex_dns_error_detection(self):
+        """Test detection of DNS lookup errors using regex."""
+        messages = [
+            'Get "https://fred.brew.sh/api/formula/stackql.json?": dial tcp: lookup fred.brew.sh on 8.8.8.8:53: no such host',
+            'dial tcp: lookup example.com on 1.1.1.1:53: no such host',
+            'Get "http://api.example.com": dial tcp: lookup api.example.com on 192.168.1.1:53: no such host',
+        ]
+        for msg in messages:
+            assert self.detector.is_error(msg), f"Should detect DNS error in: {msg}"
+
+    def test_regex_connection_refused(self):
+        """Test detection of connection refused errors using regex."""
+        messages = [
+            'dial tcp 192.168.1.1:5432: connection refused',
+            'dial tcp [::1]:8080: connection refused',
+            'unable to connect to server: connection refused',
+        ]
+        for msg in messages:
+            assert self.detector.is_error(msg), f"Should detect connection error in: {msg}"
+
+    def test_regex_timeout_errors(self):
+        """Test detection of timeout errors using regex."""
+        messages = [
+            'context deadline exceeded',
+            'dial tcp 10.0.0.1:443: i/o timeout',
+            'net/http: request canceled while waiting for connection (Client.Timeout exceeded)',
+            'timeout while waiting for response',
+        ]
+        for msg in messages:
+            assert self.detector.is_error(msg), f"Should detect timeout error in: {msg}"
+
+    def test_regex_case_insensitive(self):
+        """Test that regex matching is case-insensitive."""
+        messages = [
+            'DIAL TCP: NO SUCH HOST',
+            'Context Deadline Exceeded',
+            'Connection Refused',
+        ]
+        for msg in messages:
+            assert self.detector.is_error(msg), f"Should detect error (case-insensitive) in: {msg}"
+
+    def test_extract_error_info_with_regex(self):
+        """Test error info extraction for regex matches."""
+        msg = 'Get "https://example.com": dial tcp: lookup example.com on 8.8.8.8:53: no such host'
+        info = self.detector.extract_error_info(msg)
+        assert info is not None
+        assert info["error"] == msg
+        assert info["pattern_type"] == "regex"
+        assert info["detected_pattern"] is not None
+        # Should match one of the DNS error patterns
+        assert "no such host" in info["detected_pattern"]
+
 
 class TestOutputFormatterErrorDetection:
     """Tests for error detection integration in OutputFormatter."""
