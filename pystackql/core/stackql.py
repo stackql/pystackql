@@ -310,6 +310,12 @@ class StackQL:
             elif output_format == 'csv':
                 # Return the string representation of the result
                 return result[0]['message']
+            elif output_format == 'markdownkv':
+                from .output import OutputFormatter
+                temp_formatter = OutputFormatter('markdownkv')
+                # Extract message from result
+                message = result[0].get('message', '') if result else ''
+                return temp_formatter._format_markdownkv_statement(message)
             else:
                 return result
         else:
@@ -392,6 +398,10 @@ class StackQL:
                 return pd.read_json(StringIO(json_str))
             elif output_format == 'csv':
                 raise ValueError("CSV output is not supported in server_mode.")
+            elif output_format == 'markdownkv':
+                from .output import OutputFormatter
+                temp_formatter = OutputFormatter('markdownkv')
+                return temp_formatter._format_markdownkv(result)
             else:  # Assume 'dict' output
                 return result
         else:

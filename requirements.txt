@@ -3,6 +3,7 @@ pandas>=1.3.0
 requests>=2.25.0
 IPython>=7.0.0
 termcolor>=1.1.0
+PyYAML>=5.4.0
 
 # Documentation
 sphinx>=4.0.0

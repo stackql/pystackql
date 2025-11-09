@@ -1,5 +1,35 @@
 # Changelog
 
+## v3.8.2 (2025-11-09)
+
+### New Features
+
+- **Centralized Error Detection**: Added centralized error detection system with configurable patterns
+  - New `errors.yaml` configuration file with error patterns
+  - Supports three pattern types: fuzzy matches, exact matches, and regex matches
+  - Automatically detects errors in stdout and moves them to error field
+  - Eliminates need for external applications to parse error messages
+  - Includes patterns for HTTP 4xx/5xx errors, DNS failures, connection errors, and timeouts
+  - Added `ErrorDetector` class for pattern-based error detection
+
+- **Markdown-KV Output Format**: Added `markdownkv` output format optimized for LLM understanding
+  - Based on research showing 60.7% LLM accuracy vs 44.3% for CSV
+  - Ideal for RAG pipelines and AI-based systems processing tabular data
+  - Hierarchical structure with markdown headers and code blocks
+  - Supported in both local and server modes
+  - Reference: [Which Table Format Do LLMs Understand Best?](https://www.empiricalagents.com/blog/which-table-format-do-llms-understand-best)
+
+### Dependencies
+
+- Added `PyYAML>=5.4.0` for error pattern configuration
+
+### Testing
+
+- Added comprehensive test suite for error detection (`tests/test_error_detection.py`)
+- Added test suite for Markdown-KV format (`tests/test_markdownkv_format.py`)
+- Tests for regex pattern matching, DNS errors, connection errors, and timeouts
+- Tests for LLM-friendly data formatting
+
 ## v3.8.1 (2025-06-25)
 
 ### Updates
