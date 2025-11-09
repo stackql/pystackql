@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pystackql"
-version = "3.8.1"
+version = "3.8.2"
 description = "A Python interface for StackQL"
 readme = "README.rst"
 authors = [

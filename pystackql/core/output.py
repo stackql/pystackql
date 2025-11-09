@@ -27,7 +27,7 @@ class OutputFormatter:
         Raises:
             ValueError: If an invalid output format is specified
         """
-        ALLOWED_OUTPUTS = {'dict', 'pandas', 'csv'}
+        ALLOWED_OUTPUTS = {'dict', 'pandas', 'csv', 'markdownkv'}
         if output_format.lower() not in ALLOWED_OUTPUTS:
             raise ValueError(f"Invalid output format. Expected one of {ALLOWED_OUTPUTS}, got {output_format}.")
         self.output_format = output_format.lower()
@@ -63,10 +63,10 @@ class OutputFormatter:
     
     def _format_exception(self, exception_msg):
         """Format an exception message.
-        
+
         Args:
             exception_msg (str): The exception message
-            
+
         Returns:
             The formatted exception in the specified output format
         """
@@ -75,15 +75,17 @@ class OutputFormatter:
             return pd.DataFrame({'error': [exception_msg]}) if exception_msg else pd.DataFrame({'error': []})
         elif self.output_format == 'csv':
             return exception_msg
+        elif self.output_format == 'markdownkv':
+            return self._format_markdownkv_error(exception_msg)
         else:  # dict
             return [{"error": exception_msg}]
     
     def _format_error(self, error_msg):
         """Format an error message.
-        
+
         Args:
             error_msg (str): The error message
-            
+
         Returns:
             The formatted error in the specified output format
         """
@@ -92,6 +94,8 @@ class OutputFormatter:
             return pd.DataFrame({'error': [error_msg]}) if error_msg else pd.DataFrame({'error': []})
         elif self.output_format == 'csv':
             return error_msg
+        elif self.output_format == 'markdownkv':
+            return self._format_markdownkv_error(error_msg)
         else:  # dict
             return [{"error": error_msg}]
     
@@ -117,6 +121,11 @@ class OutputFormatter:
             if self.error_detector.is_error(data):
                 return data  # Return the error message as-is for CSV
             return data
+
+        if self.output_format == 'markdownkv':
+            # For markdownkv, check for errors before parsing
+            if isinstance(data, str) and self.error_detector.is_error(data):
+                return self._format_markdownkv_error(data)
 
         # Check if the raw data string itself is an error message (before JSON parsing)
         if isinstance(data, str) and self.error_detector.is_error(data):
@@ -157,6 +166,8 @@ class OutputFormatter:
                 import pandas as pd
                 # Convert the preprocessed JSON data to a DataFrame
                 return pd.DataFrame(processed_json_data)
+            elif self.output_format == 'markdownkv':
+                return self._format_markdownkv(processed_json_data)
 
             # Return the preprocessed dictionary data
             return processed_json_data
@@ -245,7 +256,7 @@ class OutputFormatter:
 
     def _format_empty(self):
         """Format an empty result.
-        
+
         Returns:
             An empty result in the specified output format
         """
@@ -254,8 +265,64 @@ class OutputFormatter:
             return pd.DataFrame()
         elif self.output_format == 'csv':
             return ""
+        elif self.output_format == 'markdownkv':
+            return "# Query Results\n\nNo records found.\n"
         else:  # dict
             return []
+
+    def _format_markdownkv(self, data):
+        """Format data as Markdown Key-Value pairs.
+
+        This format is optimized for LLM understanding based on research showing
+        it achieves 60.7% accuracy vs 44.3% for CSV when LLMs process tabular data.
+
+        Args:
+            data: The processed data (list of dicts)
+
+        Returns:
+            str: Markdown-formatted key-value representation
+        """
+        if not data:
+            return "# Query Results\n\nNo records found.\n"
+
+        # Handle single dict (convert to list for consistency)
+        if isinstance(data, dict):
+            data = [data]
+
+        output = ["# Query Results\n"]
+
+        for idx, record in enumerate(data, 1):
+            output.append(f"## Record {idx}\n")
+            output.append("```")
+
+            # Format each key-value pair
+            for key, value in record.items():
+                # Handle None values
+                if value is None:
+                    value = "null"
+                output.append(f"{key}: {value}")
+
+            output.append("```\n")
+
+        return "\n".join(output)
+
+    def _format_markdownkv_error(self, error_msg):
+        """Format an error message in Markdown-KV style.
+
+        Args:
+            error_msg (str): The error message
+
+        Returns:
+            str: Markdown-formatted error
+        """
+        return f"""# Query Results
+
+## Error
+
+```
+error: {error_msg}
+```
+"""
     
     def format_statement_result(self, result):
         """Format a statement result.
@@ -284,5 +351,28 @@ class OutputFormatter:
             return pd.DataFrame({'message': [message]}) if message else pd.DataFrame({'message': []})
         elif self.output_format == 'csv':
             return message
+        elif self.output_format == 'markdownkv':
+            return self._format_markdownkv_statement(message)
         else:  # dict
             return {'message': message.rstrip('\n')}
+
+    def _format_markdownkv_statement(self, message):
+        """Format a statement result message in Markdown-KV style.
+
+        Args:
+            message (str): The statement result message
+
+        Returns:
+            str: Markdown-formatted statement result
+        """
+        if not message:
+            return "# Statement Result\n\nNo message returned.\n"
+
+        return f"""# Statement Result
+
+## Result
+
+```
+message: {message.rstrip()}
+```
+"""
