@@ -8,6 +8,7 @@ This module handles the formatting of query results into different output format
 
 import json
 from io import StringIO
+from .error_detector import ErrorDetector
 
 class OutputFormatter:
     """Formats query results into different output formats.
@@ -18,11 +19,11 @@ class OutputFormatter:
     
     def __init__(self, output_format='dict'):
         """Initialize the OutputFormatter.
-        
+
         Args:
             output_format (str, optional): The output format. Defaults to 'dict'.
                 Allowed values: 'dict', 'pandas', 'csv'
-                
+
         Raises:
             ValueError: If an invalid output format is specified
         """
@@ -30,6 +31,7 @@ class OutputFormatter:
         if output_format.lower() not in ALLOWED_OUTPUTS:
             raise ValueError(f"Invalid output format. Expected one of {ALLOWED_OUTPUTS}, got {output_format}.")
         self.output_format = output_format.lower()
+        self.error_detector = ErrorDetector()
     
     def format_query_result(self, result, suppress_errors=True):
         """Format a query result.
@@ -95,21 +97,32 @@ class OutputFormatter:
     
     def _format_data(self, data):
         """Format data.
-        
+
         This method processes SQL type objects from StackQL:
         - SQL NULL values: {'String': '', 'Valid': False} → None
         - Regular values: {'String': 'value', 'Valid': True} → 'value'
         - Empty strings: {'String': '', 'Valid': True} → '' (preserved as empty string)
-        
+
+        Additionally, this method checks for error patterns in the data and
+        converts them to proper error responses.
+
         Args:
             data (str): The data string
-            
+
         Returns:
             The formatted data in the specified output format
         """
         if self.output_format == 'csv':
+            # For CSV, check if the raw data contains error patterns
+            if self.error_detector.is_error(data):
+                return data  # Return the error message as-is for CSV
             return data
-        
+
+        # Check if the raw data string itself is an error message (before JSON parsing)
+        if isinstance(data, str) and self.error_detector.is_error(data):
+            # The entire response is an error message
+            return self._format_error(data)
+
         try:
             # Attempt to parse JSON first
             raw_json_data = json.loads(data)
@@ -129,19 +142,25 @@ class OutputFormatter:
         try:
             # Process the JSON data to clean up SQL type objects
             processed_json_data = self._process_sql_types(raw_json_data)
-            
+
             # Handle empty data
             if not processed_json_data:
                 return pd.DataFrame() if self.output_format == 'pandas' else []
-            
+
+            # Check if the processed data contains error patterns
+            # This handles cases where StackQL returns error messages in structured data
+            detected_error = self._check_data_for_errors(processed_json_data)
+            if detected_error:
+                return self._format_error(detected_error)
+
             if self.output_format == 'pandas':
                 import pandas as pd
                 # Convert the preprocessed JSON data to a DataFrame
                 return pd.DataFrame(processed_json_data)
-            
+
             # Return the preprocessed dictionary data
             return processed_json_data
-            
+
         except Exception as e:
             # Handle any errors during processing
             error_msg = f"Error processing data: {str(e)}"
@@ -149,7 +168,44 @@ class OutputFormatter:
                 import pandas as pd
                 return pd.DataFrame([{"error": error_msg}])
             return [{"error": error_msg}]
-        
+
+    def _check_data_for_errors(self, data):
+        """Check if processed data contains error patterns.
+
+        This method recursively checks all string values in the data structure
+        to detect error patterns that might have been returned as valid data.
+
+        Args:
+            data: The processed data (list, dict, or primitive type)
+
+        Returns:
+            str: The error message if an error pattern is detected, None otherwise
+        """
+        if isinstance(data, list):
+            # Check each item in the list
+            for item in data:
+                error = self._check_data_for_errors(item)
+                if error:
+                    return error
+
+        elif isinstance(data, dict):
+            # Check each value in the dictionary
+            for key, value in data.items():
+                # Check string values for error patterns
+                if isinstance(value, str) and self.error_detector.is_error(value):
+                    return value
+                # Recursively check nested structures
+                error = self._check_data_for_errors(value)
+                if error:
+                    return error
+
+        elif isinstance(data, str):
+            # Check if the string itself is an error
+            if self.error_detector.is_error(data):
+                return data
+
+        return None
+
     def _process_sql_types(self, data):
         """Process SQL type objects in the data.
         
@@ -203,10 +259,10 @@ class OutputFormatter:
     
     def format_statement_result(self, result):
         """Format a statement result.
-        
+
         Args:
             result (dict): The raw statement result from the executor
-            
+
         Returns:
             The formatted result in the specified output format
         """
@@ -214,10 +270,15 @@ class OutputFormatter:
         if "exception" in result:
             exception_msg = result["exception"]
             return self._format_exception(exception_msg)
-        
+
         # Message on stderr or empty message
         message = result.get("error", "")
-        
+
+        # Check if the message contains error patterns
+        if message and self.error_detector.is_error(message):
+            # Return as error instead of as a regular message
+            return self._format_error(message)
+
         if self.output_format == 'pandas':
             import pandas as pd
             return pd.DataFrame({'message': [message]}) if message else pd.DataFrame({'message': []})

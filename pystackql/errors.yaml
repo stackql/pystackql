@@ -1,0 +1,32 @@
+# Error patterns for centralized error detection in PyStackQL
+#
+# This file defines patterns that should be detected as errors when they appear
+# in query results. These patterns are checked against messages returned in stdout
+# to identify error conditions that would otherwise be treated as valid data.
+#
+# Pattern Types:
+# - fuzzy_matches: Substring matching (case-insensitive)
+# - exact_matches: Exact string matching (case-sensitive)
+
+errors:
+  # Fuzzy matches - will match if the pattern appears anywhere in the message
+  fuzzy_matches:
+    # HTTP error status codes (4xx client errors, 5xx server errors)
+    - "http response status code: 4"
+    - "http response status code: 5"
+
+    # StackQL-specific error patterns from stackql-deploy
+    - "disparity in fields"
+    - "cannot find matching operation"
+
+    # Additional StackQL error patterns
+    - "invalid query"
+    - "syntax error"
+
+  # Exact matches - must match the entire message or start with this prefix
+  exact_matches:
+    - "error:"
+    - "ERROR:"
+    - "Error:"
+    - "FAILED"
+    - "FAILURE"
