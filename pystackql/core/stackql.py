@@ -32,8 +32,8 @@ class StackQL:
     :param backend_file_storage_location: Specifies location for database file, only applicable when `backend_storage_mode` is 'file'
         (defaults to `'{cwd}/stackql.db'`, this option is ignored in `server_mode`)
     :type backend_file_storage_location: str, optional
-    :param output: Determines the format of the output, options are 'dict', 'pandas', and 'csv' 
-        (defaults to `'dict'`, `'csv'` is not supported in `server_mode`)
+    :param output: Determines the format of the output, options are 'dict', 'pandas', 'csv', and 'markdownkv'
+        (defaults to `'dict'`, `'csv'` is not supported in `server_mode`, 'markdownkv' is optimized for LLM understanding)
     :type output: str, optional
     :param sep: Seperator for values in CSV output 
         (defaults to `','`, `output='csv'` only)
