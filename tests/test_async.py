@@ -53,7 +53,7 @@ class TestAsyncFunctionality:
         
         # Check that we have the expected formula names
         assert any("stackql" in str(name) for name in formula_names), "Results should include 'stackql'"
-        assert any("terraform" in str(name) for name in formula_names), "Results should include 'terraform'"
+        assert any("git" in str(name) for name in formula_names), "Results should include 'git'"
         
         print_test_result(f"Async executeQueriesAsync with dict output test\nRESULT COUNT: {len(results)}", 
                           isinstance(results, list) and all(isinstance(item, dict) for item in results),
@@ -75,7 +75,7 @@ class TestAsyncFunctionality:
         
         # Check that we have the expected formula names
         assert any("stackql" in str(name) for name in formula_values), "Results should include 'stackql'"
-        assert any("terraform" in str(name) for name in formula_values), "Results should include 'terraform'"
+        assert any("git" in str(name) for name in formula_values), "Results should include 'git'"
         
         # Check that numeric columns exist
         numeric_columns = [

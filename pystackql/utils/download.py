@@ -11,6 +11,25 @@ import site
 import platform
 import requests
 
+from .package import get_package_version
+
+# Base URL for all stackql binary downloads. This is a Cloudflare proxy in front
+# of the GitHub releases, used so downloads can be attributed and cached.
+RELEASES_BASE_URL = 'https://releases.stackql.io/stackql/latest'
+
+
+def get_user_agent():
+    """Builds the User-Agent string used for stackql binary downloads.
+
+    The versioned identifier (e.g. ``pystackql/3.8.2``) lets the proxy logs
+    attribute downloads to pystackql.
+
+    Returns:
+        str: The User-Agent header value
+    """
+    version = get_package_version("pystackql") or "unknown"
+    return f"pystackql/{version}"
+
 
 def get_download_dir():
     """Gets the directory to download the stackql binary.
@@ -38,11 +57,11 @@ def get_download_url():
     machine_val = platform.machine()
 
     if system_val == 'Linux' and machine_val == 'x86_64':
-        return 'https://releases.stackql.io/stackql/latest/stackql_linux_amd64.zip'
+        return f'{RELEASES_BASE_URL}/stackql_linux_amd64.zip'
     elif system_val == 'Windows':
-        return 'https://releases.stackql.io/stackql/latest/stackql_windows_amd64.zip'
+        return f'{RELEASES_BASE_URL}/stackql_windows_amd64.zip'
     elif system_val == 'Darwin':
-        return 'https://storage.googleapis.com/stackql-public-releases/latest/stackql_darwin_multiarch.pkg'
+        return f'{RELEASES_BASE_URL}/stackql_darwin_multiarch.pkg'
     else:
         raise Exception(f"ERROR: [get_download_url] unsupported OS type: {system_val} {machine_val}")
 
@@ -59,7 +78,8 @@ def download_file(url, path, showprogress=True):
         Exception: If the download fails
     """
     try:
-        r = requests.get(url, stream=True)
+        headers = {"User-Agent": get_user_agent()}
+        r = requests.get(url, stream=True, headers=headers)
         r.raise_for_status()
         total_size_in_bytes = int(r.headers.get('content-length', 0))
         block_size = 1024

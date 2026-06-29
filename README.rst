@@ -144,14 +144,14 @@ To build the package, you will need to install the following packages:
 
 ::
 
-    pip install build
+    pip install build twine
 
 Then, from the root directory of the repository, run:
 
 ::
 
     rm -rf dist/*
-    python3 -m build    
+    python3 -m build
 
 The package will be built in the ``dist`` directory.
 

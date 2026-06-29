@@ -59,9 +59,11 @@ HOMEBREW_METRICS_QUERY = "SELECT * FROM homebrew.formula.vw_usage_metrics WHERE 
 REGISTRY_PULL_HOMEBREW_QUERY = "REGISTRY PULL homebrew"
 
 # Async test queries
+# Note: both formulas must exist in the Homebrew metrics view. 'terraform' was
+# removed from Homebrew core, so 'git' is used as the second known-good formula.
 ASYNC_QUERIES = [
     "SELECT * FROM homebrew.formula.vw_usage_metrics WHERE formula_name = 'stackql'",
-    "SELECT * FROM homebrew.formula.vw_usage_metrics WHERE formula_name = 'terraform'"
+    "SELECT * FROM homebrew.formula.vw_usage_metrics WHERE formula_name = 'git'"
 ]
 
 # Pattern to match registry pull response
