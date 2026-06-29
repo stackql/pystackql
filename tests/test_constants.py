@@ -10,6 +10,7 @@ import sys
 import time
 import platform
 import subprocess
+import tempfile
 from termcolor import colored
 import pandas as pd
 
@@ -28,15 +29,16 @@ EXPECTED_VERSION_PATTERN = r'^v?(\d+\.\d+\.\d+)$'
 EXPECTED_PACKAGE_VERSION_PATTERN = r'^(\d+\.\d+\.\d+)$'
 EXPECTED_PLATFORM_PATTERN = r'^(Windows|Linux|Darwin) (\w+) \(([^)]+)\), Python (\d+\.\d+\.\d+)$'
 
-# Get custom download directory based on platform
+# Get custom download directory for tests
 def get_custom_download_dir():
-    """Return a platform-specific custom download directory."""
-    custom_download_dirs = {
-        'windows': 'C:\\temp',
-        'darwin': '/tmp',
-        'linux': '/tmp'
-    }
-    return custom_download_dirs.get(platform.system().lower(), '/tmp')
+    """Return an isolated custom download directory for tests.
+
+    Uses a dedicated subdirectory of the system temp dir so it never collides
+    with a stackql binary that CI may place directly in the temp root (e.g.
+    /tmp/stackql), which would otherwise be picked up instead of a fresh
+    download.
+    """
+    return os.path.join(tempfile.gettempdir(), 'pystackql_test_download')
 
 # Basic test queries that don't require authentication
 LITERAL_INT_QUERY = "SELECT 1 as literal_int_value"
@@ -59,9 +61,11 @@ HOMEBREW_METRICS_QUERY = "SELECT * FROM homebrew.formula.vw_usage_metrics WHERE 
 REGISTRY_PULL_HOMEBREW_QUERY = "REGISTRY PULL homebrew"
 
 # Async test queries
+# Note: both formulas must exist in the Homebrew metrics view. 'terraform' was
+# removed from Homebrew core, so 'git' is used as the second known-good formula.
 ASYNC_QUERIES = [
     "SELECT * FROM homebrew.formula.vw_usage_metrics WHERE formula_name = 'stackql'",
-    "SELECT * FROM homebrew.formula.vw_usage_metrics WHERE formula_name = 'terraform'"
+    "SELECT * FROM homebrew.formula.vw_usage_metrics WHERE formula_name = 'git'"
 ]
 
 # Pattern to match registry pull response

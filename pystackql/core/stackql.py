@@ -170,11 +170,23 @@ class StackQL:
             self.server_port = server_port
             self.server_connection = ServerConnection(server_address, server_port)
         else:
-            # Local mode - execute the binary locally
-            # Get all parameters from local variables (excluding 'self')
-            local_params = locals().copy()
-            local_params.pop('self')
-            
+            # Local mode - execute the binary locally.
+            # Combine the explicit constructor arguments with any additional
+            # **kwargs (e.g. download_dir, api_timeout, proxy settings, custom_auth).
+            # kwargs is spread flat so these reach setup_local_mode as top-level
+            # keys rather than being nested under a 'kwargs' entry.
+            local_params = {
+                'server_mode': server_mode,
+                'server_address': server_address,
+                'server_port': server_port,
+                'output': output,
+                'sep': sep,
+                'header': header,
+                'debug': debug,
+                'debug_log_file': debug_log_file,
+                **kwargs,
+            }
+
             # Set up local mode - this sets the instance attributes and returns params
             self.params = setup_local_mode(self, **local_params)
 

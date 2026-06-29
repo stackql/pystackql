@@ -12,6 +12,7 @@ ENV/
 # stackql
 .stackql/
 stackql
+stackql.exe
 stackql-*.sh
 .env
 nohup.out

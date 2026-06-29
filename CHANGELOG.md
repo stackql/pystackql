@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.8.4 (2026-06-29)
+
+### Updates
+
+- Routed all binary downloads through `releases.stackql.io` (including macOS) and added a `pystackql/{version}` User-Agent so downloads can be identified
+- Updated the test suite and test runners for Linux and Windows
+
 ## v3.8.2 (2025-11-09)
 
 ### New Features

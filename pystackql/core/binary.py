@@ -39,6 +39,10 @@ class BinaryManager:
         else:
             # Use provided download_dir or default
             self.download_dir = download_dir if download_dir else get_download_dir()
+            # Create a user-supplied download directory if it does not exist
+            # (get_download_dir already ensures the default location exists).
+            if not os.path.exists(self.download_dir):
+                os.makedirs(self.download_dir, exist_ok=True)
             self.bin_path = os.path.join(self.download_dir, get_binary_name(self.system))
         
         # Check if binary exists and get version
