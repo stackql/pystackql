@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.8.5 (2026-10-21)
+
+### Security
+
+- Added `certifi>=2026.10.19` as a declared dependency so the CA bundle used by `requests` for stackql binary downloads no longer trusts `emSign ECC Root CA - G3`, the eMudhra root whose eight intermediate CA private keys were found to be recoverable in October 2026 (Mozilla Bugzilla 2083449, certifi advisory GHSA-6q48-6c7w-9gw2). pystackql ships no CA material of its own; this floor ensures fresh installs and upgrades resolve a patched bundle.
+- Added `tests/test_tls_trust.py` to assert the resolved certifi bundle excludes the compromised root (by certificate fingerprint) and that downloads never disable certificate verification.
+
 ## v3.8.4 (2026-06-29)
 
 ### Updates
