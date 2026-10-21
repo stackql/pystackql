@@ -45,7 +45,8 @@ def main():
             "tests/test_output_formats.py",
             "tests/test_magic.py",
             "tests/test_async.py",
-            "tests/test_download.py"
+            "tests/test_download.py",
+            "tests/test_tls_trust.py"
         ])
    
     # Run pytest with the arguments
